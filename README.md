@@ -62,6 +62,25 @@ OK    track.flac → track.flac.tag (18 items, 145032 bytes)
 
 Если тегов нет, файл `.tag` не создаётся.
 
+## 🏷 Версии и changelog
+
+Проект следует [SemVer](https://semver.org/lang/ru/): ветка `0.x` — MVP,
+ломающие изменения повышают minor. История изменений ведётся в
+[CHANGELOG.md](CHANGELOG.md).
+
+Версия не хранится в коде: она берётся из git-тега через `git describe`,
+поэтому любой бинарник знает, из какого коммита он собран.
+
+```bash
+make version          # что попадёт в -ldflags
+make check            # тесты и линтер перед релизом
+make tag TAG=v0.4.0   # аннотированный тег на текущий коммит
+```
+
+Порядок релиза: перенести пункты из `[Unreleased]` в новый раздел
+CHANGELOG, закоммитить, прогнать `make check`, поставить тег `make tag`,
+при необходимости отправить его в удалённый репозиторий (`git push --tags`).
+
 ## ⚙️ Автоматизация
 
 Вся рутина собрана в `Makefile`. `make` без аргументов печатает справку по целям.
@@ -85,4 +104,4 @@ OK    track.flac → track.flac.tag (18 items, 145032 bytes)
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push и pull request запускает `make tidy-check`, `make check`, `make build` и `make dist`.
 
-Версия для сборки берётся из `git describe --tags --always --dirty`, поэтому тег вида `v0.1.0` автоматически попадает в вывод `bin/ext-tags --version`.
+Версии, теги и порядок релиза описаны в разделе «Версии и changelog» выше.

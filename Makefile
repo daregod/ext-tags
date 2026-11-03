@@ -63,7 +63,7 @@ COMMIT     ?= $(shell $(GIT) rev-parse --short HEAD 2>$(NULL))
 BUILD_DATE ?= $(shell $(GIT) log -1 --format=$(DATE_FMT) 2>$(NULL))
 
 ifeq ($(strip $(VERSION)),)
-  VERSION := dev
+  VERSION := 0.0.0-dev
 endif
 ifeq ($(strip $(COMMIT)),)
   COMMIT := none
@@ -73,12 +73,12 @@ ifeq ($(strip $(BUILD_DATE)),)
 endif
 
 BUILD_FLAGS := -trimpath -buildvcs=false
-LDFLAGS     := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
+LDFLAGS     := -s -w -X external-tags/internal/version.Version=$(VERSION) -X external-tags/internal/version.Commit=$(COMMIT) -X external-tags/internal/version.Date=$(BUILD_DATE)
 
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools build run install dist test test-race cover cover-html \
-        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version
+        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version tag
 
 ## help: list available targets
 help:
@@ -107,6 +107,7 @@ help:
 	@echo   make setup         verify toolchain, fetch modules, install tools
 	@echo   make clean         remove build artifacts
 	@echo   make version       print the version stamp
+	@echo   make tag           tag the current commit, e.g. make tag TAG=v0.4.0
 	@echo ------------------------------------------------------------------
 
 ## setup: check the toolchain, download modules and install dev tools
@@ -219,6 +220,12 @@ clean:
 	@$(call RMFILE,coverage.html)
 	@echo Cleaned.
 
+## tag: create an annotated release tag, e.g. make tag TAG=v0.4.0
+tag:
+	@$(if $(TAG),,$(error TAG is required, e.g. make tag TAG=v0.4.0))
+	@$(if $(shell $(GIT) status --porcelain),$(error working tree is dirty, commit the release first))
+	@$(GIT) tag -a $(TAG) -m "Release $(TAG)"
+	@echo Created tag $(TAG)
 ## version: print the version stamp
 version:
 	@echo $(VERSION) (commit $(COMMIT), built $(BUILD_DATE))

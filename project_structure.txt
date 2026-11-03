@@ -1,5 +1,6 @@
 external-tags/
 ├── Makefile              <-- сборка, тесты, линт, релизы
+├── CHANGELOG.md          <-- история версий (Keep a Changelog)
 ├── go.mod
 ├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
@@ -9,8 +10,11 @@ external-tags/
 │   ├── ape/
 │   │   ├── ape.go        <-- логика APEv2
 │   │   └── ape_test.go   <-- тесты APEv2
-│   └── extractor/
-│       └── extractor.go  <-- логика извлечения тегов из файлов
+│   ├── extractor/
+│   │   ├── extractor.go      <-- логика извлечения тегов из файлов
+│   │   └── extractor_test.go <-- тесты нормализации ключей
+│   └── version/
+│       └── version.go    <-- версия, коммит, дата сборки (-ldflags)
 ├── .github/
 │   └── workflows/
 │       └── ci.yml        <-- GitHub Actions: make tidy-check/check/build/dist

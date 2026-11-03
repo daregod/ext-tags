@@ -6,13 +6,7 @@ import (
 	"path/filepath"
 
 	"external-tags/internal/extractor"
-)
-
-// Injected at build time via -ldflags "-X main.version=...".
-var (
-	version   = "dev"
-	commit    = "none"
-	buildDate = "unknown"
+	"external-tags/internal/version"
 )
 
 func main() {
@@ -23,7 +17,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "-version", "--version":
-		fmt.Printf("ext-tags %s (commit %s, built %s)\n", version, commit, buildDate)
+		fmt.Printf("ext-tags %s\n", version.String())
 		return
 	}
 
