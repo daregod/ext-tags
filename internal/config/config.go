@@ -171,7 +171,7 @@ var defaultAliases = map[string]string{
 // defaultIgnore lists container fields that never become tag fields.
 var defaultIgnore = []string{
 	"vendor", "iTunNORM", "iTunSMPB", "Encoding Params", "covr", "©too",
-	"trkn", "trkn_count",
+	"trkn", "trkn_count", "DURATION",
 	"TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK", "TRCK",
 	"DISCNUMBER", "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC", "TPOS",
 	"PART_NUMBER", "TOTAL_PARTS",

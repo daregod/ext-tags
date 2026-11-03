@@ -25,13 +25,31 @@ func extractMatroska(path string, coverNames []string) (*Result, error) {
 		if tag.Name == "" || tag.Value == "" {
 			continue
 		}
-		if prev, ok := res.Fields[tag.Name]; ok {
+
+		name := tag.Name
+		albumScope := tag.TrackUID == 0 && tag.TargetTypeValue != 30
+		if albumScope {
+			// foobar2000 treats album-level Matroska tags this way.
+			switch strings.ToUpper(name) {
+			case "ARTIST":
+				name = "ALBUMARTIST"
+			case "PART_NUMBER":
+				name = "DISCNUMBER"
+			case "TOTAL_PARTS":
+				name = "DISCTOTAL"
+			}
+		} else if strings.EqualFold(name, "ENCODER") {
+			// Codec-level encoder; foobar2000 keeps the muxer value only.
+			continue
+		}
+
+		if prev, ok := res.Fields[name]; ok {
 			if prev != tag.Value {
-				res.Fields[tag.Name] = prev + "; " + tag.Value
+				res.Fields[name] = prev + "; " + tag.Value
 			}
 			continue
 		}
-		res.Fields[tag.Name] = tag.Value
+		res.Fields[name] = tag.Value
 	}
 
 	// Info/Title is a container-level title, not a SimpleTag.
@@ -43,6 +61,8 @@ func extractMatroska(path string, coverNames []string) (*Result, error) {
 
 	putVar(res.Vars, "tracknumber", fieldValue(res.Fields, "PART_NUMBER", "TRACKNUMBER"))
 	putVar(res.Vars, "totaltracks", fieldValue(res.Fields, "TOTAL_PARTS", "TRACKTOTAL", "TOTALTRACKS"))
+	putVar(res.Vars, "discnumber", fieldValue(res.Fields, "DISCNUMBER", "DISC"))
+	putVar(res.Vars, "disctotal", fieldValue(res.Fields, "DISCTOTAL", "TOTALDISCS"))
 
 	if att := pickCover(md.Attachments, coverNames); att != nil {
 		res.Cover = &Cover{

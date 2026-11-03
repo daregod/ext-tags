@@ -24,7 +24,13 @@ func main() {
 	examples := flag.String("examples", filepath.Join("bin", "examples"), "directory with audio files")
 	reference := flag.String("reference", "", "directory with reference .tag files (default: next to the audio)")
 	verbose := flag.Bool("v", false, "print values of differing fields")
+	dump := flag.String("dump", "", "print items of a .tag file and exit")
 	flag.Parse()
+
+	if *dump != "" {
+		dumpTag(*dump)
+		return
+	}
 
 	code := run(*examples, *reference, *verbose)
 	os.Exit(code)
@@ -73,7 +79,11 @@ func run(dir, referenceDir string, verbose bool) int {
 
 		md, err := extractor.ExtractWithOptions(audio, extractor.Options{CoverNames: cfg.Cover.Names})
 		if errors.Is(err, extractor.ErrNoTags) {
-			fmt.Printf("SKIP  %s (no tags in audio, reference has %s)\n", entry.Name(), keys(ref))
+			if len(ref.Items) == 0 {
+				fmt.Printf("OK    %-60s no tags in audio and in reference\n", entry.Name())
+			} else {
+				fmt.Printf("SKIP  %s (no tags in audio, reference has %s)\n", entry.Name(), keys(ref))
+			}
 			skipped++
 			continue
 		}
@@ -207,7 +217,18 @@ func normalizeText(key string, value []byte) string {
 	if strings.HasPrefix(strings.ToLower(key), "replaygain_") {
 		text = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(text), " dB"))
 	}
-	return text
+	// APEv2 multi-values are NUL-separated; foobar2000 may duplicate them.
+	seen := make(map[string]bool)
+	var unique []string
+	for _, part := range strings.Split(text, "\x00") {
+		part = strings.TrimSpace(part)
+		if part == "" || seen[part] {
+			continue
+		}
+		seen[part] = true
+		unique = append(unique, part)
+	}
+	return strings.Join(unique, "; ")
 }
 
 func index(t *ape.ParsedTag) map[string]ape.Item {
@@ -250,4 +271,23 @@ func describe(t *ape.ParsedTag, keys []string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+func dumpTag(path string) {
+	tag, err := ape.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "dump: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("%s: %d items\n", path, len(tag.Items))
+	for _, item := range tag.Items {
+		kind := "text"
+		value := item.Value
+		if item.Flags&2 != 0 {
+			kind = "binary"
+			value = []byte(fmt.Sprintf("<%d bytes>", len(item.Value)))
+		}
+		text := strings.ReplaceAll(string(value), "\x00", "\\0")
+		fmt.Printf("  %-28s %-6s %q\n", item.Key, kind, text)
+	}
 }

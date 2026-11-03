@@ -26,6 +26,8 @@ const (
 	idTags        = 0x1254C367
 	idTag         = 0x7373
 	idTargets     = 0x63C0
+	idTargetType  = 0x68CA
+	idTargetTrack = 0x63C5
 	idSimpleTag   = 0x67C8
 	idTagName     = 0x45A3
 	idTagString   = 0x4487
@@ -48,6 +50,10 @@ const (
 type SimpleTag struct {
 	Name  string
 	Value string
+	// TargetTypeValue is the Matroska target level (50 = album, 30 = track).
+	TargetTypeValue int
+	// TrackUID is set when the tag targets a specific track.
+	TrackUID uint64
 }
 
 // Attachment is a file embedded into the container (cover art).
@@ -127,7 +133,7 @@ func (p *parser) walk(start, end int64, depth int) error {
 		}
 
 		switch id {
-		case idSegment, idEBML, idInfo, idTracks, idTrackEntry, idTags, idTag, idTargets,
+		case idSegment, idEBML, idInfo, idTracks, idTrackEntry, idTags,
 			idAttachments, idChapters, idEdition, idChapterAtom:
 			if err := p.walk(dataStart, dataEnd, depth+1); err != nil {
 				return err
@@ -140,8 +146,12 @@ func (p *parser) walk(start, end int64, depth int) error {
 			p.meta.MuxingApp = p.readString(dataStart, size)
 		case idWritingApp:
 			p.meta.WritingApp = p.readString(dataStart, size)
+		case idTag:
+			if err := p.readTag(dataStart, dataEnd); err != nil {
+				return err
+			}
 		case idSimpleTag:
-			if err := p.readSimpleTag(dataStart, dataEnd); err != nil {
+			if err := p.readSimpleTag(dataStart, dataEnd, 0, 0); err != nil {
 				return err
 			}
 		case idAttached:
@@ -154,7 +164,74 @@ func (p *parser) walk(start, end int64, depth int) error {
 	return nil
 }
 
-func (p *parser) readSimpleTag(start, end int64) error {
+func (p *parser) readTag(start, end int64) error {
+	var targetType int
+	var trackUID uint64
+	off := start
+	for off < end {
+		id, size, headerLen, err := p.readHeader(off)
+		if err != nil {
+			return nil
+		}
+		dataStart := off + int64(headerLen)
+		dataEnd := end
+		if size != unknownSize {
+			dataEnd = dataStart + size
+			if dataEnd > end {
+				dataEnd = end
+			}
+		}
+		switch id {
+		case idTargets:
+			targetType, trackUID = p.readTargets(dataStart, dataEnd)
+		case idSimpleTag:
+			if err := p.readSimpleTag(dataStart, dataEnd, targetType, trackUID); err != nil {
+				return err
+			}
+		}
+		off = dataEnd
+	}
+	return nil
+}
+
+func (p *parser) readTargets(start, end int64) (int, uint64) {
+	targetType := 0
+	var trackUID uint64
+	off := start
+	for off < end {
+		id, size, headerLen, err := p.readHeader(off)
+		if err != nil {
+			return targetType, trackUID
+		}
+		dataStart := off + int64(headerLen)
+		dataEnd := end
+		if size != unknownSize {
+			dataEnd = dataStart + size
+			if dataEnd > end {
+				dataEnd = end
+			}
+		}
+		switch id {
+		case idTargetType:
+			targetType = int(p.readUint(dataStart, size))
+		case idTargetTrack:
+			trackUID = p.readUint(dataStart, size)
+		}
+		off = dataEnd
+	}
+	return targetType, trackUID
+}
+
+func (p *parser) readUint(offset, size int64) uint64 {
+	data := p.readBytes(offset, size)
+	var value uint64
+	for _, b := range data {
+		value = value<<8 | uint64(b)
+	}
+	return value
+}
+
+func (p *parser) readSimpleTag(start, end int64, targetType int, trackUID uint64) error {
 	var (
 		name  string
 		value string
@@ -178,15 +255,22 @@ func (p *parser) readSimpleTag(start, end int64) error {
 			name = p.readString(dataStart, size)
 		case idTagString:
 			value = p.readString(dataStart, size)
+		case idTag:
+			if err := p.readTag(dataStart, dataEnd); err != nil {
+				return err
+			}
 		case idSimpleTag:
-			if err := p.readSimpleTag(dataStart, dataEnd); err != nil {
+			if err := p.readSimpleTag(dataStart, dataEnd, 0, 0); err != nil {
 				return err
 			}
 		}
 		off = dataEnd
 	}
 	if name != "" {
-		p.meta.Tags = append(p.meta.Tags, SimpleTag{Name: name, Value: value})
+		p.meta.Tags = append(p.meta.Tags, SimpleTag{
+			Name: name, Value: value,
+			TargetTypeValue: targetType, TrackUID: trackUID,
+		})
 	}
 	return nil
 }

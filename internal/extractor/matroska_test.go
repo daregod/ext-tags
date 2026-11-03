@@ -79,13 +79,13 @@ func TestExtractWebM(t *testing.T) {
 	if res.Format != "MATROSKA" {
 		t.Fatalf("format = %q", res.Format)
 	}
-	if res.Fields["TITLE"] != "Stigma" || res.Fields["ARTIST"] != "Noisia" {
+	if res.Fields["TITLE"] != "Stigma" || res.Fields["ALBUMARTIST"] != "Noisia" {
 		t.Fatalf("fields = %v", res.Fields)
 	}
 	if res.Fields["GENRE"] != "Drum & Bass" {
 		t.Fatalf("genre = %q", res.Fields["GENRE"])
 	}
-	if res.Vars["tracknumber"] != "3" || res.Vars["totaltracks"] != "12" {
+	if res.Vars["discnumber"] != "3" || res.Vars["disctotal"] != "12" {
 		t.Fatalf("vars = %v", res.Vars)
 	}
 	if res.Cover == nil || !bytes.Equal(res.Cover.Data, image) {

@@ -242,7 +242,7 @@ compat-fixtures:
 	@$(COMPAT_BIN) -examples testdata/formats -reference testdata/reference
 ## fixtures: regenerate tiny test files in testdata/formats (needs ffmpeg)
 fixtures:
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-fixtures.ps1
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-fixtures.ps1 $(if $(FORCE),-Force,)
 ## compat: compare generated .tag files with foobar2000 references in bin/examples
 compat:
 	@$(call MKDIR,$(BIN_DIR))

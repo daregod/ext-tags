@@ -13,10 +13,13 @@ import (
 )
 
 type fixtureCase struct {
-	name   string
-	title  string
-	artist string
-	cover  bool
+	name        string
+	title       string
+	artist      string
+	albumArtist string
+	track       string
+	disc        string
+	cover       bool
 }
 
 func TestFixtures(t *testing.T) {
@@ -27,22 +30,28 @@ func TestFixtures(t *testing.T) {
 	}
 
 	cases := []fixtureCase{
-		{"audio.mp3", "Fixture Title", "Fixture Artist", true},
-		{"audio.mp2", "Fixture Title", "Fixture Artist", true},
-		{"audio.aac", "Fixture Title", "Fixture Artist", true},
-		{"audio.flac", "Fixture Title", "Fixture Artist", true},
-		{"audio.ogg", "Fixture Title", "Fixture Artist", false},
-		{"audio.opus", "Fixture Title", "Fixture Artist", false},
-		{"audio-aac.m4a", "Fixture Title", "Fixture Artist", true},
-		{"audio-alac.m4a", "Fixture Title", "Fixture Artist", true},
-		{"audio.wav", "Fixture Title", "Fixture Artist", false},
-		{"audio.aiff", "Fixture Title", "Fixture Artist", true},
-		{"audio.wv", "Fixture Title", "Fixture Artist", false},
-		{"audio.wma", "Fixture Title", "Fixture Artist", false},
-		{"audio.mkv", "Fixture Title", "Fixture Artist", true},
-		{"audio-attachments.mkv", "Fixture Title", "Fixture Artist", true},
-		{"audio.webm", "Fixture Title", "Fixture Artist", false},
-		{"video.wmv", "Fixture Title", "Fixture Artist", false},
+		{name: "audio.mp3", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio.mp2", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio.aac", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio.flac", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio-unicode.flac", title: "Тестовый заголовок", artist: "Исполнитель", track: "3", cover: true},
+		{name: "audio.ogg", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.opus", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio-aac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio-alac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio.wav", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.aiff", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio.wv", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.wma", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "video.wmv", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		// Matroska tags written by ffmpeg are album-level: foobar2000 maps
+		// ARTIST to Album artist and PART_NUMBER to Disc.
+		{name: "audio.mkv", title: "Fixture Title", albumArtist: "Fixture Artist", disc: "3", cover: true},
+		{name: "audio-attachments.mkv", title: "Fixture Title", albumArtist: "Fixture Artist", disc: "3", cover: true},
+		{name: "audio-track.mkv", title: "Album Title", artist: "Track Artist", disc: "3"},
+		{name: "audio-both.mkv", title: "Album Title", artist: "Track Artist", albumArtist: "Album Artist", disc: "3"},
+		{name: "audio-cover.png.mkv", title: "Fixture Title", albumArtist: "Fixture Artist", disc: "3", cover: true},
+		{name: "audio.webm", title: "Fixture Title", albumArtist: "Fixture Artist", disc: "3"},
 	}
 
 	for _, c := range cases {
@@ -62,14 +71,17 @@ func TestFixtures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("rules: %v", err)
 			}
-			if fields["Title"] != c.title {
-				t.Fatalf("Title = %q, want %q (fields %v)", fields["Title"], c.title, fields)
+			checks := map[string]string{
+				"Title":        c.title,
+				"Artist":       c.artist,
+				"Album artist": c.albumArtist,
+				"Track":        c.track,
+				"Disc":         c.disc,
 			}
-			if fields["Artist"] != c.artist {
-				t.Fatalf("Artist = %q, want %q", fields["Artist"], c.artist)
-			}
-			if fields["Track"] != "3" {
-				t.Fatalf("Track = %q, want 3", fields["Track"])
+			for field, want := range checks {
+				if fields[field] != want {
+					t.Fatalf("%s = %q, want %q (fields %v)", field, fields[field], want, fields)
+				}
 			}
 		})
 	}
@@ -101,5 +113,23 @@ func TestCoverAttachmentPriority(t *testing.T) {
 	}
 	if res.Cover == nil || !bytes.Equal(res.Cover.Data, posterJPEG) {
 		t.Fatal("poster must win when configured first")
+	}
+}
+
+func TestEmptyWAV(t *testing.T) {
+	path := filepath.Join("..", "..", "testdata", "formats", "audio-empty.wav")
+	if _, err := extractor.Extract(path); err == nil {
+		t.Fatal("expected ErrNoTags for a tagless WAV")
+	}
+}
+
+func TestPNGCoverName(t *testing.T) {
+	path := filepath.Join("..", "..", "testdata", "formats", "audio-cover.png.mkv")
+	res, err := extractor.Extract(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Cover == nil || res.Cover.Filename != "cover.png" {
+		t.Fatalf("cover = %+v", res.Cover)
 	}
 }

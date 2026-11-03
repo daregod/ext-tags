@@ -27,7 +27,7 @@
 *   **Чистый Go**: Без CGO и внешних зависимостей вроде `ffmpeg`.
 *   **Обложки**: Извлекает встроенные изображения (Front Cover) и корректно упаковывает их в APEv2 (с префиксом имени файла, как того требует спецификация).
 *   **Нормализация ключей**: Приводит теги к единому виду (например, `ORGANIZATION` -> `Publisher`, `DATE` -> `Year`), предотвращая дублирование полей в foobar2000.
-*   **Matroska**: читает `Tags/SimpleTag` (TITLE, ARTIST, GENRE, …), `Info/Title` и вложения-картинки как обложку; `Cluster`/`Cues` пропускаются, большие видео не загружаются в память.
+*   **Matroska**: читает `Tags/SimpleTag` (TITLE, ARTIST, GENRE, …), `Info/Title` и вложения-картинки как обложку; учитывает область тегов как foobar2000 (альбомные `ARTIST`/`PART_NUMBER` → `Album artist`/`Disc`). Track-level теги (`Artist` у дорожки) foobar2000 сам не показывает, но мы их переносим — в нашем `.tag` они появятся; `Cluster`/`Cues` пропускаются, большие видео не загружаются в память.
 *   **APE и ASF**: APEv2 из хвоста `.ape` и Content Description из `.wmv`/`.wma`; технические поля (`WMFSDK*`, `IsVBR`, …) отбрасываются.
 *   **Безопасность**: Не изменяет оригинальные аудиофайлы, а лишь создаёт рядом файл `<имя_файла>.<расширение>.tag`.
 
@@ -291,7 +291,8 @@ make compat
 через ffmpeg, в среднем 2–18 КБ):
 
 ```bash
-make fixtures     # перегенерировать (нужен ffmpeg)
+make fixtures            # добавить отсутствующие файлы (нужен ffmpeg)
+make fixtures FORCE=1    # перегенерировать все (файлы контейнеров недетерминированы)
 ```
 
 Там же `cover.jpg`, `folder.jpg`, `poster.jpg` и `audio-attachments.mkv` с
@@ -299,9 +300,16 @@ make fixtures     # перегенерировать (нужен ffmpeg)
 (`folder` должен победить `poster`).
 
 Покрыты: MP3, MP2, AAC (raw), M4A/AAC, M4A/ALAC, FLAC, Ogg Vorbis, Opus,
-WavPack, WMA, WMV, MKV, WebM, WAV; для форматов из TODO (AC3, DTS, AU,
-Wave64, RF64, TS, Ogg FLAC, Speex) файлы тоже есть — пригодятся, когда
-появится ридер.
+WavPack, WMA, WMV, MKV, WebM, WAV. Отдельные случаи:
+
+* `audio-track.mkv` и `audio-both.mkv` — track-level теги Matroska
+  (`Artist` с уровня трека и `Album artist` с уровня альбома);
+* `audio-cover.png.mkv` — вложение `box.png` (проверка имён и png);
+* `audio-unicode.flac` — UTF-8 кириллица в тегах;
+* `audio-empty.wav` — файл без тегов (ветка `no-tags`).
+
+Для форматов из TODO (AC3, DTS, AU, Wave64, RF64, TS, Ogg FLAC, Speex)
+файлы тоже есть — пригодятся, когда появится ридер.
 
 Тест `internal/extractor/fixtures_test.go` прогоняет фикстуры через
 `extractor + rules` и проверяет `Title`, `Artist`, `Track` и наличие обложки.

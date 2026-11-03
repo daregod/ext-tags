@@ -26,7 +26,7 @@
 | AIFF | `.aif`, `.aiff` | NAME/AUTH/ANNO + ID3v2-чанк | ✅ свой IFF-ридер, фикстура с ID3 |
 | WMA | `.wma` | ASF Content Description | ✅ |
 | WMV / ASF | `.wmv`, `.asf` | ASF Content Description | ✅ |
-| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags, вложения | ✅ |
+| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ |
 | Speex | `.spx` | Vorbis comments в Ogg | ❌ `dhowden/tag` отдаёт EOF, нужен Ogg-ридер |
 | AC3 | `.ac3` | тегов обычно нет | ⏸ вне области (нет метаданных) |
 | DTS | `.dts` | тегов обычно нет | ⏸ вне области |

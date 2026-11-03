@@ -21,6 +21,15 @@
 - Эталоны foobar2000 для фикстур: каталог `testdata/reference/` и цель
   `make compat-fixtures`; сгенерированные `.tag`/`.tag.bak` в
   `testdata/formats/` не коммитятся и удаляются `make clean`.
+- Matroska: учитываются `TargetTypeValue`/`TargetTrackUID` — альбомные теги
+  мапятся как в foobar2000 (`ARTIST` → `Album artist`, `PART_NUMBER` →
+  `Disc`), кодечные `ENCODER` и `DURATION` отбрасываются.
+- `compat`: NUL-разделённые дубли значений (стиль foobar2000 для ASF)
+  считаются косметикой; добавлен режим `-reference DIR` и цель
+  `make compat-fixtures` для эталонов из `testdata/reference/`.
+- Фикстуры расширены: track-level теги Matroska, png-обложка, кириллица,
+  файл без тегов; `make fixtures` теперь инкрементален (`FORCE=1` —
+  полная перегенерация).
 - CLI на `cobra`: команды `extract`, `config`, `version`; глобальные флаги
   `--config`, `--profile`, `--dry-run`, `--json`, `--quiet`, `-v`.
   Вызов `ext-tags track.flac` без подкоманды работает как раньше.
