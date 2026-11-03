@@ -8,10 +8,23 @@ import (
 	"external-tags/internal/extractor"
 )
 
+// Injected at build time via -ldflags "-X main.version=...".
+var (
+	version   = "dev"
+	commit    = "none"
+	buildDate = "unknown"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <audio-file> [...]\n", os.Args[0])
 		os.Exit(2)
+	}
+
+	switch os.Args[1] {
+	case "-version", "--version":
+		fmt.Printf("ext-tags %s (commit %s, built %s)\n", version, commit, buildDate)
+		return
 	}
 
 	code := 0

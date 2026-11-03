@@ -1,12 +1,18 @@
 external-tags/
+├── Makefile              <-- сборка, тесты, линт, релизы
 ├── go.mod
-├── bin/                  <-- сюда будем собирать бинарники
+├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
 │   └── ext-tags/
 │       └── main.go       <-- CLI интерфейс
-└── internal/
-    ├── ape/
-    │   ├── ape.go        <-- логика APEv2
-    │   └── ape_test.go   <-- тесты APEv2
-    └── extractor/
-        └── extractor.go  <-- логика извлечения тегов из файлов
+├── internal/
+│   ├── ape/
+│   │   ├── ape.go        <-- логика APEv2
+│   │   └── ape_test.go   <-- тесты APEv2
+│   └── extractor/
+│       └── extractor.go  <-- логика извлечения тегов из файлов
+├── .github/
+│   └── workflows/
+│       └── ci.yml        <-- GitHub Actions: make tidy-check/check/build/dist
+├── .golangci.yml         <-- конфигурация линтера
+└── .editorconfig         <-- единые отступы и переводы строк

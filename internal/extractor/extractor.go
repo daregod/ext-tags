@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"external-tags/internal/ape"
 	"github.com/dhowden/tag"
+
+	"external-tags/internal/ape"
 )
 
 var SupportedExtensions = map[string]bool{

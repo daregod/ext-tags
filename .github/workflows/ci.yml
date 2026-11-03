@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - name: Install dev tools
+        run: make tools
+      - name: Verify go.mod and go.sum
+        run: make tidy-check
+      - name: Format check, vet, lint and tests
+        run: make check
+      - name: Build
+        run: make build
+      - name: Cross-compile releases
+        run: make dist

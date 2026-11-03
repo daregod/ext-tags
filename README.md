@@ -26,15 +26,63 @@
 
 ## 🚀 Сборка и установка
 
-Для сборки необходим установленный Go 1.21 или выше.
+Для сборки нужны Go 1.24+ и GNU Make 4.x. В Windows всё ставится через scoop:
+
+```powershell
+scoop install make golangci-lint
+```
 
 ```bash
 git clone https://github.com/yourname/external-tags.git
 cd external-tags
-go mod tidy
 
-# Сборка бинарника (Linux/macOS)
-go build -o bin/ext-tags ./cmd/ext-tags
+make setup    # проверка тулчейна, загрузка модулей, установка линтера
+make build    # bin/ext-tags.exe (Windows) или bin/ext-tags
+make run ARGS="track.flac"
+```
 
-# Сборка бинарника (Windows)
-go build -o bin/ext-tags.exe ./cmd/ext-tags
+Если make использовать не хочется, сборка вручную:
+
+```bash
+go build -trimpath -o bin/ext-tags ./cmd/ext-tags
+```
+
+## 🛠 Использование
+
+```bash
+./bin/ext-tags track.flac track2.mp3
+./bin/ext-tags --version
+```
+
+Рядом с аудиофайлом появится `track.flac.tag`:
+
+```text
+OK    track.flac → track.flac.tag (18 items, 145032 bytes)
+```
+
+Если тегов нет, файл `.tag` не создаётся.
+
+## ⚙️ Автоматизация
+
+Вся рутина собрана в `Makefile`. `make` без аргументов печатает справку по целям.
+
+| Цель | Действие |
+|------|----------|
+| `make setup` | проверка окружения, `go mod download`, установка `golangci-lint` (scoop в Windows, `go install` в остальных ОС) |
+| `make build` | сборка `bin/ext-tags[.exe]`; версия, коммит и дата передаются через `-ldflags` |
+| `make run ARGS="..."` | запуск CLI без сборки |
+| `make install` | установка в `GOBIN` |
+| `make dist` | кросс-компиляция под windows/linux/darwin (amd64 + arm64) в `dist/` |
+| `make test` | юнит-тесты |
+| `make cover`, `make cover-html` | покрытие и HTML-отчёт |
+| `make bench` | бенчмарки |
+| `make vet`, `make lint`, `make lint-fix` | `go vet` и `golangci-lint` (конфиг `.golangci.yml`) |
+| `make fmt`, `make fmt-check` | форматирование и его проверка |
+| `make tidy`, `make tidy-check` | `go mod tidy` и проверка, что `go.mod`/`go.sum` не разъехались |
+| `make check` | `fmt-check` + `vet` + `lint` + `test` |
+| `make ci` | `tidy-check` + `check` — то же, что гоняет CI |
+| `make clean` | удаляет артефакты сборки (`bin/ext-tags*`, `dist/`, coverage) |
+
+GitHub Actions (`.github/workflows/ci.yml`) на каждый push и pull request запускает `make tidy-check`, `make check`, `make build` и `make dist`.
+
+Версия для сборки берётся из `git describe --tags --always --dirty`, поэтому тег вида `v0.1.0` автоматически попадает в вывод `bin/ext-tags --version`.
