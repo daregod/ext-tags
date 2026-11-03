@@ -10,7 +10,6 @@ import (
 	"github.com/dhowden/tag"
 )
 
-// Список поддерживаемых расширений
 var SupportedExtensions = map[string]bool{
 	".mp3":  true,
 	".flac": true,
@@ -23,11 +22,10 @@ var SupportedExtensions = map[string]bool{
 	".aiff": true,
 }
 
-// Маппинг оригинальных ключей в чистые ключи APEv2
 var keyMap = map[string]string{
 	"TIT2": "Title", "TPE1": "Artist", "TALB": "Album", "TPE2": "Album artist",
-	"TCON": "Genre", "TDRC": "Year", "TYER": "Year", "TRCK": "Track",
-	"TPOS": "Disc", "TCOM": "Composer", "COMM": "Comment", "TPUB": "Publisher",
+	"TCON": "Genre", "TDRC": "Year", "TYER": "Year",
+	"TCOM": "Composer", "COMM": "Comment", "TPUB": "Publisher",
 	"TCOP": "Copyright", "TSSE": "Encoder", "TLAN": "Language", "TENC": "Encoded by",
 	"TBPM": "BPM", "TKEY": "Key", "TEXT": "Lyricist", "TMED": "Media",
 
@@ -35,8 +33,6 @@ var keyMap = map[string]string{
 	"ALBUMARTIST": "Album artist", "ALBUM ARTIST": "Album artist",
 	"DATE": "Year", "YEAR": "Year", "GENRE": "Genre",
 	"COMPOSER": "Composer", "PERFORMER": "Performer",
-	"TRACKNUMBER": "Track", "TRACKTOTAL": "Total tracks", "TOTALTRACKS": "Total tracks",
-	"DISCNUMBER": "Disc", "DISCTOTAL": "Total discs", "TOTALDISCS": "Total discs",
 	"COMMENT": "Comment", "RATING": "Rating",
 
 	"CATALOGNUMBER":          "Catalognumber",
@@ -68,7 +64,6 @@ func isID3Frame(k string) bool {
 	return true
 }
 
-// Extract читает файл и возвращает готовый APETag
 func Extract(path string) (*ape.Tag, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -98,6 +93,13 @@ func Extract(path string) (*ape.Tag, error) {
 
 	for k, v := range m.Raw() {
 		upperK := strings.ToUpper(k)
+
+		// Пропускаем треки и диски, так как они обрабатываются строго ниже
+		if upperK == "TRACKNUMBER" || upperK == "TRACKTOTAL" || upperK == "TOTALTRACKS" || upperK == "TRACKS" || upperK == "TOTALTRACK" ||
+			upperK == "DISCNUMBER" || upperK == "DISCTOTAL" || upperK == "TOTALDISCS" || upperK == "DISCS" || upperK == "TOTALDISC" {
+			continue
+		}
+
 		mappedKey, ok := keyMap[upperK]
 		if !ok {
 			if isID3Frame(k) {
@@ -156,11 +158,103 @@ func Extract(path string) (*ape.Tag, error) {
 		addText("Year", strconv.Itoa(m.Year()))
 	}
 
+	// Обработка треков и дисков вручную
+	track, trackTotal := getTrack(m.Raw())
+	disc, discTotal := getDisc(m.Raw())
+
+	// Резервный вариант, если в сырых данных ничего не нашли
+	if track == "" {
+		if n, tot := m.Track(); n != 0 {
+			track = fmt.Sprintf("%d", n)
+			if tot > 0 {
+				trackTotal = fmt.Sprintf("%d", tot)
+			}
+		}
+	}
+	if disc == "" {
+		if n, tot := m.Disc(); n != 0 {
+			disc = fmt.Sprintf("%d", n)
+			if tot > 0 {
+				discTotal = fmt.Sprintf("%d", tot)
+			}
+		}
+	}
+
+	// Записываем в формате "02/16"
+	if track != "" {
+		if trackTotal != "" {
+			addText("Track", track+"/"+trackTotal)
+		} else {
+			addText("Track", track)
+		}
+	}
+	if disc != "" {
+		if discTotal != "" {
+			addText("Disc", disc+"/"+discTotal)
+		} else {
+			addText("Disc", disc)
+		}
+	}
+
 	if p := m.Picture(); p != nil {
 		t.AddCoverArt("Cover Art (Front)", coverFilename(p), p.Data)
 	}
 
 	return t, nil
+}
+
+func getTrack(raw map[string]interface{}) (string, string) {
+	var num, total string
+	for k, v := range raw {
+		upperK := strings.ToUpper(k)
+		if upperK == "TRACKNUMBER" || upperK == "TRACK" || upperK == "TRCK" {
+			str := getStr(v)
+			parts := strings.Split(str, "/")
+			num = parts[0]
+			if len(parts) > 1 {
+				total = parts[1]
+			}
+		}
+		if upperK == "TRACKTOTAL" || upperK == "TOTALTRACKS" || upperK == "TRACKS" || upperK == "TOTALTRACK" {
+			total = getStr(v)
+		}
+	}
+	return num, total
+}
+
+func getDisc(raw map[string]interface{}) (string, string) {
+	var num, total string
+	for k, v := range raw {
+		upperK := strings.ToUpper(k)
+		if upperK == "DISCNUMBER" || upperK == "DISC" || upperK == "TPOS" {
+			str := getStr(v)
+			parts := strings.Split(str, "/")
+			num = parts[0]
+			if len(parts) > 1 {
+				total = parts[1]
+			}
+		}
+		if upperK == "DISCTOTAL" || upperK == "TOTALDISCS" || upperK == "DISCS" || upperK == "TOTALDISC" {
+			total = getStr(v)
+		}
+	}
+	return num, total
+}
+
+func getStr(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case []string:
+		if len(val) > 0 {
+			return val[0]
+		}
+	case int:
+		return strconv.Itoa(val)
+	case int64:
+		return strconv.FormatInt(val, 10)
+	}
+	return ""
 }
 
 func coverFilename(p *tag.Picture) string {
