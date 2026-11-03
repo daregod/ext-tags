@@ -50,14 +50,18 @@ func IsSupported(path string, extensions []string) bool {
 // Extract reads metadata from path. It returns ErrNoTags when the file has
 // no tag block at all.
 func Extract(path string) (*Result, error) {
-	if magic, err := readMagic(path, 4); err == nil {
+	if magic, err := readMagic(path, 12); err == nil {
 		switch {
-		case bytes.Equal(magic, ebmlMagic):
+		case bytes.HasPrefix(magic, ebmlMagic):
 			return extractMatroska(path)
-		case bytes.Equal(magic, apeMagic):
-			return extractAPE(path)
-		case bytes.Equal(magic, asfMagic):
+		case bytes.HasPrefix(magic, apeMagic):
+			return extractAPEv2(path, "APE")
+		case bytes.HasPrefix(magic, wvpkMagic):
+			return extractAPEv2(path, "WAVPACK")
+		case bytes.HasPrefix(magic, asfMagic):
 			return extractASF(path)
+		case len(magic) >= 12 && bytes.Equal(magic[:4], riffMagic) && string(magic[8:12]) == "WAVE":
+			return extractWAV(path)
 		}
 	}
 	return extractTaglib(path)
@@ -80,7 +84,13 @@ func extractTaglib(path string) (*Result, error) {
 
 	res := empty()
 	res.Format = string(m.Format())
+	applyTagMetadata(m, res)
 
+	return res, nil
+}
+
+// applyTagMetadata copies raw container metadata into res.
+func applyTagMetadata(m tag.Metadata, res *Result) {
 	for k, v := range m.Raw() {
 		key, ok := normalizeKey(k)
 		if !ok {
@@ -152,7 +162,6 @@ func extractTaglib(path string) (*Result, error) {
 		}
 	}
 
-	return res, nil
 }
 
 func empty() *Result {

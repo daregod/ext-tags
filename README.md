@@ -9,15 +9,16 @@
 ## 📦 Поддерживаемые форматы
 
 На данный момент утилита умеет извлекать теги из следующих контейнеров:
-*   **MP3** (`.mp3`) — ID3v1, ID3v2.2, ID3v2.3, ID3v2.4
+*   **MP3 / MP2 / MP1** (`.mp3`, `.mp2`, `.mp1`) — ID3v1, ID3v2.2, ID3v2.3, ID3v2.4
 *   **FLAC** (`.flac`) — Vorbis Comments
 *   **Opus** (`.opus`) — Vorbis Comments (в контейнере Ogg)
 *   **Ogg Vorbis** (`.ogg`) — Vorbis Comments
-*   **M4A / MP4** (`.m4a`, `.mp4`) — iTunes-атомы
+*   **M4A / MP4** (`.m4a`, `.mp4`, `.alac`) — iTunes-атомы (AAC и ALAC)
 *   **WebM / MKV** (`.webm`, `.mkv`) — Matroska: `Tags/SimpleTag`, `Info/Title`, вложения-обложки, `PART_NUMBER`/`TOTAL_PARTS`
 *   **APE** (`.ape`) — APEv2-тег в конце файла (Monkey Audio)
+*   **WavPack** (`.wv`) — APEv2-тег в конце файла
 *   **WMV / WMA** (`.wmv`, `.wma`, `.asf`) — ASF: Content Description и Extended Content Description, `WM/Picture` как обложка
-*   **WAV** (`.wav`) — ID3v2 чанки
+*   **WAV** (`.wav`) — LIST/INFO и ID3v2, в том числе дописанный после RIFF-данных
 *   **AIFF** (`.aif`, `.aiff`) — ID3v2 чанки
 
 ## ✨ Особенности
@@ -28,6 +29,8 @@
 *   **Matroska**: читает `Tags/SimpleTag` (TITLE, ARTIST, GENRE, …), `Info/Title` и вложения-картинки как обложку; `Cluster`/`Cues` пропускаются, большие видео не загружаются в память.
 *   **APE и ASF**: APEv2 из хвоста `.ape` и Content Description из `.wmv`/`.wma`; технические поля (`WMFSDK*`, `IsVBR`, …) отбрасываются.
 *   **Безопасность**: Не изменяет оригинальные аудиофайлы, а лишь создаёт рядом файл `<имя_файла>.<расширение>.tag`.
+
+Полный список форматов и того, что ещё в планах, — в [TODO.md](TODO.md).
 
 ## 🚀 Сборка и установка
 

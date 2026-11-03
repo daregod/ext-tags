@@ -1,6 +1,7 @@
 external-tags/
 ├── Makefile              <-- сборка, тесты, линт, релизы
 ├── CHANGELOG.md          <-- история версий (Keep a Changelog)
+├── TODO.md               <-- форматы и планы
 ├── go.mod
 ├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
@@ -15,6 +16,7 @@ external-tags/
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
 │   ├── extractor/        <-- чтение контейнеров (сырые поля, обложка)
 │   ├── matroska/         <-- EBML/WebM/MKV: теги, Info/Title, вложения
+│   ├── riff/             <-- WAV: LIST/INFO, ID3v2 (в т.ч. после RIFF)
 │   ├── rules/            <-- aliases/ignore/шаблоны/copy/rename/default/remove
 │   ├── tagfile/          <-- запись .tag с on_existing/backup/dry-run
 │   └── version/          <-- версия, коммит, дата сборки (-ldflags)

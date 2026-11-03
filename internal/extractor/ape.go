@@ -9,15 +9,15 @@ import (
 
 var apeMagic = []byte("MAC ")
 
-// extractAPE reads the APEv2 tag appended to a Monkey's Audio file.
-func extractAPE(path string) (*Result, error) {
+// extractAPEv2 reads an APEv2 tag appended to a file (APE, WavPack, …).
+func extractAPEv2(path, format string) (*Result, error) {
 	tag, err := ape.ReadFromFileEnd(path)
 	if err != nil {
 		return nil, fmt.Errorf("read ape tag: %w", err)
 	}
 
 	res := empty()
-	res.Format = "APE"
+	res.Format = format
 
 	for _, item := range tag.Items {
 		if item.Flags&2 != 0 {
