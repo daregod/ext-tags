@@ -5,6 +5,7 @@
 package extractor
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -49,6 +50,13 @@ func IsSupported(path string, extensions []string) bool {
 // Extract reads metadata from path. It returns ErrNoTags when the file has
 // no tag block at all.
 func Extract(path string) (*Result, error) {
+	if magic, err := readMagic(path, len(ebmlMagic)); err == nil && bytes.Equal(magic, ebmlMagic) {
+		return extractMatroska(path)
+	}
+	return extractTaglib(path)
+}
+
+func extractTaglib(path string) (*Result, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err

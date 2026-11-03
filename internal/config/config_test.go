@@ -57,7 +57,7 @@ profiles:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(base.Files.Extensions) != 9 {
+	if len(base.Files.Extensions) != len(Default().Files.Extensions) {
 		t.Fatalf("base extensions = %v", base.Files.Extensions)
 	}
 

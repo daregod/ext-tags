@@ -47,6 +47,9 @@
 
 ### Добавлено
 
+- Поддержка Matroska/WebM (`.webm`, `.mkv`): `Tags/SimpleTag`, `Info/Title`,
+  вложения-картинки как обложка, `PART_NUMBER`/`TOTAL_PARTS` → `Track`;
+  пакет `internal/matroska`, `Cluster`/`Cues` пропускаются без чтения.
 - Поля iTunes `Itunescompilation` (`cpil`) и `Tempo` (`tmpo`) в `.tag`.
 - Юнит-тесты на нормализацию ключей (`mapKey`) и объединение номеров
   трека/диска.

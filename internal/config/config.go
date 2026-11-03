@@ -140,7 +140,8 @@ var defaultAliases = map[string]string{
 	"TITLE": "Title", "ARTIST": "Artist", "ALBUM": "Album",
 	"ALBUMARTIST": "Album artist", "ALBUM ARTIST": "Album artist",
 	"DATE": "Year", "YEAR": "Year", "GENRE": "Genre",
-	"COMPOSER": "Composer", "PERFORMER": "Performer",
+	"DATE_RELEASED": "Year",
+	"COMPOSER":      "Composer", "PERFORMER": "Performer",
 	"COMMENT": "Comment", "RATING": "Rating",
 
 	"CATALOGNUMBER":          "Catalognumber",
@@ -170,6 +171,7 @@ var defaultIgnore = []string{
 	"vendor", "iTunNORM", "iTunSMPB", "Encoding Params", "covr", "©too",
 	"TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK", "TRCK",
 	"DISCNUMBER", "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC", "TPOS",
+	"PART_NUMBER", "TOTAL_PARTS",
 }
 
 // Default returns the built-in configuration used when no file is present.
@@ -182,7 +184,7 @@ func Default() *Config {
 	return &Config{
 		Version: 1,
 		Files: FilesConfig{
-			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".wav", ".aif", ".aiff"},
+			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".webm", ".mkv", ".wav", ".aif", ".aiff"},
 			Recursive:     false,
 			OnExisting:    OnExistingBackup,
 			MergeExisting: true,
