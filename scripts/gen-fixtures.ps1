@@ -78,8 +78,9 @@ if (($Force -or -not (Test-Path (Join-Path $out 'audio.mp1'))) -and (Test-Path $
     $mp1wav = Join-Path $out 'audio-mp1-src.wav'
     & ffmpeg -y -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:duration=0.4:sample_rate=44100" -ac 2 -c:a pcm_s16le $mp1wav
     $rawMp1 = Join-Path $out 'audio-mp1-raw.mp1'
-    $proc = Start-Process -FilePath $mp2enc -ArgumentList @('-l', '1', '-b', '384', '-r', '44100', '-o', $rawMp1) -RedirectStandardInput $mp1wav -Wait -PassThru -NoNewWindow
-    if ($proc.ExitCode -eq 0 -and (Test-Path $rawMp1)) {
+    $argLine = '-l 1 -b 384 -r 44100 -o "' + $rawMp1 + '"'
+    $proc = Start-Process -FilePath $mp2enc -ArgumentList $argLine -RedirectStandardInput $mp1wav -Wait -PassThru -NoNewWindow
+    if ((Test-Path $rawMp1) -and ($null -eq $proc.ExitCode -or $proc.ExitCode -eq 0)) {
         $mp3 = [IO.File]::ReadAllBytes((Join-Path $out 'audio.mp3'))
         $tagLen = (($mp3[6] -band 0x7F) -shl 21) -bor (($mp3[7] -band 0x7F) -shl 14) -bor (($mp3[8] -band 0x7F) -shl 7) -bor ($mp3[9] -band 0x7F)
         $id3 = $mp3[0..(9 + $tagLen)]

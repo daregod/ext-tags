@@ -325,7 +325,8 @@ WavPack, WMA, WMV, MKV, WebM, WAV. Отдельные случаи:
 * `audio-track.mkv` и `audio-both.mkv` — track-level теги Matroska
   (`Artist` с уровня трека и `Album artist` с уровня альбома);
 * `audio-cover.png.mkv` — вложение `box.png` (проверка имён и png);
-* `audio-id3v1.mp3` и `audio-id3v2.4.mp3` — ID3v1 и ID3v2.4 (плюс обычный v2.3);`n* `audio.rf64` — теги в RF64;`n* `audio-unicode.flac` — UTF-8 кириллица в тегах;
+* `audio-id3v1.mp3` и `audio-id3v2.4.mp3` — ID3v1 и ID3v2.4 (плюс обычный v2.3);
+* `audio.mp1` — MPEG Layer I (получен `mp2enc -l 1`, теги — приклеенный ID3v2);`n* `audio.rf64` — теги в RF64;`n* `audio-unicode.flac` — UTF-8 кириллица в тегах;
 * `audio-empty.wav` — файл без тегов (ветка `no-tags`).
 
 Для форматов из TODO (AC3, DTS, AU, Wave64, RF64, TS, Ogg FLAC, Speex)

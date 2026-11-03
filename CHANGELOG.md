@@ -10,6 +10,8 @@
 
 ### Добавлено
 
+- MP1: фикстура (получена `mp2enc -l 1`, теги — ID3v2), тест и закрытие
+  последнего «в области» формата без образца.
 - CLI на `cobra`: команды `extract`, `config`, `version`; глобальные флаги
   `--config`, `--profile`, `--dry-run`, `--json`, `--quiet`, `-v`,
   `-r/--recursive`, `--on-existing`, `--cover`, `--merge`/`--no-merge`.
