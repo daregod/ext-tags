@@ -13,13 +13,15 @@
 *   **FLAC** (`.flac`) — Vorbis Comments
 *   **Opus** (`.opus`) — Vorbis Comments (в контейнере Ogg)
 *   **Ogg Vorbis** (`.ogg`) — Vorbis Comments
+*   **Ogg FLAC** (`.oga`) — комментарии FLAC в Ogg
+*   **Speex** (`.spx`) — комментарии в Ogg
 *   **M4A / MP4** (`.m4a`, `.mp4`, `.alac`) — iTunes-атомы (AAC и ALAC)
 *   **AAC (raw)** (`.aac`) — ID3v2 перед ADTS-потоком
 *   **WebM / MKV** (`.webm`, `.mkv`) — Matroska: `Tags/SimpleTag`, `Info/Title`, вложения-обложки, `PART_NUMBER`/`TOTAL_PARTS`
 *   **APE** (`.ape`) — APEv2-тег в конце файла (Monkey Audio)
-*   **WavPack** (`.wv`) — APEv2-тег в конце файла
+*   **WavPack** (`.wv`), **Musepack** (`.mpc`), **TAK** (`.tak`) — APEv2-тег в конце файла
 *   **WMV / WMA** (`.wmv`, `.wma`, `.asf`) — ASF: Content Description и Extended Content Description, `WM/Picture` как обложка
-*   **WAV** (`.wav`) — LIST/INFO и ID3v2, в том числе дописанный после RIFF-данных
+*   **WAV** (`.wav`) и **RF64** (`.rf64`) — LIST/INFO и ID3v2, в том числе дописанный после RIFF-данных
 *   **AIFF** (`.aif`, `.aiff`) — NAME/AUTH/ANNO и ID3v2-чанк
 
 ## ✨ Особенности
@@ -305,7 +307,7 @@ WavPack, WMA, WMV, MKV, WebM, WAV. Отдельные случаи:
 * `audio-track.mkv` и `audio-both.mkv` — track-level теги Matroska
   (`Artist` с уровня трека и `Album artist` с уровня альбома);
 * `audio-cover.png.mkv` — вложение `box.png` (проверка имён и png);
-* `audio-unicode.flac` — UTF-8 кириллица в тегах;
+* `audio-id3v1.mp3` и `audio-id3v2.4.mp3` — ID3v1 и ID3v2.4 (плюс обычный v2.3);`n* `audio.rf64` — теги в RF64;`n* `audio-unicode.flac` — UTF-8 кириллица в тегах;
 * `audio-empty.wav` — файл без тегов (ветка `no-tags`).
 
 Для форматов из TODO (AC3, DTS, AU, Wave64, RF64, TS, Ogg FLAC, Speex)

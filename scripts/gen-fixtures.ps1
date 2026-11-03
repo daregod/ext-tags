@@ -49,6 +49,13 @@ $audio = @('-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4:sample_rate=220
 $audioCover = @('-i', $cover, '-map', '0:a', '-map', '1:v', '-c:v', 'copy', '-disposition:v', 'attached_pic')
 
 Invoke-FFmpeg 'audio.mp3'  ($audio + $audioCover + @('-c:a', 'libmp3lame', '-b:a', '48k', '-id3v2_version', '3') + $meta + @((Join-Path $out 'audio.mp3')))
+Invoke-FFmpeg 'audio-id3v2.4.mp3' ($audio + $audioCover + @('-c:a', 'libmp3lame', '-b:a', '48k', '-id3v2_version', '4') + $meta + @((Join-Path $out 'audio-id3v2.4.mp3')))
+Invoke-FFmpeg 'audio-id3v1-src.mp3' ($audio + @('-c:a', 'libmp3lame', '-b:a', '48k', '-write_id3v1', '1') + $meta + @((Join-Path $out 'audio-id3v1-src.mp3')))
+$v1src = [IO.File]::ReadAllBytes((Join-Path $out 'audio-id3v1-src.mp3'))
+$v1tagLen = (($v1src[6] -band 0x7F) -shl 21) -bor (($v1src[7] -band 0x7F) -shl 14) -bor (($v1src[8] -band 0x7F) -shl 7) -bor ($v1src[9] -band 0x7F)
+[IO.File]::WriteAllBytes((Join-Path $out 'audio-id3v1.mp3'), $v1src[(10 + $v1tagLen)..($v1src.Length - 1)])
+Remove-Item (Join-Path $out 'audio-id3v1-src.mp3')
+Write-Host ("{0,-18} {1,7} B" -f 'audio-id3v1.mp3', (Get-Item (Join-Path $out 'audio-id3v1.mp3')).Length)
 Invoke-FFmpeg 'audio-raw.mp2' ($audio + @('-c:a', 'mp2', '-b:a', '64k', '-f', 'mp2') + @((Join-Path $out 'audio-raw.mp2')))
 # Raw MP2 has no tag container: prepend the ID3v2 tag generated for audio.mp3.
 $mp3 = [IO.File]::ReadAllBytes((Join-Path $out 'audio.mp3'))

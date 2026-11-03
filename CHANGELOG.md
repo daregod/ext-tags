@@ -30,6 +30,12 @@
 - Фикстуры расширены: track-level теги Matroska, png-обложка, кириллица,
   файл без тегов; `make fixtures` теперь инкрементален (`FORCE=1` —
   полная перегенерация).
+- ID3v1 и ID3v2.4: фикстуры и тесты; нулевой `Track` из ID3v1 больше не
+  попадает в теги.
+- Musepack (`.mpc`) и TAK (`.tak`): APEv2 в конце файла.
+- RF64 (`.rf64`): LIST/INFO и ID3v2, 64-битные размеры RIFF.
+- Ogg FLAC (`.oga`) и Speex (`.spx`): собственный Ogg-ридер комментариев
+  (эталоны foobar2000 совпали), новые расширения в конфиге.
 - CLI на `cobra`: команды `extract`, `config`, `version`; глобальные флаги
   `--config`, `--profile`, `--dry-run`, `--json`, `--quiet`, `-v`.
   Вызов `ext-tags track.flac` без подкоманды работает как раньше.

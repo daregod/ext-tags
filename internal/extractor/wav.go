@@ -12,6 +12,7 @@ import (
 
 var (
 	riffMagic = []byte("RIFF")
+	rf64Magic = []byte("RF64")
 	wvpkMagic = []byte("wvpk")
 )
 
@@ -22,9 +23,21 @@ func extractWAV(path string) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read wav: %w", err)
 	}
+	return buildRIFF(md, "WAVE")
+}
 
+// extractRF64 reads RF64 metadata (RIFF with 64-bit sizes).
+func extractRF64(path string) (*Result, error) {
+	md, err := riff.ReadRF64(path)
+	if err != nil {
+		return nil, fmt.Errorf("read rf64: %w", err)
+	}
+	return buildRIFF(md, "RF64")
+}
+
+func buildRIFF(md *riff.Metadata, format string) (*Result, error) {
 	res := empty()
-	res.Format = "WAVE"
+	res.Format = format
 
 	add := func(key, value string) {
 		value = strings.TrimSpace(value)

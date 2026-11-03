@@ -69,10 +69,20 @@ func ExtractWithOptions(path string, opts Options) (*Result, error) {
 			return extractAPEv2(path, "APE")
 		case bytes.HasPrefix(magic, wvpkMagic):
 			return extractAPEv2(path, "WAVPACK")
+		case bytes.HasPrefix(magic, []byte("MPCK")):
+			return extractAPEv2(path, "MUSEPACK")
+		case bytes.HasPrefix(magic, []byte("MP+")):
+			return extractAPEv2(path, "MUSEPACK")
+		case bytes.HasPrefix(magic, []byte("tBaK")):
+			return extractAPEv2(path, "TAK")
 		case bytes.HasPrefix(magic, asfMagic):
 			return extractASF(path)
+		case bytes.HasPrefix(magic, oggMagic):
+			return extractOgg(path)
 		case len(magic) >= 12 && bytes.Equal(magic[:4], riffMagic) && string(magic[8:12]) == "WAVE":
 			return extractWAV(path)
+		case len(magic) >= 12 && bytes.Equal(magic[:4], rf64Magic) && string(magic[8:12]) == "WAVE":
+			return extractRF64(path)
 		case len(magic) >= 12 && bytes.Equal(magic[:4], formMagic) && (string(magic[8:12]) == "AIFF" || string(magic[8:12]) == "AIFC"):
 			return extractAIFF(path)
 		}
@@ -111,6 +121,10 @@ func applyTagMetadata(m tag.Metadata, res *Result) {
 		}
 		val, ok := stringify(v)
 		if !ok || val == "" {
+			continue
+		}
+		upperKey := strings.ToUpper(key)
+		if (isTrackKey(upperKey) || isTrackTotalKey(upperKey) || isDiscKey(upperKey) || isDiscTotalKey(upperKey)) && val == "0" {
 			continue
 		}
 		if prev, exists := res.Fields[key]; exists {
@@ -270,6 +284,12 @@ func trackNumbers(raw map[string]interface{}) (string, string) {
 			total = getStr(v)
 		}
 	}
+	if num == "0" {
+		num = ""
+	}
+	if total == "0" {
+		total = ""
+	}
 	return num, total
 }
 
@@ -288,6 +308,12 @@ func discNumbers(raw map[string]interface{}) (string, string) {
 		if isDiscTotalKey(upper) {
 			total = getStr(v)
 		}
+	}
+	if num == "0" {
+		num = ""
+	}
+	if total == "0" {
+		total = ""
 	}
 	return num, total
 }

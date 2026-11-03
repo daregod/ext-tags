@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"external-tags/internal/ape"
 	"external-tags/internal/config"
 	"external-tags/internal/extractor"
 	"external-tags/internal/rules"
@@ -31,15 +32,20 @@ func TestFixtures(t *testing.T) {
 
 	cases := []fixtureCase{
 		{name: "audio.mp3", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
+		{name: "audio-id3v1.mp3", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio-id3v2.4.mp3", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.mp2", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.aac", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.flac", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio-unicode.flac", title: "Тестовый заголовок", artist: "Исполнитель", track: "3", cover: true},
 		{name: "audio.ogg", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio-flac.oga", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.spx", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
 		{name: "audio.opus", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
 		{name: "audio-aac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio-alac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.wav", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.rf64", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
 		{name: "audio.aiff", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.wv", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
 		{name: "audio.wma", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
@@ -131,5 +137,41 @@ func TestPNGCoverName(t *testing.T) {
 	}
 	if res.Cover == nil || res.Cover.Filename != "cover.png" {
 		t.Fatalf("cover = %+v", res.Cover)
+	}
+}
+
+func TestAPEv2Containers(t *testing.T) {
+	// Musepack (SV8) and TAK store APEv2 at the end of the file, like WavPack.
+	cases := []struct {
+		name  string
+		magic string
+	}{
+		{"sample.mpc", "MPCK"},
+		{"sample.tak", "tBaK"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tag := ape.NewTag()
+			tag.AddText("Title", "APEv2 Title")
+			tag.AddText("Artist", "APEv2 Artist")
+			data, err := tag.Serialize()
+			if err != nil {
+				t.Fatal(err)
+			}
+			file := append([]byte(c.magic), make([]byte, 256)...)
+			file = append(file, data...)
+
+			path := filepath.Join(t.TempDir(), c.name)
+			if err := os.WriteFile(path, file, 0644); err != nil {
+				t.Fatal(err)
+			}
+			res, err := extractor.Extract(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Fields["Title"] != "APEv2 Title" || res.Fields["Artist"] != "APEv2 Artist" {
+				t.Fatalf("fields = %v", res.Fields)
+			}
+		})
 	}
 }
