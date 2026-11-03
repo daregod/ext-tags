@@ -10,7 +10,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$out = (Resolve-Path $OutDir).Path
+$out = (Get-Item $OutDir).FullName
 Get-ChildItem -Path $out -Filter '*.tag' -File -ErrorAction SilentlyContinue | Remove-Item -Force
 Get-ChildItem -Path $out -Filter '*.tag.bak' -File -ErrorAction SilentlyContinue | Remove-Item -Force
 
@@ -73,6 +73,26 @@ $aacRaw = [IO.File]::ReadAllBytes((Join-Path $out 'audio-raw.aac'))
 [IO.File]::WriteAllBytes((Join-Path $out 'audio.aac'), ($aacId3 + $aacRaw))
 Remove-Item (Join-Path $out 'audio-raw.aac')
 Write-Host ("{0,-18} {1,7} B" -f 'audio.aac', (Get-Item (Join-Path $out 'audio.aac')).Length)
+$mp2enc = Join-Path (Split-Path $PSScriptRoot -Parent) 'bin\mjpegtools-2.1.0-mingw-bin64\bin\mp2enc.exe'
+if (($Force -or -not (Test-Path (Join-Path $out 'audio.mp1'))) -and (Test-Path $mp2enc)) {
+    $mp1wav = Join-Path $out 'audio-mp1-src.wav'
+    & ffmpeg -y -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:duration=0.4:sample_rate=44100" -ac 2 -c:a pcm_s16le $mp1wav
+    $rawMp1 = Join-Path $out 'audio-mp1-raw.mp1'
+    $proc = Start-Process -FilePath $mp2enc -ArgumentList @('-l', '1', '-b', '384', '-r', '44100', '-o', $rawMp1) -RedirectStandardInput $mp1wav -Wait -PassThru -NoNewWindow
+    if ($proc.ExitCode -eq 0 -and (Test-Path $rawMp1)) {
+        $mp3 = [IO.File]::ReadAllBytes((Join-Path $out 'audio.mp3'))
+        $tagLen = (($mp3[6] -band 0x7F) -shl 21) -bor (($mp3[7] -band 0x7F) -shl 14) -bor (($mp3[8] -band 0x7F) -shl 7) -bor ($mp3[9] -band 0x7F)
+        $id3 = $mp3[0..(9 + $tagLen)]
+        $raw = [IO.File]::ReadAllBytes($rawMp1)
+        [IO.File]::WriteAllBytes((Join-Path $out 'audio.mp1'), ($id3 + $raw))
+        Remove-Item $rawMp1, $mp1wav
+        Write-Host ("{0,-18} {1,7} B" -f 'audio.mp1', (Get-Item (Join-Path $out 'audio.mp1')).Length)
+    }
+    else {
+        Remove-Item $rawMp1, $mp1wav -ErrorAction SilentlyContinue
+        Write-Host 'audio.mp1          skip (mp2enc failed)'
+    }
+}
 Invoke-FFmpeg 'audio.flac' ($audio + $audioCover + @('-c:a', 'flac') + $meta + @((Join-Path $out 'audio.flac')))
 Invoke-FFmpeg 'audio.ogg'  ($audio + @('-c:a', 'libvorbis', '-q:a', '0') + $meta + @((Join-Path $out 'audio.ogg')))
 Invoke-FFmpeg 'audio.opus' ($audio + @('-c:a', 'libopus', '-b:a', '24k') + $meta + @((Join-Path $out 'audio.opus')))

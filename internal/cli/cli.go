@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"external-tags/internal/artwork"
 	"external-tags/internal/config"
 	"external-tags/internal/extractor"
 	"external-tags/internal/rules"
@@ -147,6 +148,23 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 }
 
 // isOwnOutput reports whether path is a .tag (or its .bak) we produce ourselves.
+// applySidecarCover embeds a cover image found next to the audio file when
+// the file itself has no embedded picture.
+func (a *app) applySidecarCover(md *extractor.Result, path string, cfg *config.Config) {
+	if md.Cover != nil || !cfg.Cover.Enabled || !cfg.Cover.Directory {
+		return
+	}
+	img, err := artwork.Find(filepath.Dir(path), cfg.Cover.Names)
+	if err != nil {
+		return
+	}
+	md.Cover = &extractor.Cover{
+		Filename: "cover" + strings.ToLower(filepath.Ext(img.Filename)),
+		MIME:     img.MIME,
+		Data:     img.Data,
+	}
+}
+
 func (a *app) isOwnOutput(path string, cfg *config.Config) bool {
 	lower := strings.ToLower(path)
 	suffix := strings.ToLower(cfg.TagFile.Suffix)
@@ -237,6 +255,8 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		a.report(res)
 		return
 	}
+
+	a.applySidecarCover(md, path, cfg)
 
 	fields, err := engine.Build(md, meta)
 	if err != nil {

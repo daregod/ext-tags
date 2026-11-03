@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"external-tags/internal/config"
+	"external-tags/internal/extractor"
 )
 
 func TestExpandPathsRecursive(t *testing.T) {
@@ -163,5 +164,33 @@ func TestIsOwnOutput(t *testing.T) {
 		if got := a.isOwnOutput(path, cfg); got != want {
 			t.Fatalf("isOwnOutput(%q) = %v, want %v", path, got, want)
 		}
+	}
+}
+
+func TestApplySidecarCover(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "cover.jpg"), []byte{0xFF, 0xD8}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Default()
+	a := &app{opts: &options{}}
+
+	md := &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	a.applySidecarCover(md, filepath.Join(dir, "track.flac"), cfg)
+	if md.Cover == nil || md.Cover.Filename != "cover.jpg" || md.Cover.MIME != "image/jpeg" {
+		t.Fatalf("cover = %+v", md.Cover)
+	}
+
+	embedded := &extractor.Result{Cover: &extractor.Cover{Filename: "embedded.png", MIME: "image/png"}}
+	a.applySidecarCover(embedded, filepath.Join(dir, "track.flac"), cfg)
+	if embedded.Cover.Filename != "embedded.png" {
+		t.Fatal("embedded cover must win")
+	}
+
+	cfg.Cover.Directory = false
+	md = &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	a.applySidecarCover(md, filepath.Join(dir, "track.flac"), cfg)
+	if md.Cover != nil {
+		t.Fatal("sidecar must be disabled")
 	}
 }

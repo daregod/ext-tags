@@ -47,10 +47,11 @@ type TagFileConfig struct {
 
 // CoverConfig controls embedded cover art.
 type CoverConfig struct {
-	Enabled  bool     `yaml:"enabled"`
-	Field    string   `yaml:"field"`
-	Filename string   `yaml:"filename"`
-	Names    []string `yaml:"names"`
+	Enabled   bool     `yaml:"enabled"`
+	Field     string   `yaml:"field"`
+	Filename  string   `yaml:"filename"`
+	Names     []string `yaml:"names"`
+	Directory bool     `yaml:"directory"`
 }
 
 // FieldsConfig controls how container fields become tag fields.
@@ -194,10 +195,11 @@ func Default() *Config {
 		},
 		TagFile: TagFileConfig{Suffix: ".tag"},
 		Cover: CoverConfig{
-			Enabled:  true,
-			Field:    "Cover Art (Front)",
-			Filename: "cover",
-			Names:    []string{"cover", "folder", "box", "disc", "media"},
+			Enabled:   true,
+			Field:     "Cover Art (Front)",
+			Filename:  "cover",
+			Names:     []string{"cover", "folder", "box", "disc", "media"},
+			Directory: true,
 		},
 		Fields: FieldsConfig{
 			Aliases: aliases,
@@ -540,6 +542,8 @@ files:
 cover:
   # embed the front cover into the .tag file
   enabled: true
+  # fall back to cover/folder/box/disc/media.* next to the audio file
+  directory: true
 
 # fields:
 #   aliases:                    # container key -> foobar2000 field
