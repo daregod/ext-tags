@@ -278,3 +278,15 @@ func TestRulesModeInvalid(t *testing.T) {
 		t.Fatal("expected validation error for rules_mode")
 	}
 }
+
+func TestWarningsMergeWithSkip(t *testing.T) {
+	cfg := Default()
+	cfg.Files.OnExisting = OnExistingSkip
+	if len(cfg.Warnings()) != 1 {
+		t.Fatalf("expected warning for merge+skip, got %v", cfg.Warnings())
+	}
+	cfg.Files.OnExisting = OnExistingBackup
+	if len(cfg.Warnings()) != 0 {
+		t.Fatalf("unexpected warnings: %v", cfg.Warnings())
+	}
+}

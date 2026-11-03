@@ -34,9 +34,10 @@ type Config struct {
 
 // FilesConfig controls input discovery and overwrite behaviour.
 type FilesConfig struct {
-	Extensions []string `yaml:"extensions"`
-	Recursive  bool     `yaml:"recursive"`
-	OnExisting string   `yaml:"on_existing"`
+	Extensions    []string `yaml:"extensions"`
+	Recursive     bool     `yaml:"recursive"`
+	OnExisting    string   `yaml:"on_existing"`
+	MergeExisting bool     `yaml:"merge_existing"`
 }
 
 // TagFileConfig controls the name of the produced tag file.
@@ -181,9 +182,10 @@ func Default() *Config {
 	return &Config{
 		Version: 1,
 		Files: FilesConfig{
-			Extensions: []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".wav", ".aif", ".aiff"},
-			Recursive:  false,
-			OnExisting: OnExistingBackup,
+			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".wav", ".aif", ".aiff"},
+			Recursive:     false,
+			OnExisting:    OnExistingBackup,
+			MergeExisting: true,
 		},
 		TagFile: TagFileConfig{Suffix: ".tag"},
 		Cover: CoverConfig{
@@ -409,6 +411,17 @@ func profileNames(path string) ([]string, error) {
 	return names, nil
 }
 
+// Warnings returns non-fatal configuration notes.
+func (c *Config) Warnings() []string {
+	var warnings []string
+	if c.Files.MergeExisting && (c.Files.OnExisting == OnExistingSkip || c.Files.OnExisting == OnExistingError) {
+		warnings = append(warnings, fmt.Sprintf(
+			"files.merge_existing has no effect with files.on_existing: %s (nothing is written)",
+			c.Files.OnExisting))
+	}
+	return warnings
+}
+
 // Validate checks the configuration for structural errors.
 func (c *Config) Validate() error {
 	if c.Version != 1 {
@@ -506,6 +519,9 @@ version: 1
 files:
   # overwrite | skip | backup | error
   on_existing: backup
+  # keep fields from an existing .tag that are absent in the audio file
+  # (for example Rating, which foobar2000 keeps in its media library)
+  merge_existing: true
   # recurse into subdirectories when a directory is passed
   recursive: false
   # extensions: [.mp3, .flac, .m4a]

@@ -92,7 +92,7 @@ func run(dir string, verbose bool) int {
 			failed++
 			continue
 		}
-		data, _, err := tagfile.Build(fields, md.Cover, cfg)
+		data, _, _, err := tagfile.Build(fields, md.Cover, nil, cfg)
 		if err != nil {
 			fmt.Printf("ERROR %s: build: %v\n", entry.Name(), err)
 			failed++

@@ -63,6 +63,9 @@ func (a *app) configCmd() *cobra.Command {
 			if _, err := rules.New(cfg); err != nil {
 				return err
 			}
+			for _, warning := range cfg.Warnings() {
+				fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
+			}
 			fmt.Printf("ok: %s\n", label)
 			return nil
 		},

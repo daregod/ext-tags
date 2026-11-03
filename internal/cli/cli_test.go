@@ -57,7 +57,12 @@ func TestExpandPathsGlob(t *testing.T) {
 func TestApplyOverrides(t *testing.T) {
 	a := &app{opts: &options{recursive: true, onExisting: "skip", cover: false}}
 	cfg := config.Default()
-	a.applyOverrides(cfg, func(string) bool { return true })
+	changed := func(name string) bool {
+		return name == "recursive" || name == "on-existing" || name == "cover"
+	}
+	if err := a.applyOverrides(cfg, changed); err != nil {
+		t.Fatal(err)
+	}
 
 	if !cfg.Files.Recursive {
 		t.Fatal("recursive override not applied")

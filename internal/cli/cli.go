@@ -31,6 +31,8 @@ type options struct {
 	recursive  bool
 	onExisting string
 	cover      bool
+	merge      bool
+	noMerge    bool
 }
 
 type app struct {
@@ -79,6 +81,8 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVarP(&a.opts.recursive, "recursive", "r", false, "recurse into subdirectories (extract)")
 	pf.StringVar(&a.opts.onExisting, "on-existing", "", "overwrite|skip|backup|error (default: from config)")
 	pf.BoolVar(&a.opts.cover, "cover", true, "embed cover art (extract)")
+	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
+	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
 
 	root.AddCommand(a.extractCmd(), a.configCmd(), a.versionCmd())
 	return root
@@ -110,9 +114,16 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 	if err != nil {
 		return err
 	}
-	a.applyOverrides(cfg, cmd.Flags().Changed)
+	if err := a.applyOverrides(cfg, cmd.Flags().Changed); err != nil {
+		return err
+	}
 	if err := cfg.Validate(); err != nil {
 		return err
+	}
+	for _, warning := range cfg.Warnings() {
+		if a.opts.verbose {
+			fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
+		}
 	}
 	engine, err := rules.New(cfg)
 	if err != nil {
@@ -132,7 +143,10 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 	return nil
 }
 
-func (a *app) applyOverrides(cfg *config.Config, changed func(string) bool) {
+func (a *app) applyOverrides(cfg *config.Config, changed func(string) bool) error {
+	if changed("merge") && changed("no-merge") {
+		return fmt.Errorf("--merge and --no-merge are mutually exclusive")
+	}
 	if changed("recursive") {
 		cfg.Files.Recursive = a.opts.recursive
 	}
@@ -142,6 +156,13 @@ func (a *app) applyOverrides(cfg *config.Config, changed func(string) bool) {
 	if changed("cover") {
 		cfg.Cover.Enabled = a.opts.cover
 	}
+	if changed("merge") {
+		cfg.Files.MergeExisting = a.opts.merge
+	}
+	if changed("no-merge") {
+		cfg.Files.MergeExisting = false
+	}
+	return nil
 }
 
 func (a *app) effectiveConfig() (*config.Config, string, error) {
@@ -229,7 +250,10 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	res.Backup = written.Backup
 	res.Items = written.Items
 	res.Bytes = written.Bytes
-	res.Fields = fields
+	res.Fields = written.Fields
+	if res.Fields == nil {
+		res.Fields = fields
+	}
 	if cfg.Cover.Enabled && md.Cover != nil {
 		res.Cover = &coverInfo{Filename: md.Cover.Filename, Bytes: len(md.Cover.Data)}
 	}
