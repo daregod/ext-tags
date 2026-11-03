@@ -47,6 +47,12 @@
 
 ### Добавлено
 
+- Поддержка Monkey Audio (`.ape`): чтение APEv2-тега из конца файла,
+  обложка `Cover Art (Front)`, номера трека/диска.
+- Поддержка ASF (`.wmv`, `.wma`, `.asf`): Content Description
+  (Title/Author/Comment/Rating) и Extended Content Description
+  (`WM/AlbumTitle`, `WM/Genre`, `WM/TrackNumber`, `WM/Picture` как обложка);
+  технические дескрипторы (`WMFSDK*`, `IsVBR`, …) игнорируются.
 - Поддержка Matroska/WebM (`.webm`, `.mkv`): `Tags/SimpleTag`, `Info/Title`,
   вложения-картинки как обложка, `PART_NUMBER`/`TOTAL_PARTS` → `Track`;
   пакет `internal/matroska`, `Cluster`/`Cues` пропускаются без чтения.

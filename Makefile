@@ -43,7 +43,14 @@ APP      := ext-tags
 PKG      := ./cmd/$(APP)
 BIN_DIR  := bin
 DIST_DIR := dist
-BINARY   := $(BIN_DIR)/$(APP)$(EXE)
+BINARY     := $(BIN_DIR)/$(APP)$(EXE)
+
+# cmd.exe does not run relative paths with forward slashes ("bin/x.exe").
+ifeq ($(OS),Windows_NT)
+  COMPAT_BIN := $(BIN_DIR)\compat$(EXE)
+else
+  COMPAT_BIN := $(BIN_DIR)/compat$(EXE)
+endif
 
 GO       ?= go
 GIT      := git -c "safe.directory=*"
@@ -216,6 +223,7 @@ ci: tidy-check check
 ## clean: remove build artifacts
 clean:
 	@$(call RMFILE,$(BINARY))
+	@$(call RMFILE,$(COMPAT_BIN))
 	@$(call RMDIR,$(DIST_DIR))
 	@$(call RMFILE,coverage.out)
 	@$(call RMFILE,coverage.html)
@@ -223,7 +231,9 @@ clean:
 
 ## compat: compare generated .tag files with foobar2000 references in bin/examples
 compat:
-	@$(GO) run $(BUILD_FLAGS) ./cmd/compat -examples $(BIN_DIR)/examples
+	@$(call MKDIR,$(BIN_DIR))
+	@$(GO) build $(BUILD_FLAGS) -o $(COMPAT_BIN) ./cmd/compat
+	@$(COMPAT_BIN) -examples $(BIN_DIR)/examples
 ## tag: create an annotated release tag, e.g. make tag TAG=v0.4.0
 tag:
 	@$(if $(TAG),,$(error TAG is required, e.g. make tag TAG=v0.4.0))

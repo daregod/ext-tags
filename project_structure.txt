@@ -9,7 +9,8 @@ external-tags/
 │   └── ext-tags/
 │       └── main.go       <-- тонкая точка входа (internal/cli)
 ├── internal/
-│   ├── ape/              <-- APEv2: запись (Serialize) и чтение (Parse)
+│   ├── ape/              <-- APEv2: запись (Serialize), чтение (Parse, ReadFromFileEnd)
+│   ├── asf/              <-- ASF/WMV/WMA: Content Description, WM/Picture
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
 │   ├── extractor/        <-- чтение контейнеров (сырые поля, обложка)

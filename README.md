@@ -15,6 +15,8 @@
 *   **Ogg Vorbis** (`.ogg`) — Vorbis Comments
 *   **M4A / MP4** (`.m4a`, `.mp4`) — iTunes-атомы
 *   **WebM / MKV** (`.webm`, `.mkv`) — Matroska: `Tags/SimpleTag`, `Info/Title`, вложения-обложки, `PART_NUMBER`/`TOTAL_PARTS`
+*   **APE** (`.ape`) — APEv2-тег в конце файла (Monkey Audio)
+*   **WMV / WMA** (`.wmv`, `.wma`, `.asf`) — ASF: Content Description и Extended Content Description, `WM/Picture` как обложка
 *   **WAV** (`.wav`) — ID3v2 чанки
 *   **AIFF** (`.aif`, `.aiff`) — ID3v2 чанки
 
@@ -24,6 +26,7 @@
 *   **Обложки**: Извлекает встроенные изображения (Front Cover) и корректно упаковывает их в APEv2 (с префиксом имени файла, как того требует спецификация).
 *   **Нормализация ключей**: Приводит теги к единому виду (например, `ORGANIZATION` -> `Publisher`, `DATE` -> `Year`), предотвращая дублирование полей в foobar2000.
 *   **Matroska**: читает `Tags/SimpleTag` (TITLE, ARTIST, GENRE, …), `Info/Title` и вложения-картинки как обложку; `Cluster`/`Cues` пропускаются, большие видео не загружаются в память.
+*   **APE и ASF**: APEv2 из хвоста `.ape` и Content Description из `.wmv`/`.wma`; технические поля (`WMFSDK*`, `IsVBR`, …) отбрасываются.
 *   **Безопасность**: Не изменяет оригинальные аудиофайлы, а лишь создаёт рядом файл `<имя_файла>.<расширение>.tag`.
 
 ## 🚀 Сборка и установка
@@ -138,7 +141,7 @@ ext-tags config path          # показать, какие файлы прим
 version: 1
 
 files:
-  extensions: [.mp3, .flac, .opus, .ogg, .m4a, .mp4, .webm, .mkv, .wav, .aif, .aiff]
+  extensions: [.mp3, .flac, .opus, .ogg, .m4a, .mp4, .webm, .mkv, .ape, .wmv, .wma, .asf, .wav, .aif, .aiff]
   recursive: false
   on_existing: backup          # overwrite | skip | backup | error
   merge_existing: true         # сохранять поля из старого .tag (Rating и т. п.)
@@ -260,6 +263,9 @@ merge со `skip`/`error` не является ошибкой (merge может
 ```bash
 make compat
 ```
+
+Команда собирает `bin/compat.exe` и запускает его; вручную её можно вызвать
+как `bin/compat.exe -examples bin/examples`.
 
 Разбор вывода:
 
