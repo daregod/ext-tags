@@ -225,6 +225,43 @@ ext-tags --profile music extract -r D:\Music
 * `overwrite` — перезаписать;
 * `skip` — оставить как есть и вывести `SKIP ... (already exists)`;
 * `error` — считать это ошибкой (код возврата `1`).
+## 🔍 Проверка совместимости
+
+### Автоматическая: `make compat`
+
+Команда сравнивает то, что генерирует утилита, с эталонными `.tag`, которые
+создал сам плагин `foo_external_tags` (файлы лежат рядом с аудио в
+`bin/examples`, в git они не входят):
+
+```bash
+make compat
+```
+
+Разбор вывода:
+
+* `OK` — поля и обложки совпадают;
+* `changed=[…]` — реальное расхождение (команда вернёт код `1`);
+* `cosmetic=[…]` — различия, не влияющие на чтение: имя файла внутри обложки
+  (`cover.jpg` vs `hello.jpg`), суффикс ` dB` у `replaygain_*`, лишние пробелы;
+* `ref-only=[Rating]` — поля, которые foobar2000 хранит только в своей
+  медиатеке (`Rating`, иногда обложка), в аудиофайле их нет;
+* `gen-only=[Cover Art (Front)]` — наша обложка: плагин её в `.tag` не кладёт,
+  а утилита кладёт (ради этого всё и затевалось).
+
+### Ручная: 5 минут в foobar2000
+
+1. Preferences → Components → `foo_external_tags`: включить чтение внешних
+   тегов и запись «in .tag files».
+2. Сгенерировать `.tag` для тестового трека (`ext-tags track.flac`).
+3. Добавить трек в foobar2000 и открыть Properties — поля и обложка должны
+   прийти из `.tag`.
+4. Изменить любой тег в foobar2000 — плагин перезапишет наш `.tag`
+   (проверка, что формат ему «родной»).
+5. Удалить `.tag` — foobar2000 покажет теги из самого файла.
+
+Полностью автоматизировать GUI плеера можно, но хрупко: foobar2000 v2
+поддерживает `/context_command:"Tagging/Rewrite file tags"` и портативный
+профиль, так что при желании несложно собрать отдельный smoke-скрипт.
 ## 🏷 Версии и changelog
 
 Проект следует [SemVer](https://semver.org/lang/ru/): ветка `0.x` — MVP,
@@ -263,6 +300,7 @@ CHANGELOG, закоммитить, прогнать `make check`, постави
 | `make tidy`, `make tidy-check` | `go mod tidy` и проверка, что `go.mod`/`go.sum` не разъехались |
 | `make check` | `fmt-check` + `vet` + `lint` + `test` |
 | `make ci` | `tidy-check` + `check` — то же, что гоняет CI |
+| `make compat` | сверка `.tag` с эталонами `foo_external_tags` из `bin/examples` |
 | `make clean` | удаляет артефакты сборки (`bin/ext-tags*`, `dist/`, coverage) |
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push и pull request запускает `make tidy-check`, `make check`, `make build` и `make dist`.

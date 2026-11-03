@@ -78,7 +78,7 @@ LDFLAGS     := -s -w -X external-tags/internal/version.Version=$(VERSION) -X ext
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools build run install dist test test-race cover cover-html \
-        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version tag
+        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version tag compat
 
 ## help: list available targets
 help:
@@ -108,6 +108,7 @@ help:
 	@echo   make clean         remove build artifacts
 	@echo   make version       print the version stamp
 	@echo   make tag           tag the current commit, e.g. make tag TAG=v0.4.0
+	@echo   make compat        compare .tag output with foo_external_tags references
 	@echo ------------------------------------------------------------------
 
 ## setup: check the toolchain, download modules and install dev tools
@@ -220,6 +221,9 @@ clean:
 	@$(call RMFILE,coverage.html)
 	@echo Cleaned.
 
+## compat: compare generated .tag files with foobar2000 references in bin/examples
+compat:
+	@$(GO) run $(BUILD_FLAGS) ./cmd/compat -examples $(BIN_DIR)/examples
 ## tag: create an annotated release tag, e.g. make tag TAG=v0.4.0
 tag:
 	@$(if $(TAG),,$(error TAG is required, e.g. make tag TAG=v0.4.0))

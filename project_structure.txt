@@ -4,10 +4,12 @@ external-tags/
 ├── go.mod
 ├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
+│   ├── compat/
+│   │   └── main.go       <-- сверка с эталонами foo_external_tags (make compat)
 │   └── ext-tags/
 │       └── main.go       <-- тонкая точка входа (internal/cli)
 ├── internal/
-│   ├── ape/              <-- сериализатор APEv2
+│   ├── ape/              <-- APEv2: запись (Serialize) и чтение (Parse)
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
 │   ├── extractor/        <-- чтение контейнеров (сырые поля, обложка)
