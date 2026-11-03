@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+
+	"external-tags/internal/extractor"
 )
 
 func main() {
@@ -13,6 +16,12 @@ func main() {
 
 	code := 0
 	for _, path := range os.Args[1:] {
+		ext := filepath.Ext(path)
+		if !extractor.SupportedExtensions[ext] {
+			fmt.Fprintf(os.Stderr, "SKIP  %s (unsupported format %s)\n", path, ext)
+			continue
+		}
+
 		if err := processFile(path); err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR %s: %v\n", path, err)
 			code = 1
@@ -22,7 +31,7 @@ func main() {
 }
 
 func processFile(path string) error {
-	t, err := ExtractFromAudio(path)
+	t, err := extractor.Extract(path)
 	if err != nil {
 		return err
 	}

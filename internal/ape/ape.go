@@ -1,4 +1,4 @@
-package main
+package ape
 
 import (
 	"bytes"
@@ -14,38 +14,37 @@ const (
 	flagText   = uint32(0)
 	flagBinary = uint32(2)
 
-	// APEv2 tag-level flags
-	tagFlagHasHeader = uint32(0x80000000) // bit 31
-	tagFlagIsHeader  = uint32(0x20000000) // bit 29
+	tagFlagHasHeader = uint32(0x80000000)
+	tagFlagIsHeader  = uint32(0x20000000)
 )
 
-type APEItem struct {
+type Item struct {
 	Flags uint32
 	Key   string
 	Value []byte
 }
 
-type APETag struct {
-	Items []APEItem
+type Tag struct {
+	Items []Item
 }
 
-func NewAPETag() *APETag { return &APETag{} }
+func NewTag() *Tag { return &Tag{} }
 
-func (t *APETag) AddText(key, value string) {
+func (t *Tag) AddText(key, value string) {
 	if key == "" || value == "" {
 		return
 	}
-	t.Items = append(t.Items, APEItem{Flags: flagText, Key: key, Value: []byte(value)})
+	t.Items = append(t.Items, Item{Flags: flagText, Key: key, Value: []byte(value)})
 }
 
-func (t *APETag) AddBinary(key string, value []byte) {
+func (t *Tag) AddBinary(key string, value []byte) {
 	if key == "" || len(value) == 0 {
 		return
 	}
-	t.Items = append(t.Items, APEItem{Flags: flagBinary, Key: key, Value: value})
+	t.Items = append(t.Items, Item{Flags: flagBinary, Key: key, Value: value})
 }
 
-func (t *APETag) AddCoverArt(key, filename string, data []byte) {
+func (t *Tag) AddCoverArt(key, filename string, data []byte) {
 	if key == "" || len(data) == 0 || filename == "" {
 		return
 	}
@@ -54,7 +53,7 @@ func (t *APETag) AddCoverArt(key, filename string, data []byte) {
 	t.AddBinary(key, v)
 }
 
-func (t *APETag) Serialize() ([]byte, error) {
+func (t *Tag) Serialize() ([]byte, error) {
 	var itemsBuf bytes.Buffer
 
 	for _, item := range t.Items {
@@ -76,8 +75,8 @@ func (t *APETag) Serialize() ([]byte, error) {
 	itemCount := uint32(len(t.Items))
 	tagSize := uint32(len(itemsData)) + 32 // items + footer
 
-	header := buildAPEHeader(tagSize, itemCount, true)
-	footer := buildAPEHeader(tagSize, itemCount, false)
+	header := buildHeader(tagSize, itemCount, true)
+	footer := buildHeader(tagSize, itemCount, false)
 
 	var out bytes.Buffer
 	out.WriteString(apeTAGFILE)
@@ -87,7 +86,7 @@ func (t *APETag) Serialize() ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func buildAPEHeader(tagSize, itemCount uint32, isHeader bool) []byte {
+func buildHeader(tagSize, itemCount uint32, isHeader bool) []byte {
 	buf := make([]byte, 32)
 	copy(buf[0:8], apeSignature)
 	binary.LittleEndian.PutUint32(buf[8:12], apeVersion)
@@ -99,6 +98,5 @@ func buildAPEHeader(tagSize, itemCount uint32, isHeader bool) []byte {
 		flags |= tagFlagIsHeader
 	}
 	binary.LittleEndian.PutUint32(buf[20:24], flags)
-	// bytes 24..31 reserved = zeros
 	return buf
 }

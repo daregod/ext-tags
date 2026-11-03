@@ -1,7 +1,12 @@
-external-tags-mvp/
+external-tags/
 ├── go.mod
-├── main.go          # CLI entry
-├── ape.go           # APEv2 сериализатор
-├── extract.go       # Извлечение тегов из аудио
-├── ape_test.go      # Тесты
-└── README.md
+├── bin/                  <-- сюда будем собирать бинарники
+├── cmd/
+│   └── ext-tags/
+│       └── main.go       <-- CLI интерфейс
+└── internal/
+    ├── ape/
+    │   ├── ape.go        <-- логика APEv2
+    │   └── ape_test.go   <-- тесты APEv2
+    └── extractor/
+        └── extractor.go  <-- логика извлечения тегов из файлов

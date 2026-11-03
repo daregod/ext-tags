@@ -1,4 +1,4 @@
-package main
+package extractor
 
 import (
 	"fmt"
@@ -6,19 +6,31 @@ import (
 	"strconv"
 	"strings"
 
+	"external-tags/internal/ape"
 	"github.com/dhowden/tag"
 )
 
-// Маппинг оригинальных ключей (ID3v2 и Vorbis) в чистые ключи APEv2
+// Список поддерживаемых расширений
+var SupportedExtensions = map[string]bool{
+	".mp3":  true,
+	".flac": true,
+	".opus": true,
+	".ogg":  true,
+	".m4a":  true,
+	".mp4":  true,
+	".wav":  true,
+	".aif":  true,
+	".aiff": true,
+}
+
+// Маппинг оригинальных ключей в чистые ключи APEv2
 var keyMap = map[string]string{
-	// ID3v2 фреймы (MP3)
 	"TIT2": "Title", "TPE1": "Artist", "TALB": "Album", "TPE2": "Album artist",
 	"TCON": "Genre", "TDRC": "Year", "TYER": "Year", "TRCK": "Track",
 	"TPOS": "Disc", "TCOM": "Composer", "COMM": "Comment", "TPUB": "Publisher",
 	"TCOP": "Copyright", "TSSE": "Encoder", "TLAN": "Language", "TENC": "Encoded by",
 	"TBPM": "BPM", "TKEY": "Key", "TEXT": "Lyricist", "TMED": "Media",
 
-	// Vorbis Comments (FLAC / Opus) - приводим к ВЕРХНЕМУ регистру для поиска
 	"TITLE": "Title", "ARTIST": "Artist", "ALBUM": "Album",
 	"ALBUMARTIST": "Album artist", "ALBUM ARTIST": "Album artist",
 	"DATE": "Year", "YEAR": "Year", "GENRE": "Genre",
@@ -27,7 +39,6 @@ var keyMap = map[string]string{
 	"DISCNUMBER": "Disc", "DISCTOTAL": "Total discs", "TOTALDISCS": "Total discs",
 	"COMMENT": "Comment", "RATING": "Rating",
 
-	// Кастомные поля
 	"CATALOGNUMBER":          "Catalognumber",
 	"CATALOG NUMBER":         "Catalognumber",
 	"COMMENT CATALOG NUMBER": "Comment catalog number",
@@ -57,7 +68,8 @@ func isID3Frame(k string) bool {
 	return true
 }
 
-func ExtractFromAudio(path string) (*APETag, error) {
+// Extract читает файл и возвращает готовый APETag
+func Extract(path string) (*ape.Tag, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -69,10 +81,9 @@ func ExtractFromAudio(path string) (*APETag, error) {
 		return nil, fmt.Errorf("read tags: %w", err)
 	}
 
-	t := NewAPETag()
+	t := ape.NewTag()
 	seen := make(map[string]bool)
 
-	// Функция добавления. Нормализуем ключ (нижний регистр, без пробелов) для надежной проверки
 	addText := func(k, v string) {
 		if k == "" || v == "" {
 			return
@@ -85,15 +96,14 @@ func ExtractFromAudio(path string) (*APETag, error) {
 		t.AddText(k, v)
 	}
 
-	// 1. Основной проход по сырым данным
 	for k, v := range m.Raw() {
 		upperK := strings.ToUpper(k)
 		mappedKey, ok := keyMap[upperK]
 		if !ok {
 			if isID3Frame(k) {
-				continue // Пропускаем неизвестные ID3v2 фреймы
+				continue
 			}
-			mappedKey = k // Оставляем как есть
+			mappedKey = k
 		}
 
 		switch val := v.(type) {
@@ -101,7 +111,6 @@ func ExtractFromAudio(path string) (*APETag, error) {
 			addText(mappedKey, val)
 		case []string:
 			if len(val) > 0 {
-				// Дедупликация значений внутри массива (например, Date: [2025, 2025] -> "2025")
 				unique := []string{}
 				vSeen := make(map[string]bool)
 				for _, s := range val {
@@ -122,7 +131,6 @@ func ExtractFromAudio(path string) (*APETag, error) {
 		}
 	}
 
-	// 2. Резервный сбор (сработает только если поля не были добавлены из Raw)
 	if m.Title() != "" {
 		addText("Title", m.Title())
 	}
@@ -148,7 +156,6 @@ func ExtractFromAudio(path string) (*APETag, error) {
 		addText("Year", strconv.Itoa(m.Year()))
 	}
 
-	// 3. Обложка
 	if p := m.Picture(); p != nil {
 		t.AddCoverArt("Cover Art (Front)", coverFilename(p), p.Data)
 	}
