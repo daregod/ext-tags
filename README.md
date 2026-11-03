@@ -21,7 +21,7 @@
 *   **APE** (`.ape`) — APEv2-тег в конце файла (Monkey Audio)
 *   **WavPack** (`.wv`), **Musepack** (`.mpc`), **TAK** (`.tak`) — APEv2-тег в конце файла
 *   **WMV / WMA** (`.wmv`, `.wma`, `.asf`) — ASF: Content Description и Extended Content Description, `WM/Picture` как обложка
-*   **WAV** (`.wav`) и **RF64** (`.rf64`) — LIST/INFO и ID3v2, в том числе дописанный после RIFF-данных
+*   **WAV** (`.wav`), **RF64** (`.rf64`) и **Wave64** (`.w64`) — LIST/INFO и ID3v2, в том числе дописанный после данных; Wave64 — GUID-чанки и 64-битные размеры, ID3-чанк должен идти до `data` (так его читает foobar2000)
 *   **AIFF** (`.aif`, `.aiff`) — NAME/AUTH/ANNO и ID3v2-чанк
 
 ## ✨ Особенности
@@ -326,7 +326,10 @@ WavPack, WMA, WMV, MKV, WebM, WAV. Отдельные случаи:
   (`Artist` с уровня трека и `Album artist` с уровня альбома);
 * `audio-cover.png.mkv` — вложение `box.png` (проверка имён и png);
 * `audio-id3v1.mp3` и `audio-id3v2.4.mp3` — ID3v1 и ID3v2.4 (плюс обычный v2.3);
-* `audio.mp1` — MPEG Layer I (получен `mp2enc -l 1`, теги — приклеенный ID3v2);`n* `audio.rf64` — теги в RF64;`n* `audio-unicode.flac` — UTF-8 кириллица в тегах;
+* `audio.mp1` — MPEG Layer I (получен `mp2enc -l 1`, теги — приклеенный ID3v2);
+* `audio.w64` — Wave64 (контейнер от `flac --force-wave64-format`, теги — ID3-чанк);
+* `audio.rf64` — теги в RF64;
+* `audio-unicode.flac` — UTF-8 кириллица в тегах;
 * `audio-empty.wav` — файл без тегов (ветка `no-tags`).
 
 Для форматов из TODO (AC3, DTS, AU, Wave64, RF64, TS, Ogg FLAC, Speex)

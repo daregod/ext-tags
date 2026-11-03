@@ -94,6 +94,48 @@ if (($Force -or -not (Test-Path (Join-Path $out 'audio.mp1'))) -and (Test-Path $
         Write-Host 'audio.mp1          skip (mp2enc failed)'
     }
 }
+$flac = Get-Command flac -ErrorAction SilentlyContinue
+if ($flac -and ($Force -or -not (Test-Path (Join-Path $out 'audio.w64')))) {
+    $tmpFlac = Join-Path $out 'audio-w64.tmp.flac'
+    $rawW64 = Join-Path $out 'audio-w64.tmp.w64'
+    & flac -s -f -o $tmpFlac (Join-Path $out 'audio.wav')
+    $encOK = $LASTEXITCODE -eq 0
+    if ($encOK) {
+        & flac -s -d -f --force-wave64-format -o $rawW64 $tmpFlac
+        $encOK = $LASTEXITCODE -eq 0
+    }
+    if ($encOK -and (Test-Path $rawW64)) {
+        $mp3 = [IO.File]::ReadAllBytes((Join-Path $out 'audio.mp3'))
+        $tagLen = (($mp3[6] -band 0x7F) -shl 21) -bor (($mp3[7] -band 0x7F) -shl 14) -bor (($mp3[8] -band 0x7F) -shl 7) -bor ($mp3[9] -band 0x7F)
+        $id3 = [byte[]]$mp3[0..(9 + $tagLen)]
+        $base = [IO.File]::ReadAllBytes($rawW64)
+        # Insert the ID3 chunk right after fmt, before data: foobar2000 only
+        # picks up tag chunks in the header area.
+        $fmtSize = [BitConverter]::ToUInt64($base, 56)
+        $insertAt = 40 + [int]$fmtSize
+        $guid = [Text.Encoding]::ASCII.GetBytes('ID3 ') + [byte[]](0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A)
+        $chunkSize = 24 + $id3.Length
+        $chunkLen = $chunkSize
+        while (($chunkLen % 8) -ne 0) { $chunkLen++ }
+        $chunk = New-Object byte[] $chunkLen
+        [Array]::Copy($guid, 0, $chunk, 0, 16)
+        [Array]::Copy([BitConverter]::GetBytes([uint64]$chunkSize), 0, $chunk, 16, 8)
+        [Array]::Copy($id3, 0, $chunk, 24, $id3.Length)
+
+        $outBytes = New-Object byte[] ($base.Length + $chunk.Length)
+        [Array]::Copy($base, 0, $outBytes, 0, $insertAt)
+        [Array]::Copy($chunk, 0, $outBytes, $insertAt, $chunk.Length)
+        [Array]::Copy($base, $insertAt, $outBytes, $insertAt + $chunk.Length, $base.Length - $insertAt)
+        [Array]::Copy([BitConverter]::GetBytes([uint64]$outBytes.Length), 0, $outBytes, 16, 8)
+        [IO.File]::WriteAllBytes((Join-Path $out 'audio.w64'), $outBytes)
+        Remove-Item $tmpFlac, $rawW64
+        Write-Host ("{0,-18} {1,7} B" -f 'audio.w64', (Get-Item (Join-Path $out 'audio.w64')).Length)
+    }
+    else {
+        Remove-Item $tmpFlac, $rawW64 -ErrorAction SilentlyContinue
+        Write-Host 'audio.w64          skip (flac failed)'
+    }
+}
 Invoke-FFmpeg 'audio.flac' ($audio + $audioCover + @('-c:a', 'flac') + $meta + @((Join-Path $out 'audio.flac')))
 Invoke-FFmpeg 'audio.ogg'  ($audio + @('-c:a', 'libvorbis', '-q:a', '0') + $meta + @((Join-Path $out 'audio.ogg')))
 Invoke-FFmpeg 'audio.opus' ($audio + @('-c:a', 'libopus', '-b:a', '24k') + $meta + @((Join-Path $out 'audio.opus')))
@@ -116,7 +158,7 @@ Invoke-FFmpeg 'audio.spx'  ($audio + @('-c:a', 'libspeex', '-f', 'ogg') + $meta 
 Invoke-FFmpeg 'audio.ac3'  ($audio + @('-c:a', 'ac3', '-b:a', '64k', '-f', 'ac3') + @((Join-Path $out 'audio.ac3')))
 Invoke-FFmpeg 'audio.dts'  ($audio + @('-c:a', 'dca', '-strict', '-2', '-f', 'dts') + @((Join-Path $out 'audio.dts')))
 Invoke-FFmpeg 'audio.au'   ($audio + @('-c:a', 'pcm_s16be', '-f', 'au') + @((Join-Path $out 'audio.au')))
-Invoke-FFmpeg 'audio.w64'  ($audio + @('-c:a', 'pcm_s16le', '-f', 'w64') + $meta + @((Join-Path $out 'audio.w64')))
+
 Invoke-FFmpeg 'audio.rf64' ($audio + @('-c:a', 'pcm_s16le', '-f', 'wav', '-rf64', 'always') + $meta + @((Join-Path $out 'audio.rf64')))
 Invoke-FFmpeg 'audio.ts'   ($audio + @('-c:a', 'mp2', '-b:a', '64k', '-f', 'mpegts') + $meta + @((Join-Path $out 'audio.ts')))
 

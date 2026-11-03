@@ -61,7 +61,7 @@ func Extract(path string) (*Result, error) {
 // ExtractWithOptions reads metadata from path. It returns ErrNoTags when the
 // file has no tag block at all.
 func ExtractWithOptions(path string, opts Options) (*Result, error) {
-	if magic, err := readMagic(path, 12); err == nil {
+	if magic, err := readMagic(path, 40); err == nil {
 		switch {
 		case bytes.HasPrefix(magic, ebmlMagic):
 			return extractMatroska(path, opts.CoverNames)
@@ -83,6 +83,8 @@ func ExtractWithOptions(path string, opts Options) (*Result, error) {
 			return extractWAV(path)
 		case len(magic) >= 12 && bytes.Equal(magic[:4], rf64Magic) && string(magic[8:12]) == "WAVE":
 			return extractRF64(path)
+		case len(magic) >= 40 && string(magic[0:4]) == "riff" && string(magic[24:28]) == "wave":
+			return extractWave64(path)
 		case len(magic) >= 12 && bytes.Equal(magic[:4], formMagic) && (string(magic[8:12]) == "AIFF" || string(magic[8:12]) == "AIFC"):
 			return extractAIFF(path)
 		}

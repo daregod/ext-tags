@@ -46,6 +46,7 @@ func TestFixtures(t *testing.T) {
 		{name: "audio-aac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio-alac.m4a", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.wav", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
+		{name: "audio.w64", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.rf64", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
 		{name: "audio.aiff", title: "Fixture Title", artist: "Fixture Artist", track: "3", cover: true},
 		{name: "audio.wv", title: "Fixture Title", artist: "Fixture Artist", track: "3"},
