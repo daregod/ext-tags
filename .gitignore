@@ -1,0 +1,8 @@
+/bin
+/vendor
+/vendor.protogen
+.DS_Store
+/.idea
+/.vscode
+/.local
+*.exe

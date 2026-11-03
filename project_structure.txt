@@ -1,0 +1,7 @@
+external-tags-mvp/
+├── go.mod
+├── main.go          # CLI entry
+├── ape.go           # APEv2 сериализатор
+├── extract.go       # Извлечение тегов из аудио
+├── ape_test.go      # Тесты
+└── README.md
