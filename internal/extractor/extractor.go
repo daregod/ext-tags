@@ -1,10 +1,12 @@
 package extractor
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/dhowden/tag"
 
@@ -53,6 +55,31 @@ var keyMap = map[string]string{
 	"REPLAYGAIN_TRACK_PEAK":  "replaygain_track_peak",
 }
 
+// technicalKeys are container/codec fields that must not become tag items.
+var technicalKeys = map[string]bool{
+	"vendor":          true,
+	"iTunNORM":        true,
+	"iTunSMPB":        true,
+	"Encoding Params": true,
+	"covr":            true,
+	"\xa9too":         true, // ©too: encoder tool name
+}
+
+// mp4Atoms maps iTunes/MP4 atoms to foobar2000 field names. Atom names start
+// with a raw 0xA9 byte ("©"), so they are matched before upper-casing.
+var mp4Atoms = map[string]string{
+	"\xa9nam": "Title",
+	"\xa9ART": "Artist",
+	"\xa9alb": "Album",
+	"\xa9gen": "Genre",
+	"\xa9wrt": "Composer",
+	"\xa9cmt": "Comment",
+	"\xa9day": "Year",
+	"aART":    "Album artist",
+	"cpil":    "Itunescompilation",
+	"tmpo":    "Tempo",
+}
+
 func isID3Frame(k string) bool {
 	if len(k) != 4 {
 		return false
@@ -65,6 +92,40 @@ func isID3Frame(k string) bool {
 	return true
 }
 
+func isTrackKey(k string) bool {
+	switch k {
+	case "TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK",
+		"DISCNUMBER", "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC":
+		return true
+	}
+	return false
+}
+
+// mapKey converts a raw container key into an APEv2 field name. ok is false
+// when the key describes the container itself and must be skipped.
+func mapKey(k string) (string, bool) {
+	if technicalKeys[k] {
+		return "", false
+	}
+	if name, ok := mp4Atoms[k]; ok {
+		return name, true
+	}
+
+	upper := strings.ToUpper(k)
+	if isTrackKey(upper) {
+		return "", false
+	}
+	if name, ok := keyMap[upper]; ok {
+		return name, true
+	}
+	// Unknown ID3v2 frame IDs and MP4 atoms with non-UTF-8 names (0xA9) are
+	// not user-visible fields.
+	if isID3Frame(k) || !utf8.ValidString(k) {
+		return "", false
+	}
+	return k, true
+}
+
 func Extract(path string) (*ape.Tag, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -74,6 +135,10 @@ func Extract(path string) (*ape.Tag, error) {
 
 	m, err := tag.ReadFrom(f)
 	if err != nil {
+		// A file may simply have no tag block (plain WAV, tagless MP4).
+		if errors.Is(err, tag.ErrNoTagsFound) {
+			return ape.NewTag(), nil
+		}
 		return nil, fmt.Errorf("read tags: %w", err)
 	}
 
@@ -93,20 +158,9 @@ func Extract(path string) (*ape.Tag, error) {
 	}
 
 	for k, v := range m.Raw() {
-		upperK := strings.ToUpper(k)
-
-		// Пропускаем треки и диски, так как они обрабатываются строго ниже
-		if upperK == "TRACKNUMBER" || upperK == "TRACKTOTAL" || upperK == "TOTALTRACKS" || upperK == "TRACKS" || upperK == "TOTALTRACK" ||
-			upperK == "DISCNUMBER" || upperK == "DISCTOTAL" || upperK == "TOTALDISCS" || upperK == "DISCS" || upperK == "TOTALDISC" {
-			continue
-		}
-
-		mappedKey, ok := keyMap[upperK]
+		mappedKey, ok := mapKey(k)
 		if !ok {
-			if isID3Frame(k) {
-				continue
-			}
-			mappedKey = k
+			continue
 		}
 
 		switch val := v.(type) {
@@ -148,9 +202,6 @@ func Extract(path string) (*ape.Tag, error) {
 	}
 	if m.Genre() != "" {
 		addText("Genre", m.Genre())
-	}
-	if m.Composer() != "" {
-		addText("Composer", m.Composer())
 	}
 	if m.Comment() != "" {
 		addText("Comment", m.Comment())
