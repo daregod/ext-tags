@@ -1,132 +1,54 @@
+// Package extractor reads raw metadata from audio containers.
+//
+// It is deliberately policy-free: it returns container fields as they are,
+// plus a few normalised values (track/disc numbers) used by field rules.
 package extractor
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/dhowden/tag"
-
-	"external-tags/internal/ape"
 )
 
-var SupportedExtensions = map[string]bool{
-	".mp3":  true,
-	".flac": true,
-	".opus": true,
-	".ogg":  true,
-	".m4a":  true,
-	".mp4":  true,
-	".wav":  true,
-	".aif":  true,
-	".aiff": true,
+// ErrNoTags means the file has no metadata block at all.
+var ErrNoTags = errors.New("no tags")
+
+// Cover is a picture embedded in the container.
+type Cover struct {
+	// Filename is a suggested name for the APEv2 cover item ("cover.jpg").
+	Filename string
+	MIME     string
+	Data     []byte
 }
 
-var keyMap = map[string]string{
-	"TIT2": "Title", "TPE1": "Artist", "TALB": "Album", "TPE2": "Album artist",
-	"TCON": "Genre", "TDRC": "Year", "TYER": "Year",
-	"TCOM": "Composer", "COMM": "Comment", "TPUB": "Publisher",
-	"TCOP": "Copyright", "TSSE": "Encoder", "TLAN": "Language", "TENC": "Encoded by",
-	"TBPM": "BPM", "TKEY": "Key", "TEXT": "Lyricist", "TMED": "Media",
-
-	"TITLE": "Title", "ARTIST": "Artist", "ALBUM": "Album",
-	"ALBUMARTIST": "Album artist", "ALBUM ARTIST": "Album artist",
-	"DATE": "Year", "YEAR": "Year", "GENRE": "Genre",
-	"COMPOSER": "Composer", "PERFORMER": "Performer",
-	"COMMENT": "Comment", "RATING": "Rating",
-
-	"CATALOGNUMBER":          "Catalognumber",
-	"CATALOG NUMBER":         "Catalognumber",
-	"COMMENT CATALOG NUMBER": "Comment catalog number",
-	"COPYRIGHT":              "Copyright",
-	"ISRC":                   "Isrc",
-	"LABEL":                  "Label",
-	"ORGANIZATION":           "Publisher",
-	"PUBLISHER":              "Publisher",
-	"MUSICBRAINZ_ALBUMID":    "Musicbrainz_albumid",
-	"MUSICBRAINZ_TRACKID":    "Musicbrainz_trackid",
-	"RELEASETIME":            "Releasetime",
-	"UPC":                    "Upc",
-	"WWW":                    "Www",
-	"REPLAYGAIN_TRACK_GAIN":  "replaygain_track_gain",
-	"REPLAYGAIN_TRACK_PEAK":  "replaygain_track_peak",
+// Result is raw metadata, before any field rules are applied.
+type Result struct {
+	Format string
+	Fields map[string]string
+	Vars   map[string]string
+	Cover  *Cover
 }
 
-// technicalKeys are container/codec fields that must not become tag items.
-var technicalKeys = map[string]bool{
-	"vendor":          true,
-	"iTunNORM":        true,
-	"iTunSMPB":        true,
-	"Encoding Params": true,
-	"covr":            true,
-	"\xa9too":         true, // ©too: encoder tool name
-}
-
-// mp4Atoms maps iTunes/MP4 atoms to foobar2000 field names. Atom names start
-// with a raw 0xA9 byte ("©"), so they are matched before upper-casing.
-var mp4Atoms = map[string]string{
-	"\xa9nam": "Title",
-	"\xa9ART": "Artist",
-	"\xa9alb": "Album",
-	"\xa9gen": "Genre",
-	"\xa9wrt": "Composer",
-	"\xa9cmt": "Comment",
-	"\xa9day": "Year",
-	"aART":    "Album artist",
-	"cpil":    "Itunescompilation",
-	"tmpo":    "Tempo",
-}
-
-func isID3Frame(k string) bool {
-	if len(k) != 4 {
-		return false
-	}
-	for _, c := range k {
-		if c < 'A' || c > 'Z' {
-			return false
+// IsSupported reports whether path has one of the configured extensions.
+func IsSupported(path string, extensions []string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	for _, e := range extensions {
+		if ext == e {
+			return true
 		}
-	}
-	return true
-}
-
-func isTrackKey(k string) bool {
-	switch k {
-	case "TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK",
-		"DISCNUMBER", "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC":
-		return true
 	}
 	return false
 }
 
-// mapKey converts a raw container key into an APEv2 field name. ok is false
-// when the key describes the container itself and must be skipped.
-func mapKey(k string) (string, bool) {
-	if technicalKeys[k] {
-		return "", false
-	}
-	if name, ok := mp4Atoms[k]; ok {
-		return name, true
-	}
-
-	upper := strings.ToUpper(k)
-	if isTrackKey(upper) {
-		return "", false
-	}
-	if name, ok := keyMap[upper]; ok {
-		return name, true
-	}
-	// Unknown ID3v2 frame IDs and MP4 atoms with non-UTF-8 names (0xA9) are
-	// not user-visible fields.
-	if isID3Frame(k) || !utf8.ValidString(k) {
-		return "", false
-	}
-	return k, true
-}
-
-func Extract(path string) (*ape.Tag, error) {
+// Extract reads metadata from path. It returns ErrNoTags when the file has
+// no tag block at all.
+func Extract(path string) (*Result, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -135,131 +57,171 @@ func Extract(path string) (*ape.Tag, error) {
 
 	m, err := tag.ReadFrom(f)
 	if err != nil {
-		// A file may simply have no tag block (plain WAV, tagless MP4).
 		if errors.Is(err, tag.ErrNoTagsFound) {
-			return ape.NewTag(), nil
+			return empty(), ErrNoTags
 		}
 		return nil, fmt.Errorf("read tags: %w", err)
 	}
 
-	t := ape.NewTag()
-	seen := make(map[string]bool)
-
-	addText := func(k, v string) {
-		if k == "" || v == "" {
-			return
-		}
-		norm := strings.ToLower(strings.ReplaceAll(k, " ", ""))
-		if seen[norm] {
-			return
-		}
-		seen[norm] = true
-		t.AddText(k, v)
-	}
+	res := empty()
+	res.Format = string(m.Format())
 
 	for k, v := range m.Raw() {
-		mappedKey, ok := mapKey(k)
+		key, ok := normalizeKey(k)
 		if !ok {
 			continue
 		}
-
-		switch val := v.(type) {
-		case string:
-			addText(mappedKey, val)
-		case []string:
-			if len(val) > 0 {
-				unique := []string{}
-				vSeen := make(map[string]bool)
-				for _, s := range val {
-					s = strings.TrimSpace(s)
-					if s != "" && !vSeen[s] {
-						vSeen[s] = true
-						unique = append(unique, s)
-					}
-				}
-				if len(unique) > 0 {
-					addText(mappedKey, strings.Join(unique, "; "))
-				}
+		val, ok := stringify(v)
+		if !ok || val == "" {
+			continue
+		}
+		if prev, exists := res.Fields[key]; exists {
+			if prev != val {
+				res.Fields[key] = prev + "; " + val
 			}
-		case int:
-			addText(mappedKey, strconv.Itoa(val))
-		case int64:
-			addText(mappedKey, strconv.FormatInt(val, 10))
+			continue
+		}
+		res.Fields[key] = val
+	}
+
+	// Fallbacks for formats where Raw() does not expose common fields.
+	for key, val := range map[string]string{
+		"TITLE":       m.Title(),
+		"ARTIST":      m.Artist(),
+		"ALBUM":       m.Album(),
+		"ALBUMARTIST": m.AlbumArtist(),
+		"GENRE":       m.Genre(),
+		"COMMENT":     m.Comment(),
+	} {
+		if val == "" {
+			continue
+		}
+		if _, exists := res.Fields[key]; !exists {
+			res.Fields[key] = val
+		}
+	}
+	if year := m.Year(); year != 0 {
+		if _, exists := res.Fields["YEAR"]; !exists {
+			res.Fields["YEAR"] = strconv.Itoa(year)
 		}
 	}
 
-	if m.Title() != "" {
-		addText("Title", m.Title())
-	}
-	if m.Artist() != "" {
-		addText("Artist", m.Artist())
-	}
-	if m.Album() != "" {
-		addText("Album", m.Album())
-	}
-	if m.AlbumArtist() != "" {
-		addText("Album artist", m.AlbumArtist())
-	}
-	if m.Genre() != "" {
-		addText("Genre", m.Genre())
-	}
-	if m.Comment() != "" {
-		addText("Comment", m.Comment())
-	}
-	if m.Year() != 0 {
-		addText("Year", strconv.Itoa(m.Year()))
-	}
-
-	// Обработка треков и дисков вручную
-	track, trackTotal := getTrack(m.Raw())
-	disc, discTotal := getDisc(m.Raw())
-
-	// Резервный вариант, если в сырых данных ничего не нашли
+	track, trackTotal := trackNumbers(m.Raw())
+	disc, discTotal := discNumbers(m.Raw())
 	if track == "" {
-		if n, tot := m.Track(); n != 0 {
-			track = fmt.Sprintf("%d", n)
-			if tot > 0 {
-				trackTotal = fmt.Sprintf("%d", tot)
+		if n, total := m.Track(); n != 0 {
+			track = strconv.Itoa(n)
+			if total > 0 {
+				trackTotal = strconv.Itoa(total)
 			}
 		}
 	}
 	if disc == "" {
-		if n, tot := m.Disc(); n != 0 {
-			disc = fmt.Sprintf("%d", n)
-			if tot > 0 {
-				discTotal = fmt.Sprintf("%d", tot)
+		if n, total := m.Disc(); n != 0 {
+			disc = strconv.Itoa(n)
+			if total > 0 {
+				discTotal = strconv.Itoa(total)
 			}
 		}
 	}
-
-	// Записываем в формате "02/16"
-	if track != "" {
-		if trackTotal != "" {
-			addText("Track", track+"/"+trackTotal)
-		} else {
-			addText("Track", track)
-		}
-	}
-	if disc != "" {
-		if discTotal != "" {
-			addText("Disc", disc+"/"+discTotal)
-		} else {
-			addText("Disc", disc)
-		}
-	}
+	putVar(res.Vars, "tracknumber", track)
+	putVar(res.Vars, "totaltracks", trackTotal)
+	putVar(res.Vars, "discnumber", disc)
+	putVar(res.Vars, "disctotal", discTotal)
 
 	if p := m.Picture(); p != nil {
-		t.AddCoverArt("Cover Art (Front)", coverFilename(p), p.Data)
+		res.Cover = &Cover{
+			Filename: coverFilename(p),
+			MIME:     p.MIMEType,
+			Data:     p.Data,
+		}
 	}
 
-	return t, nil
+	return res, nil
 }
 
-func getTrack(raw map[string]interface{}) (string, string) {
+func empty() *Result {
+	return &Result{Fields: map[string]string{}, Vars: map[string]string{}}
+}
+
+func putVar(m map[string]string, key, val string) {
+	if val != "" {
+		m[key] = val
+	}
+}
+
+// normalizeKey converts container keys to UTF-8. MP4 atoms carry a LATIN-1
+// copyright sign (0xA9) which is rewritten to the Unicode "©".
+func normalizeKey(k string) (string, bool) {
+	if utf8.ValidString(k) {
+		return k, true
+	}
+	if len(k) > 1 && k[0] == 0xA9 && utf8.ValidString(k[1:]) {
+		return "©" + k[1:], true
+	}
+	return "", false
+}
+
+func stringify(v interface{}) (string, bool) {
+	switch val := v.(type) {
+	case string:
+		return strings.TrimSpace(val), true
+	case []string:
+		seen := make(map[string]bool, len(val))
+		unique := make([]string, 0, len(val))
+		for _, s := range val {
+			s = strings.TrimSpace(s)
+			if s != "" && !seen[s] {
+				seen[s] = true
+				unique = append(unique, s)
+			}
+		}
+		return strings.Join(unique, "; "), true
+	case int:
+		return strconv.Itoa(val), true
+	case int64:
+		return strconv.FormatInt(val, 10), true
+	}
+	return "", false
+}
+
+func isTrackKey(k string) bool {
+	switch k {
+	case "TRACKNUMBER", "TRACK", "TRCK":
+		return true
+	}
+	return false
+}
+
+func isTrackTotalKey(k string) bool {
+	switch k {
+	case "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK":
+		return true
+	}
+	return false
+}
+
+func isDiscKey(k string) bool {
+	switch k {
+	case "DISCNUMBER", "DISC", "TPOS":
+		return true
+	}
+	return false
+}
+
+func isDiscTotalKey(k string) bool {
+	switch k {
+	case "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC":
+		return true
+	}
+	return false
+}
+
+func trackNumbers(raw map[string]interface{}) (string, string) {
 	var num, total string
 	for k, v := range raw {
-		upperK := strings.ToUpper(k)
-		if upperK == "TRACKNUMBER" || upperK == "TRACK" || upperK == "TRCK" {
+		upper := strings.ToUpper(k)
+		if isTrackKey(upper) {
 			str := getStr(v)
 			parts := strings.Split(str, "/")
 			num = parts[0]
@@ -267,18 +229,18 @@ func getTrack(raw map[string]interface{}) (string, string) {
 				total = parts[1]
 			}
 		}
-		if upperK == "TRACKTOTAL" || upperK == "TOTALTRACKS" || upperK == "TRACKS" || upperK == "TOTALTRACK" {
+		if isTrackTotalKey(upper) {
 			total = getStr(v)
 		}
 	}
 	return num, total
 }
 
-func getDisc(raw map[string]interface{}) (string, string) {
+func discNumbers(raw map[string]interface{}) (string, string) {
 	var num, total string
 	for k, v := range raw {
-		upperK := strings.ToUpper(k)
-		if upperK == "DISCNUMBER" || upperK == "DISC" || upperK == "TPOS" {
+		upper := strings.ToUpper(k)
+		if isDiscKey(upper) {
 			str := getStr(v)
 			parts := strings.Split(str, "/")
 			num = parts[0]
@@ -286,7 +248,7 @@ func getDisc(raw map[string]interface{}) (string, string) {
 				total = parts[1]
 			}
 		}
-		if upperK == "DISCTOTAL" || upperK == "TOTALDISCS" || upperK == "DISCS" || upperK == "TOTALDISC" {
+		if isDiscTotalKey(upper) {
 			total = getStr(v)
 		}
 	}

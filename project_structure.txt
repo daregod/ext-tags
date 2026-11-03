@@ -5,16 +5,15 @@ external-tags/
 ├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
 │   └── ext-tags/
-│       └── main.go       <-- CLI интерфейс
+│       └── main.go       <-- тонкая точка входа (internal/cli)
 ├── internal/
-│   ├── ape/
-│   │   ├── ape.go        <-- логика APEv2
-│   │   └── ape_test.go   <-- тесты APEv2
-│   ├── extractor/
-│   │   ├── extractor.go      <-- логика извлечения тегов из файлов
-│   │   └── extractor_test.go <-- тесты нормализации ключей
-│   └── version/
-│       └── version.go    <-- версия, коммит, дата сборки (-ldflags)
+│   ├── ape/              <-- сериализатор APEv2
+│   ├── cli/              <-- команды cobra и вывод (text/json)
+│   ├── config/           <-- YAML-схема, дефолты, профили, валидация
+│   ├── extractor/        <-- чтение контейнеров (сырые поля, обложка)
+│   ├── rules/            <-- aliases/ignore/шаблоны/copy/rename/default/remove
+│   ├── tagfile/          <-- запись .tag с on_existing/backup/dry-run
+│   └── version/          <-- версия, коммит, дата сборки (-ldflags)
 ├── .github/
 │   └── workflows/
 │       └── ci.yml        <-- GitHub Actions: make tidy-check/check/build/dist

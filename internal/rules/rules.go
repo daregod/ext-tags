@@ -1,0 +1,290 @@
+// Package rules turns raw container metadata into tag fields according to
+// the configuration: aliases, ignored fields, templates and copy/rename
+// rules.
+package rules
+
+import (
+	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+	"text/template"
+	"time"
+	"unicode"
+
+	"external-tags/internal/config"
+	"external-tags/internal/extractor"
+)
+
+// Meta is per-file context available to templates.
+type Meta struct {
+	Path     string
+	Filename string
+	Dir      string
+	Ext      string
+	Now      time.Time
+}
+
+// Engine is a compiled, reusable rule pipeline.
+type Engine struct {
+	aliases map[string]string
+	ignore  map[string]bool
+	include []string
+	exclude []string
+	rules   []compiled
+}
+
+type compiled struct {
+	rule config.Rule
+	set  *template.Template
+	when *template.Template
+}
+
+var funcs = template.FuncMap{
+	"lower": strings.ToLower,
+	"upper": strings.ToUpper,
+	"title": title,
+	"trim":  strings.TrimSpace,
+	"default": func(def, val string) string {
+		if strings.TrimSpace(val) == "" {
+			return def
+		}
+		return val
+	},
+	"replace": func(old, new, s string) string {
+		return strings.ReplaceAll(s, old, new)
+	},
+	"regexReplace": func(expr, repl, s string) (string, error) {
+		re, err := regexp.Compile(expr)
+		if err != nil {
+			return "", fmt.Errorf("regexReplace: %w", err)
+		}
+		return re.ReplaceAllString(s, repl), nil
+	},
+}
+
+// New compiles the configured rules.
+func New(cfg *config.Config) (*Engine, error) {
+	e := &Engine{
+		aliases: make(map[string]string, len(cfg.Fields.Aliases)),
+		ignore:  make(map[string]bool, len(cfg.Fields.Ignore)),
+		include: append([]string(nil), cfg.Fields.Include...),
+		exclude: append([]string(nil), cfg.Fields.Exclude...),
+	}
+	for key, value := range cfg.Fields.Aliases {
+		e.aliases[strings.ToLower(key)] = value
+	}
+	for _, key := range cfg.Fields.Ignore {
+		e.ignore[strings.ToLower(key)] = true
+	}
+
+	for i, rule := range cfg.Fields.Rules {
+		c := compiled{rule: rule}
+		if rule.Set != "" {
+			tmpl, err := template.New(fmt.Sprintf("rule-%d-set", i)).Funcs(funcs).Option("missingkey=zero").Parse(rule.Template)
+			if err != nil {
+				return nil, fmt.Errorf("fields.rules[%d]: template: %w", i, err)
+			}
+			c.set = tmpl
+		}
+		if rule.When != "" {
+			tmpl, err := template.New(fmt.Sprintf("rule-%d-when", i)).Funcs(funcs).Option("missingkey=zero").Parse(rule.When)
+			if err != nil {
+				return nil, fmt.Errorf("fields.rules[%d]: when: %w", i, err)
+			}
+			c.when = tmpl
+		}
+		e.rules = append(e.rules, c)
+	}
+	return e, nil
+}
+
+// Build applies aliases and rules to raw metadata and returns final fields.
+func (e *Engine) Build(res *extractor.Result, meta Meta) (map[string]string, error) {
+	fields := make(map[string]string, len(res.Fields))
+	index := make(map[string]string, len(res.Fields))
+
+	set := func(name, value string) {
+		name = strings.TrimSpace(name)
+		value = strings.TrimSpace(value)
+		if name == "" || value == "" {
+			return
+		}
+		key := strings.ToLower(name)
+		if existing, ok := index[key]; ok {
+			fields[existing] = value
+			return
+		}
+		index[key] = name
+		fields[name] = value
+	}
+	get := func(name string) string {
+		return fields[index[strings.ToLower(strings.TrimSpace(name))]]
+	}
+	del := func(name string) {
+		key := strings.ToLower(strings.TrimSpace(name))
+		if canonical, ok := index[key]; ok {
+			delete(fields, canonical)
+			delete(index, key)
+		}
+	}
+
+	rawKeys := make([]string, 0, len(res.Fields))
+	for k := range res.Fields {
+		rawKeys = append(rawKeys, k)
+	}
+	sort.Strings(rawKeys)
+
+	for _, key := range rawKeys {
+		lower := strings.ToLower(key)
+		if e.ignore[lower] {
+			continue
+		}
+		target, ok := e.aliases[lower]
+		if !ok {
+			if isID3Frame(key) {
+				continue
+			}
+			target = key
+		}
+		set(target, res.Fields[key])
+	}
+
+	for i, c := range e.rules {
+		data := e.templateData(fields, res.Vars, meta)
+
+		if c.when != nil {
+			value, err := execute(c.when, data)
+			if err != nil {
+				return nil, fmt.Errorf("rule %d when: %w", i, err)
+			}
+			if !isTrue(value) {
+				continue
+			}
+		}
+
+		switch {
+		case c.rule.Set != "":
+			value, err := execute(c.set, data)
+			if err != nil {
+				return nil, fmt.Errorf("rule %d set %q: %w", i, c.rule.Set, err)
+			}
+			set(c.rule.Set, value)
+
+		case c.rule.Copy != nil:
+			set(c.rule.Copy.To, get(c.rule.Copy.From))
+
+		case c.rule.Rename != nil:
+			if value := get(c.rule.Rename.From); value != "" {
+				del(c.rule.Rename.From)
+				set(c.rule.Rename.To, value)
+			}
+
+		case c.rule.Default != nil:
+			if get(c.rule.Default.Field) == "" {
+				set(c.rule.Default.Field, get(c.rule.Default.From))
+			}
+
+		case len(c.rule.Remove) > 0:
+			for _, name := range c.rule.Remove {
+				del(name)
+			}
+		}
+	}
+
+	if len(e.include) > 0 {
+		allowed := make(map[string]bool, len(e.include))
+		for _, name := range e.include {
+			allowed[strings.ToLower(name)] = true
+		}
+		for name := range fields {
+			if !allowed[strings.ToLower(name)] {
+				delete(fields, name)
+			}
+		}
+	}
+	for _, name := range e.exclude {
+		del(name)
+	}
+
+	return fields, nil
+}
+
+func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[string]string {
+	data := make(map[string]string, len(fields)+len(vars)+5)
+
+	keys := make([]string, 0, len(fields))
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if id := ident(k); id != "" {
+			data[id] = fields[k]
+		}
+	}
+	for k, v := range vars {
+		if id := ident(k); id != "" {
+			data[id] = v
+		}
+	}
+
+	data["filename"] = meta.Filename
+	data["dirname"] = meta.Dir
+	data["ext"] = meta.Ext
+	data["path"] = meta.Path
+	data["now"] = meta.Now.Format(time.RFC3339)
+	return data
+}
+
+func execute(t *template.Template, data map[string]string) (string, error) {
+	var buf strings.Builder
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(buf.String()), nil
+}
+
+func isTrue(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "false", "0", "no":
+		return false
+	}
+	return true
+}
+
+// ident converts a field name into a template identifier:
+// "Album artist" -> "albumartist", "©nam" -> "nam".
+func ident(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func isID3Frame(k string) bool {
+	if len(k) != 4 {
+		return false
+	}
+	for _, c := range k {
+		if c < 'A' || c > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
+func title(s string) string {
+	fields := strings.Fields(s)
+	for i, f := range fields {
+		runes := []rune(strings.ToLower(f))
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+		}
+		fields[i] = string(runes)
+	}
+	return strings.Join(fields, " ")
+}

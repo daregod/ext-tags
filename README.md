@@ -50,18 +50,181 @@ go build -trimpath -o bin/ext-tags ./cmd/ext-tags
 ## 🛠 Использование
 
 ```bash
-./bin/ext-tags track.flac track2.mp3
-./bin/ext-tags --version
+# обработка файлов и каталогов
+ext-tags extract track.flac album/*.mp3
+ext-tags extract -r D:\Music\Album        # рекурсивно
+ext-tags --dry-run extract track.flac     # показать, что будет записано
+ext-tags --json extract track.flac        # машинный вывод (по объекту на строку)
+ext-tags track.flac                       # то же, что extract (обратная совместимость)
+
+# конфигурация
+ext-tags config init                      # создать ext-tags.yaml
+ext-tags config validate                  # проверить конфиг и шаблоны
+ext-tags config show                      # напечатать итоговый конфиг
+ext-tags config path                      # какой файл используется
+
+# версия
+ext-tags version
+ext-tags --version
 ```
 
-Рядом с аудиофайлом появится `track.flac.tag`:
+Глобальные флаги: `--config PATH`, `--profile NAME`, `--dry-run`, `--json`,
+`--quiet`, `-v/--verbose`, `-r/--recursive`,
+`--on-existing=overwrite|skip|backup|error`, `--cover=false` (не встраивать
+обложку).
+
+Рядом с аудиофайлом появляется `track.flac.tag`:
 
 ```text
-OK    track.flac → track.flac.tag (18 items, 145032 bytes)
+OK      track.flac → track.flac.tag (21 items, 197434 bytes)
 ```
 
-Если тегов нет, файл `.tag` не создаётся.
+Если файл без тегов, формат не поддержан или `.tag` уже существует при
+`on_existing: skip`, выводится `SKIP` с причиной. Код возврата `1` — только
+при реальных ошибках чтения/записи.
 
+`--json` печатает по объекту на строку (NDJSON):
+
+```json
+{"file":"track.flac","status":"ok","tagfile":"track.flac.tag","items":21,"bytes":197434,"fields":{"Title":"…","Artist":"…"},"cover":{"filename":"cover.jpg","bytes":196440}}
+```
+
+## ⚙️ Конфигурация
+
+Поведение задаётся YAML-файлом; без него действуют встроенные значения
+(они повторяют прежнее поведение утилиты).
+
+### Где лежит конфиг
+
+Файлы применяются слоями: встроенные значения → пользовательский конфиг →
+конфиг проекта. Явный файл (`--config` или `EXT_TAGS_CONFIG`) заменяет оба
+найденных и применяется поверх встроенных значений.
+
+| Слой | Путь |
+|---|---|
+| пользовательский | `%APPDATA%\ext-tags\config.yaml`, `$XDG_CONFIG_HOME/ext-tags/config.yaml` |
+| проект | `./ext-tags.yaml`, `./ext-tags.yml`, `./.ext-tags.yaml` |
+| явный | `--config PATH` или `EXT_TAGS_CONFIG` |
+
+Слои сливаются: скалярные поля переопределяются, `aliases` дополняются,
+списки `extensions`, `ignore`, `include`, `exclude` заменяются целиком, а
+`rules` накапливаются (встроенные → пользовательские → проектные). Правила
+`Track`/`Disc` продолжают работать, даже если слой добавляет своё правило;
+чтобы слой заменил все предыдущие правила, укажите `fields.rules_mode:
+replace`. Личные правила удобно держать в пользовательском конфиге, а
+настройки библиотеки — в `ext-tags.yaml` в её корне.
+
+Конфиг библиотеки лучше держать в её корне и запускать утилиту оттуда:
+`cd D:\Music && ext-tags -r .`. Профили читаются из файла с наибольшим
+приоритетом.
+
+```bash
+ext-tags config init          # минимальный ext-tags.yaml (только частые ключи)
+ext-tags config init --full   # полный дамп со всеми значениями
+ext-tags config validate      # проверить структуру и шаблоны правил
+ext-tags config show          # напечатать итоговый конфиг (с учётом --profile)
+ext-tags config path          # показать, какие файлы применяются
+```
+
+`config init` не перезаписывает существующий файл без `--force`. В минимальном
+файле перечислены только часто меняемые ключи, остальное берётся из дефолтов —
+так обновления встроенных значений продолжают действовать.
+
+### Пример
+
+```yaml
+version: 1
+
+files:
+  extensions: [.mp3, .flac, .opus, .ogg, .m4a, .mp4, .wav, .aif, .aiff]
+  recursive: false
+  on_existing: backup          # overwrite | skip | backup | error
+
+tagfile:
+  suffix: .tag                 # foo_external_tags: <name>.<ext>.tag
+
+cover:
+  enabled: true
+  field: Cover Art (Front)
+  filename: cover              # cover.jpg / cover.png по типу картинки
+
+fields:
+  aliases:                     # ключ контейнера -> поле foobar2000
+    ORGANIZATION: Publisher
+    DATE: Year
+    "©nam": Title
+  ignore: [vendor, iTunNORM, iTunSMPB, "Encoding Params"]
+  rules:                       # применяются по порядку, видят результат друг друга
+    - set: Track
+      template: "{{ .tracknumber }}{{ if .totaltracks }}/{{ .totaltracks }}{{ end }}"
+    - copy: {from: Label, to: Publisher}
+    - rename: {from: "Comment catalog number", to: "Catalog#"}
+    - default: {field: "Album artist", from: Artist}
+    - remove: [Www]
+  include: []                  # пусто — оставить все поля
+  exclude: []
+```
+
+### Правила
+
+| Правило | Что делает |
+|---|---|
+| `set: Field` + `template` | вычисляет значение и записывает поле |
+| `copy: {from, to}` | дублирует поле |
+| `rename: {from, to}` | переносит поле под новым именем |
+| `default: {field, from}` | заполняет поле из другого, если оно пустое |
+| `remove: [Field, …]` | удаляет поля |
+
+У любого правила может быть `when` — шаблон-условие: правило выполняется,
+если результат не пустой, не `false` и не `0`.
+
+Правила из файлов применяются поверх встроенных, поэтому `Track`/`Disc`
+продолжают собираться, если вы добавили только своё правило. Полностью
+заменить встроенные правила можно через `fields.rules_mode: replace`.
+
+### Шаблоны
+
+Шаблоны — стандартный Go `text/template`. Данные: все поля в виде
+идентификатора (`Album artist` → `.albumartist`, `Title` → `.title`) и
+нормализованные значения `.tracknumber`, `.totaltracks`, `.discnumber`,
+`.disctotal`, а также `.filename`, `.dirname`, `.ext`, `.path`, `.now`.
+
+Функции: `lower`, `upper`, `title`, `trim`, `default "…" .field`,
+`replace "a" "b" .field`, `regexReplace "^pattern" "replacement" .field`.
+
+### Профили
+
+Именованные наборы переопределений поверх базового конфига:
+
+```yaml
+profiles:
+  music:
+    files:
+      extensions: [.flac, .mp3]
+  video:
+    files:
+      recursive: true
+    cover:
+      enabled: false
+```
+
+```bash
+ext-tags --profile music extract -r D:\Music
+```
+
+Профиль накладывается на базовые значения: то, что в нём не указано,
+остаётся из базовой части файла (списки и `rules` заменяются целиком,
+`aliases` дополняются).
+
+### Существующие `.tag`
+
+`files.on_existing`:
+
+* `backup` (по умолчанию) — старый `<file>.tag` переименовывается в
+  `<file>.tag.bak`, затем пишется новый;
+* `overwrite` — перезаписать;
+* `skip` — оставить как есть и вывести `SKIP ... (already exists)`;
+* `error` — считать это ошибкой (код возврата `1`).
 ## 🏷 Версии и changelog
 
 Проект следует [SemVer](https://semver.org/lang/ru/): ветка `0.x` — MVP,
