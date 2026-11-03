@@ -8,6 +8,19 @@
 
 ### Добавлено
 
+- Имена обложек-вложений: `cover.names` (`cover`, `folder`, `box`, `disc`,
+  `media`) с настраиваемым приоритетом; поддержка webp/gif.
+- Тестовые фикстуры `testdata/formats/` (~250 КБ, генерируются ffmpeg) и
+  тесты на них; цель `make fixtures`.
+- MP2, raw AAC и ALAC в списке поддерживаемых (фикстуры в git).
+- AIFF: собственный IFF-ридер — NAME/AUTH/ANNO и ID3v2-чанк (включая
+  обложку); `dhowden/tag` этот формат не поддерживает.
+- Свои `.tag`/`.tag.bak` больше не попадают в обработку, если подхватились
+  маской (`ext-tags audio.*`).
+- `make fixtures` перед генерацией удаляет старые `.tag`/`.tag.bak`.
+- Эталоны foobar2000 для фикстур: каталог `testdata/reference/` и цель
+  `make compat-fixtures`; сгенерированные `.tag`/`.tag.bak` в
+  `testdata/formats/` не коммитятся и удаляются `make clean`.
 - CLI на `cobra`: команды `extract`, `config`, `version`; глобальные флаги
   `--config`, `--profile`, `--dry-run`, `--json`, `--quiet`, `-v`.
   Вызов `ext-tags track.flac` без подкоманды работает как раньше.

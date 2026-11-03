@@ -52,6 +52,13 @@ func extractWAV(path string) (*Result, error) {
 		}
 	}
 
+	track, trackTotal := splitPair(fieldValue(res.Fields, "TRACKNUMBER"))
+	disc, discTotal := splitPair(fieldValue(res.Fields, "DISCNUMBER"))
+	putVar(res.Vars, "tracknumber", track)
+	putVar(res.Vars, "totaltracks", trackTotal)
+	putVar(res.Vars, "discnumber", disc)
+	putVar(res.Vars, "disctotal", discTotal)
+
 	if len(res.Fields) == 0 && res.Cover == nil {
 		return res, ErrNoTags
 	}
@@ -72,7 +79,7 @@ func infoField(id string) string {
 		return "GENRE"
 	case "ICMT":
 		return "COMMENT"
-	case "ITRK":
+	case "ITRK", "IPRT":
 		return "TRACKNUMBER"
 	case "ICOP":
 		return "COPYRIGHT"

@@ -29,6 +29,7 @@ ifeq ($(OS),Windows_NT)
   MKDIR        = powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(1)' | Out-Null"
   RMDIR        = powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(1)') { Remove-Item -LiteralPath '$(1)' -Recurse -Force }"
   RMFILE       = powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(1)') { Remove-Item -LiteralPath '$(1)' -Force }"
+  RMGLOB       = powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Path '$(1)' -Force -ErrorAction SilentlyContinue"
   ENV          = set "GOOS=$(1)" && set "GOARCH=$(2)" &&
 else
   EXE         :=
@@ -36,6 +37,7 @@ else
   MKDIR        = mkdir -p $(1)
   RMDIR        = rm -rf $(1)
   RMFILE       = rm -f $(1)
+  RMGLOB       = rm -f $(1)
   ENV          = GOOS=$(1) GOARCH=$(2)
 endif
 
@@ -85,7 +87,7 @@ LDFLAGS     := -s -w -X external-tags/internal/version.Version=$(VERSION) -X ext
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools build run install dist test test-race cover cover-html \
-        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version tag compat
+        bench vet lint lint-fix fmt fmt-check tidy tidy-check check ci clean version tag compat compat-fixtures fixtures
 
 ## help: list available targets
 help:
@@ -116,6 +118,8 @@ help:
 	@echo   make version       print the version stamp
 	@echo   make tag           tag the current commit, e.g. make tag TAG=v0.4.0
 	@echo   make compat        compare .tag output with foo_external_tags references
+	@echo   make compat-fixtures  compare testdata/formats with foobar2000 reference tags
+	@echo   make fixtures      regenerate testdata/formats with ffmpeg
 	@echo ------------------------------------------------------------------
 
 ## setup: check the toolchain, download modules and install dev tools
@@ -227,8 +231,18 @@ clean:
 	@$(call RMDIR,$(DIST_DIR))
 	@$(call RMFILE,coverage.out)
 	@$(call RMFILE,coverage.html)
+	@$(call RMGLOB,testdata/formats/*.tag)
+	@$(call RMGLOB,testdata/formats/*.tag.bak)
 	@echo Cleaned.
 
+## compat-fixtures: compare testdata/formats with reference tags from foobar2000
+compat-fixtures:
+	@$(call MKDIR,$(BIN_DIR))
+	@$(GO) build $(BUILD_FLAGS) -o $(COMPAT_BIN) ./cmd/compat
+	@$(COMPAT_BIN) -examples testdata/formats -reference testdata/reference
+## fixtures: regenerate tiny test files in testdata/formats (needs ffmpeg)
+fixtures:
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-fixtures.ps1
 ## compat: compare generated .tag files with foobar2000 references in bin/examples
 compat:
 	@$(call MKDIR,$(BIN_DIR))

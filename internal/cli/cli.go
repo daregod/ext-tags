@@ -138,9 +138,19 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 		return err
 	}
 	for _, file := range files {
+		if a.isOwnOutput(file, cfg) {
+			continue
+		}
 		a.processFile(file, cfg, engine)
 	}
 	return nil
+}
+
+// isOwnOutput reports whether path is a .tag (or its .bak) we produce ourselves.
+func (a *app) isOwnOutput(path string, cfg *config.Config) bool {
+	lower := strings.ToLower(path)
+	suffix := strings.ToLower(cfg.TagFile.Suffix)
+	return strings.HasSuffix(lower, suffix) || strings.HasSuffix(lower, suffix+".bak")
 }
 
 func (a *app) applyOverrides(cfg *config.Config, changed func(string) bool) error {
@@ -214,7 +224,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		Now:      time.Now(),
 	}
 
-	md, err := extractor.Extract(path)
+	md, err := extractor.ExtractWithOptions(path, extractor.Options{CoverNames: cfg.Cover.Names})
 	if errors.Is(err, extractor.ErrNoTags) {
 		res.Status = "no-tags"
 		a.report(res)

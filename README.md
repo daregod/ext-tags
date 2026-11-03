@@ -14,12 +14,13 @@
 *   **Opus** (`.opus`) — Vorbis Comments (в контейнере Ogg)
 *   **Ogg Vorbis** (`.ogg`) — Vorbis Comments
 *   **M4A / MP4** (`.m4a`, `.mp4`, `.alac`) — iTunes-атомы (AAC и ALAC)
+*   **AAC (raw)** (`.aac`) — ID3v2 перед ADTS-потоком
 *   **WebM / MKV** (`.webm`, `.mkv`) — Matroska: `Tags/SimpleTag`, `Info/Title`, вложения-обложки, `PART_NUMBER`/`TOTAL_PARTS`
 *   **APE** (`.ape`) — APEv2-тег в конце файла (Monkey Audio)
 *   **WavPack** (`.wv`) — APEv2-тег в конце файла
 *   **WMV / WMA** (`.wmv`, `.wma`, `.asf`) — ASF: Content Description и Extended Content Description, `WM/Picture` как обложка
 *   **WAV** (`.wav`) — LIST/INFO и ID3v2, в том числе дописанный после RIFF-данных
-*   **AIFF** (`.aif`, `.aiff`) — ID3v2 чанки
+*   **AIFF** (`.aif`, `.aiff`) — NAME/AUTH/ANNO и ID3v2-чанк
 
 ## ✨ Особенности
 
@@ -155,7 +156,8 @@ tagfile:
 cover:
   enabled: true
   field: Cover Art (Front)
-  filename: cover              # cover.jpg / cover.png по типу картинки
+  filename: cover              # базовое имя в .tag (расширение — по картинке)
+  names: [cover, folder, box, disc, media]  # какие имена вложений считать обложкой
 
 fields:
   aliases:                     # ключ контейнера -> поле foobar2000
@@ -283,6 +285,47 @@ make compat
 * `gen-only=[Cover Art (Front)]` — наша обложка: плагин её в `.tag` не кладёт,
   а утилита кладёт (ради этого всё и затевалось).
 
+### Тестовые фикстуры
+
+В `testdata/formats/` лежат крошечные файлы почти всех форматов (генерируются
+через ffmpeg, в среднем 2–18 КБ):
+
+```bash
+make fixtures     # перегенерировать (нужен ffmpeg)
+```
+
+Там же `cover.jpg`, `folder.jpg`, `poster.jpg` и `audio-attachments.mkv` с
+двумя вложениями — на нём проверяется приоритет имён из `cover.names`
+(`folder` должен победить `poster`).
+
+Покрыты: MP3, MP2, AAC (raw), M4A/AAC, M4A/ALAC, FLAC, Ogg Vorbis, Opus,
+WavPack, WMA, WMV, MKV, WebM, WAV; для форматов из TODO (AC3, DTS, AU,
+Wave64, RF64, TS, Ogg FLAC, Speex) файлы тоже есть — пригодятся, когда
+появится ридер.
+
+Тест `internal/extractor/fixtures_test.go` прогоняет фикстуры через
+`extractor + rules` и проверяет `Title`, `Artist`, `Track` и наличие обложки.
+
+Сгенерированные рядом с фикстурами `.tag`/`.tag.bak` — это выход утилиты, они
+не коммитятся (в `.gitignore`) и удаляются `make clean`.
+
+Эталоны от foobar2000 лежат отдельно, в `testdata/reference/` (в git), чтобы
+их не перетирали запуски `ext-tags`. Как их получить: открыть файлы из
+`testdata/formats` в foobar2000 (плагин `foo_external_tags` в режиме
+«tag files»), выполнить Tagging → Rewrite file tags и перенести появившиеся
+`.tag` в `testdata/reference/` с теми же именами. Проверка:
+
+```bash
+make compat-fixtures
+```
+
+Сравнение с эталонами идёт по тем же правилам, что и `make compat`:
+`ref-only` (Rating из медиатеки) и `cosmetic` (пробелы, ` dB`, имя обложки)
+ошибкой не считаются.
+**Ручная проверка в foobar2000:** откройте `testdata/formats/*` в плеере,
+сгенерируйте `.tag` (`ext-tags testdata/formats/audio.mp3`) и сравните
+Properties: должны совпадать Title/Artist/Album/Genre/Year/Track = 3, а для
+MP3, MP2, FLAC, M4A, MKV — и обложка.
 ### Ручная: 5 минут в foobar2000
 
 1. Preferences → Components → `foo_external_tags`: включить чтение внешних

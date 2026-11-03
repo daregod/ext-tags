@@ -47,13 +47,24 @@ func IsSupported(path string, extensions []string) bool {
 	return false
 }
 
-// Extract reads metadata from path. It returns ErrNoTags when the file has
-// no tag block at all.
+// Options tune container parsing.
+type Options struct {
+	// CoverNames are preferred attachment base names (cover, folder, box…).
+	CoverNames []string
+}
+
+// Extract reads metadata from path with default options.
 func Extract(path string) (*Result, error) {
+	return ExtractWithOptions(path, Options{})
+}
+
+// ExtractWithOptions reads metadata from path. It returns ErrNoTags when the
+// file has no tag block at all.
+func ExtractWithOptions(path string, opts Options) (*Result, error) {
 	if magic, err := readMagic(path, 12); err == nil {
 		switch {
 		case bytes.HasPrefix(magic, ebmlMagic):
-			return extractMatroska(path)
+			return extractMatroska(path, opts.CoverNames)
 		case bytes.HasPrefix(magic, apeMagic):
 			return extractAPEv2(path, "APE")
 		case bytes.HasPrefix(magic, wvpkMagic):
@@ -62,6 +73,8 @@ func Extract(path string) (*Result, error) {
 			return extractASF(path)
 		case len(magic) >= 12 && bytes.Equal(magic[:4], riffMagic) && string(magic[8:12]) == "WAVE":
 			return extractWAV(path)
+		case len(magic) >= 12 && bytes.Equal(magic[:4], formMagic) && (string(magic[8:12]) == "AIFF" || string(magic[8:12]) == "AIFC"):
+			return extractAIFF(path)
 		}
 	}
 	return extractTaglib(path)

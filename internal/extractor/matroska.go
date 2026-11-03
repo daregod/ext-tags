@@ -12,7 +12,7 @@ import (
 var ebmlMagic = []byte{0x1A, 0x45, 0xDF, 0xA3}
 
 // extractMatroska reads WebM/MKV metadata.
-func extractMatroska(path string) (*Result, error) {
+func extractMatroska(path string, coverNames []string) (*Result, error) {
 	md, err := matroska.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read matroska: %w", err)
@@ -44,7 +44,7 @@ func extractMatroska(path string) (*Result, error) {
 	putVar(res.Vars, "tracknumber", fieldValue(res.Fields, "PART_NUMBER", "TRACKNUMBER"))
 	putVar(res.Vars, "totaltracks", fieldValue(res.Fields, "TOTAL_PARTS", "TRACKTOTAL", "TOTALTRACKS"))
 
-	if att := pickCover(md.Attachments); att != nil {
+	if att := pickCover(md.Attachments, coverNames); att != nil {
 		res.Cover = &Cover{
 			Filename: coverName(att.Filename, att.MIME),
 			MIME:     att.MIME,
@@ -58,22 +58,35 @@ func extractMatroska(path string) (*Result, error) {
 	return res, nil
 }
 
-// pickCover chooses the most cover-like image attachment.
-func pickCover(attachments []matroska.Attachment) *matroska.Attachment {
-	var fallback *matroska.Attachment
+// defaultCoverNames is used when the configuration does not override names.
+var defaultCoverNames = []string{"cover", "folder", "box", "disc", "media"}
+
+// pickCover chooses the most cover-like image attachment: exact base-name
+// matches in the configured priority order, then the first image.
+func pickCover(attachments []matroska.Attachment, names []string) *matroska.Attachment {
+	if len(names) == 0 {
+		names = defaultCoverNames
+	}
+
+	var images []*matroska.Attachment
 	for i := range attachments {
 		att := &attachments[i]
 		if len(att.Data) == 0 || !strings.HasPrefix(strings.ToLower(att.MIME), "image/") {
 			continue
 		}
-		if strings.Contains(strings.ToLower(att.Filename), "cover") {
-			return att
-		}
-		if fallback == nil {
-			fallback = att
+		images = append(images, att)
+	}
+	for _, name := range names {
+		for _, att := range images {
+			if strings.EqualFold(strings.TrimSuffix(att.Filename, filepath.Ext(att.Filename)), name) {
+				return att
+			}
 		}
 	}
-	return fallback
+	if len(images) > 0 {
+		return images[0]
+	}
+	return nil
 }
 
 func fieldValue(fields map[string]string, names ...string) string {

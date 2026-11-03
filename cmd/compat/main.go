@@ -21,15 +21,16 @@ import (
 )
 
 func main() {
-	examples := flag.String("examples", filepath.Join("bin", "examples"), "directory with audio files and reference .tag files")
+	examples := flag.String("examples", filepath.Join("bin", "examples"), "directory with audio files")
+	reference := flag.String("reference", "", "directory with reference .tag files (default: next to the audio)")
 	verbose := flag.Bool("v", false, "print values of differing fields")
 	flag.Parse()
 
-	code := run(*examples, *verbose)
+	code := run(*examples, *reference, *verbose)
 	os.Exit(code)
 }
 
-func run(dir string, verbose bool) int {
+func run(dir, referenceDir string, verbose bool) int {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "compat: %v\n", err)
@@ -44,7 +45,7 @@ func run(dir string, verbose bool) int {
 	}
 
 	var (
-		compared, failed, skipped int
+		compared, failed, skipped, references int
 	)
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -55,9 +56,13 @@ func run(dir string, verbose bool) int {
 			continue
 		}
 		refPath := audio + cfg.TagFile.Suffix
+		if referenceDir != "" {
+			refPath = filepath.Join(referenceDir, filepath.Base(audio)+cfg.TagFile.Suffix)
+		}
 		if _, err := os.Stat(refPath); err != nil {
 			continue
 		}
+		references++
 
 		ref, err := ape.ReadFile(refPath)
 		if err != nil {
@@ -66,7 +71,7 @@ func run(dir string, verbose bool) int {
 			continue
 		}
 
-		md, err := extractor.Extract(audio)
+		md, err := extractor.ExtractWithOptions(audio, extractor.Options{CoverNames: cfg.Cover.Names})
 		if errors.Is(err, extractor.ErrNoTags) {
 			fmt.Printf("SKIP  %s (no tags in audio, reference has %s)\n", entry.Name(), keys(ref))
 			skipped++
@@ -129,6 +134,11 @@ func run(dir string, verbose bool) int {
 			fmt.Printf(" gen-only=%v", genOnly)
 		}
 		fmt.Println()
+	}
+
+	if referenceDir != "" && references == 0 {
+		fmt.Fprintf(os.Stderr, "no reference .tag files found in %s\n", referenceDir)
+		return 1
 	}
 
 	fmt.Printf("\ncompared=%d failed=%d skipped=%d\n", compared, failed, skipped)

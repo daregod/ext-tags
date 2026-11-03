@@ -148,3 +148,20 @@ func TestConfigInitMinimalAndFull(t *testing.T) {
 		t.Fatal("full config must contain aliases")
 	}
 }
+
+func TestIsOwnOutput(t *testing.T) {
+	a := &app{opts: &options{}}
+	cfg := config.Default()
+	cases := map[string]bool{
+		"track.flac.tag":     true,
+		"track.flac.tag.bak": true,
+		"TRACK.FLAC.TAG":     true,
+		"track.flac":         false,
+		"track.tagged.flac":  false,
+	}
+	for path, want := range cases {
+		if got := a.isOwnOutput(path, cfg); got != want {
+			t.Fatalf("isOwnOutput(%q) = %v, want %v", path, got, want)
+		}
+	}
+}

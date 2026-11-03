@@ -47,9 +47,10 @@ type TagFileConfig struct {
 
 // CoverConfig controls embedded cover art.
 type CoverConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	Field    string `yaml:"field"`
-	Filename string `yaml:"filename"`
+	Enabled  bool     `yaml:"enabled"`
+	Field    string   `yaml:"field"`
+	Filename string   `yaml:"filename"`
+	Names    []string `yaml:"names"`
 }
 
 // FieldsConfig controls how container fields become tag fields.
@@ -140,6 +141,7 @@ var defaultAliases = map[string]string{
 	"TITLE": "Title", "ARTIST": "Artist", "ALBUM": "Album",
 	"ALBUMARTIST": "Album artist", "ALBUM ARTIST": "Album artist",
 	"DATE": "Year", "YEAR": "Year", "GENRE": "Genre",
+	"TRACK": "Track", "DISC": "Disc",
 	"DATE_RELEASED": "Year",
 	"COMPOSER":      "Composer", "PERFORMER": "Performer",
 	"COMMENT": "Comment", "RATING": "Rating",
@@ -169,6 +171,7 @@ var defaultAliases = map[string]string{
 // defaultIgnore lists container fields that never become tag fields.
 var defaultIgnore = []string{
 	"vendor", "iTunNORM", "iTunSMPB", "Encoding Params", "covr", "©too",
+	"trkn", "trkn_count",
 	"TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS", "TRACKS", "TOTALTRACK", "TRCK",
 	"DISCNUMBER", "DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC", "TPOS",
 	"PART_NUMBER", "TOTAL_PARTS",
@@ -184,7 +187,7 @@ func Default() *Config {
 	return &Config{
 		Version: 1,
 		Files: FilesConfig{
-			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".webm", ".mkv", ".ape", ".wv", ".wmv", ".wma", ".asf", ".wav", ".aif", ".aiff", ".alac", ".mp1", ".mp2"},
+			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".m4a", ".mp4", ".webm", ".mkv", ".ape", ".wv", ".wmv", ".wma", ".asf", ".wav", ".aif", ".aiff", ".alac", ".aac", ".mp1", ".mp2"},
 			Recursive:     false,
 			OnExisting:    OnExistingBackup,
 			MergeExisting: true,
@@ -194,6 +197,7 @@ func Default() *Config {
 			Enabled:  true,
 			Field:    "Cover Art (Front)",
 			Filename: "cover",
+			Names:    []string{"cover", "folder", "box", "disc", "media"},
 		},
 		Fields: FieldsConfig{
 			Aliases: aliases,
@@ -447,6 +451,11 @@ func (c *Config) Validate() error {
 	}
 	if c.Cover.Enabled && c.Cover.Field == "" {
 		return fmt.Errorf("cover.field is empty")
+	}
+	for _, name := range c.Cover.Names {
+		if name == "" || strings.ContainsAny(name, `\/:*?"<>|.`) {
+			return fmt.Errorf("cover.names: invalid name %q", name)
+		}
 	}
 	switch c.Fields.RulesMode {
 	case "", "append", "replace":

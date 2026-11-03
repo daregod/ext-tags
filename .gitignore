@@ -2,6 +2,8 @@
 /vendor
 /vendor.protogen
 /dist
+/testdata/formats/*.tag
+/testdata/formats/*.tag.bak
 /coverage.out
 /coverage.html
 .DS_Store
