@@ -228,3 +228,47 @@ func TestGetRegistryDefaultAndOverrides(t *testing.T) {
 		t.Fatal("merge conflict expected")
 	}
 }
+func TestGlobErrors(t *testing.T) {
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	if err := a.runExtract(a.extractCmd(), []string{"["}); err == nil {
+		t.Fatal("extract glob error expected")
+	}
+	if err := a.runFixExt([]string{"["}, &fixOptions{}); err == nil {
+		t.Fatal("fixext glob error expected")
+	}
+}
+
+func TestProcessFileUnsupported(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.txt")
+	if err := os.WriteFile(path, []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := testConfig()
+	engine, err := rules.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	a.processFile(path, cfg, engine)
+}
+func TestProcessFileWriteError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.flac")
+	if err := os.WriteFile(path, []byte("audio"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := testConfig()
+	cfg.TagFile.Suffix = "/"
+	engine, err := rules.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Title"] = "T"
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{&serviceReader{doc: doc}}, nil)}
+	a.processFile(path, cfg, engine)
+	if !a.failed {
+		t.Fatal("tagfile write error must mark failure")
+	}
+}

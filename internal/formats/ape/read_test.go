@@ -85,3 +85,16 @@ func TestReadFile(t *testing.T) {
 		t.Fatal("missing file must fail")
 	}
 }
+func TestAddNoOps(t *testing.T) {
+	tag := ape.NewTag()
+	tag.AddText("", "x")
+	tag.AddText("K", "")
+	tag.AddBinary("", []byte{1})
+	tag.AddBinary("K", nil)
+	tag.AddCoverArt("", "f", []byte{1})
+	tag.AddCoverArt("K", "", []byte{1})
+	tag.AddCoverArt("K", "f", nil)
+	if len(tag.Items) != 0 {
+		t.Fatalf("items = %+v", tag.Items)
+	}
+}
