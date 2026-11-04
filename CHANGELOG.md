@@ -8,6 +8,8 @@
 
 ### Добавлено
 
+- Обратный импорт ASF/WMA/WMV: Content Description, Extended Content
+  Description и `WM/Picture` (пять artwork-типов, лимит 64 КиБ на descriptor).
 - Обратный импорт Matroska/WebM: `Tags`/`SimpleTag`, `Attachments` с пятью
   artwork-слотами, обновление `Cues`/`SeekHead`, без перепаковки кластеров.
 - Обратный импорт MP4/M4A: iTunes-атомы (`©nam`, `©ART`, `aART`, `trkn`,
