@@ -31,7 +31,7 @@
 | AC3 | `.ac3` | APEv2 в конце файла (как fb2k) | ✅ |
 | DTS | `.dts` | APEv2; `.dts` может быть Matroska с DTS | ✅ расширение приоритетнее магии |
 | AU / SND | `.au`, `.snd` | нет стандартных тегов | ⏸ вне области |
-| MPEG Transport Stream | `.ts` | ID3v2 в PES — редкость | ⏸ вне области |
+| MPEG Transport Stream | `.ts` | нет тег-контейнера; ID3v2 в PES — редкость | ⏸ fb2k и плагин не тегируют TS (проверено) |
 | Audio CD | — | CD-TEXT через Windows API | ⏸ вне области CLI |
 
 ### Приоритеты

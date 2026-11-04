@@ -258,7 +258,8 @@ WMA/WMV/ASF, Matroska/WebM, AC3 и DTS (APEv2 в конце файла — та�
 foobar2000).
 
 Форматы без тегов (AU, TS, Audio CD) не поддерживаются — см.
-[TODO.md](TODO.md).
+[TODO.md](TODO.md). В MPEG-TS нет контейнера тегов, и fb2k его тоже не тегирует
+(проверено на 1-секундном audio-only фрагменте).
 
 ## Решение проблем
 
