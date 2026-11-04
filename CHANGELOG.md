@@ -40,7 +40,7 @@
 ### Исправлено
 
 - ASF: reserved-байты заголовка `01 02`, правильные типы Extended Content
-  (строки — type 0), `date` и `WM/Year` пишутся оба; WMF/fb2k снова открывает
+  (строки — type 0), `date` и `WM/Year` пишутся оба; WMF/foobar2000 снова открывает
   metadata editor.
 - Ogg: непрерывные sequence-номера страниц и корректные continuation-флаги
   при больших comment-пакетах.

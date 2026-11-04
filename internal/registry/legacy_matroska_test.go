@@ -1,4 +1,4 @@
-package extractor
+package registry_test
 
 import (
 	"bytes"
@@ -72,7 +72,7 @@ func TestExtractWebM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestExtractWebMNoTags(t *testing.T) {
 	if err := os.WriteFile(path, append(header, segment...), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Extract(path); err == nil {
+	if _, err := readPath(path, nil); err == nil {
 		t.Fatal("expected ErrNoTags")
 	}
 }

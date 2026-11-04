@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/daregod/ext-tags/internal/id3"
+	"github.com/daregod/ext-tags/internal/formats/id3"
 	"github.com/daregod/ext-tags/internal/metadata"
 )
 

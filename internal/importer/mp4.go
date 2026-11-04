@@ -1,7 +1,7 @@
 package importer
 
 import (
-	"github.com/daregod/ext-tags/internal/mp4"
+	"github.com/daregod/ext-tags/internal/formats/mp4"
 )
 
 // ImportMP4 writes fields and the front cover into MP4/M4A.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 type flacBlock struct {

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/extractor"
-	"github.com/daregod/ext-tags/internal/mp4"
+	"github.com/daregod/ext-tags/internal/formats/mp4"
+	"github.com/daregod/ext-tags/internal/read"
 )
 
 func TestWrite(t *testing.T) {
-	src := filepath.Join("..", "..", "testdata", "formats", "audio-aac.m4a")
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio-aac.m4a")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +28,7 @@ func TestWrite(t *testing.T) {
 	if err := mp4.Write(path, fields, cover, true); err != nil {
 		t.Fatal(err)
 	}
-	res, err := extractor.Extract(path)
+	res, err := read.Taglib(path)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 func newConfig(policy string) *config.Config {
@@ -125,8 +125,8 @@ func TestWriteDryRun(t *testing.T) {
 
 func TestBuildCover(t *testing.T) {
 	cfg := config.Default()
-	cover := &extractor.Cover{Filename: "cover.jpg", MIME: "image/jpeg", Data: []byte{0xFF, 0xD8}}
-	data, items, _, err := Build(map[string]string{"Title": "Song"}, map[string]*extractor.Cover{"front": cover}, nil, cfg)
+	cover := &metadata.Cover{Filename: "cover.jpg", MIME: "image/jpeg", Data: []byte{0xFF, 0xD8}}
+	data, items, _, err := Build(map[string]string{"Title": "Song"}, map[string]*metadata.Cover{"front": cover}, nil, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func hasSuffix(value, suffix []byte) bool {
 }
 func TestBuildAllArtwork(t *testing.T) {
 	cfg := config.Default()
-	covers := map[string]*extractor.Cover{
+	covers := map[string]*metadata.Cover{
 		"front":  {Filename: "cover.jpg", Data: []byte{1}},
 		"back":   {Filename: "back.png", Data: []byte{2}},
 		"artist": {Filename: "artist.jpg", Data: []byte{3}},

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 func build(t *testing.T, cfg *config.Config, fields map[string]string, vars map[string]string) map[string]string {
@@ -14,7 +14,7 @@ func build(t *testing.T, cfg *config.Config, fields map[string]string, vars map[
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	res, err := engine.Build(&extractor.Result{Fields: fields, Vars: vars}, Meta{
+	res, err := engine.Build(&metadata.Document{Fields: fields, Vars: vars}, Meta{
 		Path: "C:/music/track.flac", Filename: "track", Dir: "C:/music", Ext: ".flac",
 		Now: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
 	})

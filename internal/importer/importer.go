@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/ape"
-	"github.com/daregod/ext-tags/internal/id3"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/formats/id3"
 	"github.com/daregod/ext-tags/internal/metadata"
 )
 

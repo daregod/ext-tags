@@ -1,7 +1,7 @@
 package importer
 
 import (
-	"github.com/daregod/ext-tags/internal/matroska"
+	"github.com/daregod/ext-tags/internal/formats/matroska"
 )
 
 // ImportMatroska writes fields and artwork attachments into MKV/WebM.

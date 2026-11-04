@@ -15,21 +15,15 @@ ext-tags/
 │   └── genfixtures/
 │       └── main.go       <-- генерация testdata/formats (make fixtures)
 ├── internal/
-│   ├── ape/              <-- APEv2: запись (Serialize), чтение (Parse, ReadFromFileEnd)
-│   ├── asf/              <-- ASF/WMV/WMA: Content Description, WM/Picture
 │   ├── artwork/          <-- поиск cover/folder/box/disc/media рядом с аудио
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
-│   ├── extractor/        <-- compatibility facade над registry
-│   ├── read/             <-- общие read-хелперы + taglib adapter
 │   ├── metadata/         <-- Document/Cover/ArtworkKind
+│   ├── formats/          <-- ape/asf/flac/id3/matroska/mp4/ogg/riff/vorbis
+│   ├── read/             <-- общие read-хелперы + taglib adapter
 │   ├── format/           <-- Reader/Writer + Registry
 │   ├── registry/         <-- явный NewDefault
-│   ├── id3/              <-- свой writer ID3v1/2.2/2.3/2.4
 │   ├── importer/         <-- обратный импорт: .tag → формат
-│   ├── matroska/         <-- EBML/WebM/MKV: теги, Info/Title, вложения
-│   ├── ogg/              <-- Ogg FLAC/Speex: Vorbis-комментарии
-│   ├── riff/             <-- WAV/RF64/Wave64: LIST/INFO, ID3v2, GUID-чанки
 │   ├── rules/            <-- aliases/ignore/шаблоны/copy/rename/default/remove
 │   ├── tagfile/          <-- запись .tag с on_existing/backup/dry-run
 │   └── version/          <-- версия, коммит, дата сборки (-ldflags)

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 type page struct {

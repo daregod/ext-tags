@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/flac"
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/flac"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 var vorbisFields = map[string]string{

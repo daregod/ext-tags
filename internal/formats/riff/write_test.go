@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/daregod/ext-tags/internal/formats/riff"
 	"github.com/daregod/ext-tags/internal/metadata"
-	"github.com/daregod/ext-tags/internal/riff"
 )
 
 func TestWriteRead(t *testing.T) {
 	cases := []string{"audio.wav", "audio.rf64", "audio.w64", "audio.aiff"}
 	for _, fixture := range cases {
 		t.Run(fixture, func(t *testing.T) {
-			src := filepath.Join("..", "..", "testdata", "formats", fixture)
+			src := filepath.Join("..", "..", "..", "testdata", "formats", fixture)
 			path := filepath.Join(t.TempDir(), fixture)
 			data, err := os.ReadFile(src)
 			if err != nil {

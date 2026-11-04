@@ -1,4 +1,4 @@
-package extractor_test
+package registry_test
 
 import (
 	"bytes"
@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/rules"
 )
 
@@ -65,7 +64,7 @@ func TestFixtures(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			path := filepath.Join("..", "..", "testdata", "formats", c.name)
-			res, err := extractor.ExtractWithOptions(path, extractor.Options{CoverNames: cfg.Cover.Names})
+			res, err := readPath(path, cfg.Cover.Names)
 			if err != nil {
 				t.Fatalf("extract: %v", err)
 			}
@@ -107,7 +106,7 @@ func TestCoverAttachmentPriority(t *testing.T) {
 	}
 
 	path := filepath.Join(formats, "audio-attachments.mkv")
-	res, err := extractor.Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +114,7 @@ func TestCoverAttachmentPriority(t *testing.T) {
 		t.Fatal("folder.jpg must win over poster.jpg with default names")
 	}
 
-	res, err = extractor.ExtractWithOptions(path, extractor.Options{CoverNames: []string{"poster"}})
+	res, err = readPath(path, []string{"poster"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,14 +125,14 @@ func TestCoverAttachmentPriority(t *testing.T) {
 
 func TestEmptyWAV(t *testing.T) {
 	path := filepath.Join("..", "..", "testdata", "formats", "audio-empty.wav")
-	if _, err := extractor.Extract(path); err == nil {
+	if _, err := readPath(path, nil); err == nil {
 		t.Fatal("expected ErrNoTags for a tagless WAV")
 	}
 }
 
 func TestPNGCoverName(t *testing.T) {
 	path := filepath.Join("..", "..", "testdata", "formats", "audio-cover.png.mkv")
-	res, err := extractor.Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +174,7 @@ func TestAPEv2Containers(t *testing.T) {
 			if err := os.WriteFile(path, file, 0644); err != nil {
 				t.Fatal(err)
 			}
-			res, err := extractor.Extract(path)
+			res, err := readPath(path, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

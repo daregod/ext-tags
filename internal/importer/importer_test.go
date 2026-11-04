@@ -9,9 +9,11 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"github.com/daregod/ext-tags/internal/ape"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/importer"
+	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/registry"
 )
 
 func copyFile(t *testing.T, src, dst string) {
@@ -153,7 +155,7 @@ func TestImportFLAC(t *testing.T) {
 	if _, err := os.Stat(audio + ".bak"); err != nil {
 		t.Fatalf("backup missing: %v", err)
 	}
-	res, err := extractor.Extract(audio)
+	res, err := readAudio(t, audio)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +195,7 @@ func TestImportAPEv2(t *testing.T) {
 	if err := importer.ImportAPEv2(audio, tf, importer.Options{Replace: true, Backup: true}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := extractor.Extract(audio)
+	res, err := readAudio(t, audio)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,4 +207,12 @@ func TestImportAPEv2(t *testing.T) {
 			t.Fatalf("missing %s artwork", kind)
 		}
 	}
+}
+func readAudio(t *testing.T, path string) (*metadata.Document, error) {
+	t.Helper()
+	reader, ok := registry.NewDefault().ReaderFor(path)
+	if !ok {
+		t.Fatalf("no reader for %s", path)
+	}
+	return reader.Read(path, format.ReadOptions{})
 }

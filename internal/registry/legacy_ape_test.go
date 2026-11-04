@@ -1,11 +1,11 @@
-package extractor
+package registry_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 )
 
 func TestExtractAPE(t *testing.T) {
@@ -29,7 +29,7 @@ func TestExtractAPE(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

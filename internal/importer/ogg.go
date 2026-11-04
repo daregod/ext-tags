@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/ogg"
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/ogg"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 // ImportOgg writes fields and artwork into Ogg Vorbis, Opus or Speex.

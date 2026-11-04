@@ -1,8 +1,8 @@
 package importer
 
 import (
+	"github.com/daregod/ext-tags/internal/formats/riff"
 	"github.com/daregod/ext-tags/internal/metadata"
-	"github.com/daregod/ext-tags/internal/riff"
 )
 
 // ImportRIFF writes ID3v2 metadata into WAV/RF64/Wave64/AIFF.

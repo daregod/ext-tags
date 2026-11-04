@@ -1,4 +1,4 @@
-package extractor
+package registry_test
 
 import (
 	"encoding/binary"
@@ -69,7 +69,7 @@ func TestExtractASF(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

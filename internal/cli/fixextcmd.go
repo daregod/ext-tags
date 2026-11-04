@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/daregod/ext-tags/internal/ogg"
+	"github.com/daregod/ext-tags/internal/formats/ogg"
 )
 
 type fixOptions struct {

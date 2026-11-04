@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/rules"

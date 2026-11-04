@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 func TestOggFLACWrite(t *testing.T) {
-	src := filepath.Join("..", "..", "testdata", "formats", "audio-flac.oga")
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio-flac.oga")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)

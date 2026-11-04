@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 func TestPageSequences(t *testing.T) {
 	for _, name := range []string{"audio.ogg", "audio.opus", "audio.spx"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "formats", name))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "formats", name))
 			if err != nil {
 				t.Fatal(err)
 			}

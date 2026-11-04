@@ -26,7 +26,7 @@
 | AIFF | `.aif`, `.aiff` | NAME/AUTH/ANNO + ID3v2-чанк | ✅ свой IFF-ридер, фикстура с ID3 |
 | WMA | `.wma` | ASF Content Description + Extended + WM/Picture | ✅ |
 | WMV / ASF | `.wmv`, `.asf` | ASF Content Description + Extended + WM/Picture | ✅ |
-| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ fb2k показывает 4/5 слотов, `icon` не поддерживает |
+| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ foobar2000 показывает 4/5 слотов, `icon` не поддерживает |
 | Speex | `.spx` | Vorbis comments в Ogg | ✅ свой Ogg-ридер, эталон foobar2000 совпал |
 | AC3 | `.ac3` | APEv2 в конце файла (как foobar2000) | ✅ |
 | DTS | `.dts` | APEv2; `.dts` может быть Matroska с DTS | ✅ расширение приоритетнее магии |

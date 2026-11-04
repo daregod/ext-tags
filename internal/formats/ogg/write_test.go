@@ -6,15 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/extractor"
-	"github.com/daregod/ext-tags/internal/ogg"
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/ogg"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 func TestWriteComments(t *testing.T) {
 	for _, name := range []string{"audio.ogg", "audio.opus", "audio.spx"} {
 		t.Run(name, func(t *testing.T) {
-			src := filepath.Join("..", "..", "testdata", "formats", name)
+			src := filepath.Join("..", "..", "..", "testdata", "formats", name)
 			data, err := os.ReadFile(src)
 			if err != nil {
 				t.Fatal(err)
@@ -55,7 +54,7 @@ func TestWriteComments(t *testing.T) {
 				t.Fatalf("comments = %+v", got)
 			}
 
-			res, err := extractor.Extract(path)
+			res, err := ogg.Read(path)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -6,12 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/asf"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/formats/asf"
 )
 
 func TestWrite(t *testing.T) {
-	src := filepath.Join("..", "..", "testdata", "formats", "audio.wma")
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio.wma")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +61,7 @@ func TestWrite(t *testing.T) {
 	if !hasDate || !hasYear {
 		t.Fatalf("date descriptors: date=%v WM/Year=%v", hasDate, hasYear)
 	}
-	res, err := extractor.Extract(path)
+	res, err := asf.Read(path)
 	if err != nil {
 		t.Fatal(err)
 	}

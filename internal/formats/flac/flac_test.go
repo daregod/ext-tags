@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/vorbis"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 )
 
 func TestWriteRead(t *testing.T) {
-	src := filepath.Join("..", "..", "testdata", "formats", "audio.flac")
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio.flac")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)

@@ -42,14 +42,13 @@ internal/config     YAML-схема, слои, профили, валидаци�
 internal/metadata   Document/Cover/ArtworkKind — общие типы
 internal/format     Reader/Writer + Registry, явный format.New
 internal/registry   NewDefault: явный список reader/writer по форматам
-internal/extractor  compatibility facade над registry (для compat/старых тестов)
 internal/read       общие read-хелперы + dhowden/tag adapter
 internal/rules      aliases/ignore/set/copy/rename/default/remove
 internal/tagfile    запись .tag: merge, backup, dry-run
 internal/importer   .tag → формат (ID3, APEv2, FLAC, Ogg, MP4…)
-internal/id3        свой writer ID3v1/2.2/2.3/2.4
-internal/ape        APEv2 (чтение и запись .tag)
-internal/{asf,matroska,ogg,riff,flac,mp4,vorbis}  форматы/кодеки
+internal/formats/id3        свой writer ID3v1/2.2/2.3/2.4
+internal/formats/ape        APEv2 (чтение и запись)
+internal/formats/{asf,matroska,ogg,riff,flac,mp4,vorbis}  форматы/кодеки
 internal/artwork    поиск обложки рядом с аудио
 internal/version    версия, коммит, дата
 ```
@@ -147,9 +146,9 @@ make compat            # сравнить с bin/examples (локальные п
 
 ## Добавление нового формата
 
-1. Написать/расширить парсер в `internal/<format>`.
-2. Смапить поля в `internal/extractor/<format>.go`; технические поля — в
-   `ignore` конфига, если они не нужны.
+1. Написать/расширить парсер в `internal/formats/<format>`.
+2. Смапить поля в `internal/formats/<format>/read.go` или `read.Taglib`;
+   технические поля — в `ignore` конфига, если они не нужны.
 3. Зарегистрировать reader в `internal/registry` (имя + расширения).
 4. Для записи: `importer.Import...` + writerSpec в `internal/registry`.
 5. Добавить файл в `cmd/genfixtures` и сгенерировать его.

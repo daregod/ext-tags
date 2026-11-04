@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/matroska"
+	"github.com/daregod/ext-tags/internal/formats/matroska"
 )
 
 func TestWrite(t *testing.T) {
-	src := filepath.Join("..", "..", "testdata", "formats", "audio.mkv")
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio.mkv")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)

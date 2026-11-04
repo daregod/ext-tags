@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 )
 
 var apeArtKeys = []struct {

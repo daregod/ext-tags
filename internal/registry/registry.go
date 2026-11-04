@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/ape"
-	"github.com/daregod/ext-tags/internal/asf"
 	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/formats/asf"
+	"github.com/daregod/ext-tags/internal/formats/matroska"
+	"github.com/daregod/ext-tags/internal/formats/ogg"
+	"github.com/daregod/ext-tags/internal/formats/riff"
 	"github.com/daregod/ext-tags/internal/importer"
-	"github.com/daregod/ext-tags/internal/matroska"
 	"github.com/daregod/ext-tags/internal/metadata"
-	"github.com/daregod/ext-tags/internal/ogg"
 	"github.com/daregod/ext-tags/internal/read"
-	"github.com/daregod/ext-tags/internal/riff"
 )
 
 // NewDefault returns the production registry. The list is explicit so tests

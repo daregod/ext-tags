@@ -1,7 +1,7 @@
 package importer
 
 import (
-	"github.com/daregod/ext-tags/internal/asf"
+	"github.com/daregod/ext-tags/internal/formats/asf"
 )
 
 // ImportASF writes fields and WM/Picture artwork into WMA/WMV/ASF.

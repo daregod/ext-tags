@@ -13,9 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/read"
+	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagfile"
 )
@@ -58,7 +60,7 @@ func run(dir, referenceDir string, verbose bool) int {
 			continue
 		}
 		audio := filepath.Join(dir, entry.Name())
-		if !extractor.IsSupported(audio, cfg.Files.Extensions) {
+		if !read.IsSupported(audio, cfg.Files.Extensions) {
 			continue
 		}
 		refPath := audio + cfg.TagFile.Suffix
@@ -77,8 +79,12 @@ func run(dir, referenceDir string, verbose bool) int {
 			continue
 		}
 
-		md, err := extractor.ExtractWithOptions(audio, extractor.Options{CoverNames: cfg.Cover.Names})
-		if errors.Is(err, extractor.ErrNoTags) {
+		reader, ok := registry.NewDefault().ReaderFor(audio)
+		if !ok {
+			continue
+		}
+		md, err := reader.Read(audio, format.ReadOptions{CoverNames: cfg.Cover.Names})
+		if errors.Is(err, read.ErrNoTags) {
 			if len(ref.Items) == 0 {
 				fmt.Printf("OK    %-60s no tags in audio and in reference\n", entry.Name())
 			} else {

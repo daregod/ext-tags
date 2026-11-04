@@ -1,4 +1,4 @@
-package extractor
+package registry_test
 
 import (
 	"encoding/binary"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 )
 
 func wavChunk(id string, data []byte) []byte {
@@ -61,7 +61,7 @@ func TestExtractWAV(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestExtractWavPack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Extract(path)
+	res, err := readPath(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
