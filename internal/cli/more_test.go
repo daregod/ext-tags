@@ -32,3 +32,13 @@ func TestRunExtractUnsupported(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestRunExtractValidateError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad.yaml")
+	if err := os.WriteFile(path, []byte("version: 2\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{quiet: true, configPath: path}, registry: registry.NewDefault()}
+	if err := a.runExtract(a.extractCmd(), []string{"x.flac"}); err == nil {
+		t.Fatal("invalid config must fail")
+	}
+}
