@@ -61,25 +61,35 @@ func Write(path string, fields map[string]string, covers map[string]*Cover, repl
 
 	var kept []object
 	var existingDesc []Descriptor
+	insertAt := -1
 	for _, obj := range objects {
 		switch obj.guid {
-		case guidContentDesc:
-			continue
-		case guidExtendedContent:
-			payload := obj.raw[24:]
-			existingDesc = parseDescriptorList(payload)
+		case guidContentDesc, guidExtendedContent:
+			if insertAt < 0 {
+				insertAt = len(kept)
+			}
+			if obj.guid == guidExtendedContent {
+				existingDesc = parseDescriptorList(obj.raw[24:])
+			}
 			continue
 		default:
 			kept = append(kept, obj)
 		}
 	}
+	if insertAt < 0 {
+		insertAt = len(kept)
+	}
 
 	content := buildContentDescription(fields)
 	ext := buildExtendedContent(fields, covers, existingDesc, replace)
-	kept = append(kept, object{guid: guidContentDesc, raw: makeObject(guidContentDesc, content)})
+	newObjects := make([]object, 0, len(kept)+2)
+	newObjects = append(newObjects, kept[:insertAt]...)
+	newObjects = append(newObjects, object{guid: guidContentDesc, raw: makeObject(guidContentDesc, content)})
 	if len(ext) > 0 {
-		kept = append(kept, object{guid: guidExtendedContent, raw: makeObject(guidExtendedContent, ext)})
+		newObjects = append(newObjects, object{guid: guidExtendedContent, raw: makeObject(guidExtendedContent, ext)})
 	}
+	newObjects = append(newObjects, kept[insertAt:]...)
+	kept = newObjects
 
 	total := 30
 	for _, obj := range kept {
