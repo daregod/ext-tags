@@ -243,6 +243,7 @@ type fileResult struct {
 	Fields  map[string]string `json:"fields,omitempty"`
 	Cover   *coverInfo        `json:"cover,omitempty"`
 	Reason  string            `json:"reason,omitempty"`
+	Warning string            `json:"warning,omitempty"`
 	Error   string            `json:"error,omitempty"`
 }
 
@@ -350,6 +351,9 @@ func (a *app) report(r fileResult) {
 		fmt.Printf("IMPORT  %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)
 		if r.Backup != "" {
 			fmt.Printf("        backup: %s\n", r.Backup)
+		}
+		if r.Warning != "" {
+			fmt.Printf("        warning: %s\n", r.Warning)
 		}
 	case "import-dry":
 		fmt.Printf("DRY-RUN %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)

@@ -112,6 +112,9 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		res.Backup = path + ".bak"
 	}
 	res.Status = "imported"
+	if strings.EqualFold(filepath.Ext(path), ".flac") && sniffContainer(path) == "ogg" {
+		res.Warning = "Ogg/Opus in a .flac file: foobar2000 picks the artwork reader by extension; rename to .opus to see embedded art"
+	}
 	a.report(res)
 }
 func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
