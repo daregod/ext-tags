@@ -1,7 +1,10 @@
 # ext-tags
 
-[![CI](https://github.com/daregod/ext-tags/actions/workflows/ci.yml/badge.svg)](https://github.com/daregod/ext-tags/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/daregod/ext-tags?display_name=tag)](https://github.com/daregod/ext-tags/releases/latest)
+[![CI](https://github.com/daregod/ext-tags/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/daregod/ext-tags/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/daregod/ext-tags?label=release&sort=semver)](https://github.com/daregod/ext-tags/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/daregod/ext-tags)](https://github.com/daregod/ext-tags/blob/main/go.mod)
+[![License](https://img.shields.io/github/license/daregod/ext-tags)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](#)
 
 `ext-tags` — консольная утилита для Windows, Linux и macOS, которая складывает
 теги аудиофайлов в отдельные `.tag`-файлы, совместимые с компонентом
