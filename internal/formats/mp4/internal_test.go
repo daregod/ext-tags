@@ -88,3 +88,36 @@ func read32(b []byte) uint32 {
 	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
 func read64(b []byte) uint64 { return uint64(read32(b[0:4]))<<32 | uint64(read32(b[4:8])) }
+func TestParseBoxesErrors(t *testing.T) {
+	for _, data := range [][]byte{
+		{0, 0, 0},
+		{0, 0, 0, 8, 'f', 't', 'y', 'p', 1},
+		{0, 0, 0, 1, 'f', 't', 'y', 'p'},
+	} {
+		if _, err := parseBoxes(data); err == nil {
+			t.Fatalf("data % X must fail", data)
+		}
+	}
+}
+
+func TestShiftOffsetsErrors(t *testing.T) {
+	stco := make([]byte, 8)
+	put32(stco[4:8], 2)
+	if err := shiftOffsets(makeBox("stco", stco), 0, 1); err == nil {
+		t.Fatal("truncated stco must fail")
+	}
+	co64 := make([]byte, 8)
+	put32(co64[4:8], 1)
+	if err := shiftOffsets(makeBox("co64", co64), 0, 1); err == nil {
+		t.Fatal("truncated co64 must fail")
+	}
+}
+
+func TestSplitPair(t *testing.T) {
+	if a, b := splitPair("3/12"); a != "3" || b != "12" {
+		t.Fatalf("split = %q/%q", a, b)
+	}
+	if a, b := splitPair("3"); a != "3" || b != "" {
+		t.Fatalf("split = %q/%q", a, b)
+	}
+}

@@ -1,6 +1,7 @@
 package riff
 
 import (
+	"encoding/binary"
 	"os"
 	"path/filepath"
 	"testing"
@@ -69,4 +70,35 @@ func TestReadAtLimits(t *testing.T) {
 	if readAt(f, 0, 0) != nil || readAt(f, 0, maxTagSize+1) != nil {
 		t.Fatal("invalid sizes must return nil")
 	}
+}
+func TestMalformedContainerChunks(t *testing.T) {
+	dir := t.TempDir()
+	rf64 := filepath.Join(dir, "bad.rf64")
+	data := append([]byte("RF64"), []byte{0xFF, 0xFF, 0xFF, 0xFF}...)
+	data = append(data, []byte("WAVE")...)
+	data = append(data, []byte{0xFF, 0xFF, 0xFF, 0xFF, 1, 2, 3, 4}...)
+	if err := os.WriteFile(rf64, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadRF64(rf64); err != nil {
+		t.Fatal(err)
+	}
+	w64 := filepath.Join(dir, "bad.w64")
+	head := make([]byte, 40)
+	copy(head[0:4], "riff")
+	copy(head[24:28], "wave")
+	chunk := make([]byte, 24)
+	copy(chunk[0:4], "data")
+	binary.LittleEndian.PutUint64(chunk[16:24], 1)
+	if err := os.WriteFile(w64, append(head, chunk...), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadWave64(w64); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDS64Short(t *testing.T) {
+	patchDS64(nil)
+	rf64DataSize(nil)
 }

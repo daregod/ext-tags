@@ -78,3 +78,23 @@ func TestParseFlacPicture(t *testing.T) {
 		t.Fatal("short picture must fail")
 	}
 }
+func TestOggHelpers(t *testing.T) {
+	if isOggFLAC(nil) {
+		t.Fatal("nil packets")
+	}
+	if !isOggFLAC([]packet{{data: append([]byte{0x7F, 'F', 'L', 'A', 'C', 1, 0, 0, 0, 'f', 'L', 'a', 'C'}, make([]byte, 4)...)}}) {
+		t.Fatal("valid FLAC packet")
+	}
+	if got := stringsIndexByte("abc", 'b'); got != 1 {
+		t.Fatalf("index = %d", got)
+	}
+	if got := stringsIndexByte("abc", 'z'); got != -1 {
+		t.Fatalf("index = %d", got)
+	}
+	if _, err := readPrefix(filepath.Join(t.TempDir(), "missing"), 4); err == nil {
+		t.Fatal("missing prefix must fail")
+	}
+	if _, _, err := ReadComments(filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("missing comments must fail")
+	}
+}

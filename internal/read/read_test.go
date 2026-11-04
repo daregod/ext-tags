@@ -157,3 +157,28 @@ func TestNormalizeKeyInvalid(t *testing.T) {
 		t.Fatal("invalid UTF-8 must be rejected")
 	}
 }
+func TestReadHelpersExtra(t *testing.T) {
+	for _, key := range []string{"DISCTOTAL", "TOTALDISCS", "DISCS", "TOTALDISC"} {
+		if !isDiscTotalKey(key) {
+			t.Errorf("%s must be disc total", key)
+		}
+	}
+	if isDiscTotalKey("X") {
+		t.Fatal("X is not disc total")
+	}
+	if got := CoverName("x.jpeg", ""); got != "cover.jpeg" {
+		t.Fatalf("CoverName = %q", got)
+	}
+	if got := FieldValue(map[string]string{"A": "1"}, "B", "A"); got != "1" {
+		t.Fatalf("FieldValue = %q", got)
+	}
+	if a, b := SplitPair(""); a != "" || b != "" {
+		t.Fatalf("empty SplitPair = %q/%q", a, b)
+	}
+	if a, b := SplitPair("3"); a != "3" || b != "" {
+		t.Fatalf("plain SplitPair = %q/%q", a, b)
+	}
+	if _, err := ReadMagic(filepath.Join(t.TempDir(), "missing"), 4); err == nil {
+		t.Fatal("missing magic must fail")
+	}
+}
