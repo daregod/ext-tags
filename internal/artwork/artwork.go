@@ -13,7 +13,7 @@ import (
 var ErrNotFound = errors.New("no cover image found")
 
 // DefaultNames are the base names checked when the configuration is empty.
-var DefaultNames = []string{"cover", "folder", "box", "disc", "media"}
+var DefaultNames = []string{"cover", "folder", "front", "album", "poster", "box", "disc", "media"}
 
 // Extensions are checked in this order for every base name.
 var Extensions = []string{".jpg", ".jpeg", ".png", ".webp", ".gif"}

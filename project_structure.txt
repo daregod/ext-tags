@@ -16,6 +16,8 @@ external-tags/
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
 │   ├── extractor/        <-- чтение контейнеров (сырые поля, обложка)
+│   ├── id3/              <-- свой writer ID3v1/2.2/2.3/2.4
+│   ├── importer/         <-- обратный импорт: .tag → ID3 (MP3)
 │   ├── matroska/         <-- EBML/WebM/MKV: теги, Info/Title, вложения
 │   ├── ogg/              <-- Ogg FLAC/Speex: Vorbis-комментарии
 │   ├── riff/             <-- WAV/RF64/Wave64: LIST/INFO, ID3v2, GUID-чанки

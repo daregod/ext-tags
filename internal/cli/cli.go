@@ -85,7 +85,7 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
 	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
 
-	root.AddCommand(a.extractCmd(), a.configCmd(), a.versionCmd())
+	root.AddCommand(a.extractCmd(), a.importCmd(), a.configCmd(), a.versionCmd())
 	return root
 }
 
@@ -323,6 +323,13 @@ func (a *app) report(r fileResult) {
 		}
 	case "dry-run":
 		fmt.Printf("DRY-RUN %s → %s (%d items, %d bytes)\n", r.File, r.TagFile, r.Items, r.Bytes)
+	case "imported":
+		fmt.Printf("IMPORT  %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)
+		if r.Backup != "" {
+			fmt.Printf("        backup: %s\n", r.Backup)
+		}
+	case "import-dry":
+		fmt.Printf("DRY-RUN %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)
 	case "skipped":
 		fmt.Printf("SKIP    %s (%s)\n", r.File, r.Reason)
 	case "no-tags":

@@ -55,7 +55,14 @@ else
 endif
 
 GO       ?= go
-GIT      := git -c "safe.directory=*"
+# On Windows the project often lives on a VM shared folder, where git needs
+# safe.directory=*; cmd.exe does not expand '*', so it must stay unquoted.
+# On Unix a plain git is enough (and quoting would not survive cmd anyway).
+ifeq ($(OS),Windows_NT)
+  GIT ?= git -c safe.directory=*
+else
+  GIT ?= git
+endif
 GOLANGCI_LINT ?= golangci-lint
 GOLANGCI_VERSION ?= v2.15.0
 

@@ -198,7 +198,7 @@ func Default() *Config {
 			Enabled:   true,
 			Field:     "Cover Art (Front)",
 			Filename:  "cover",
-			Names:     []string{"cover", "folder", "box", "disc", "media"},
+			Names:     []string{"cover", "folder", "front", "album", "poster", "box", "disc", "media"},
 			Directory: true,
 		},
 		Fields: FieldsConfig{
@@ -542,7 +542,7 @@ files:
 cover:
   # embed the front cover into the .tag file
   enabled: true
-  # fall back to cover/folder/box/disc/media.* next to the audio file
+  # fall back to cover/folder/front/album/poster/box/disc/media.*
   directory: true
 
 # fields:

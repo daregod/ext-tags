@@ -61,3 +61,17 @@ func TestFindEmptyDir(t *testing.T) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
+func TestDefaultNames(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "album.jpg", []byte("album"))
+	writeFile(t, dir, "front.png", []byte("front"))
+	writeFile(t, dir, "poster.webp", []byte("poster"))
+
+	img, err := Find(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Filename != "front.png" {
+		t.Fatalf("filename = %q, want front.png", img.Filename)
+	}
+}

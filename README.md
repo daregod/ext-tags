@@ -27,7 +27,7 @@
 ## ✨ Особенности
 
 *   **Чистый Go**: Без CGO и внешних зависимостей вроде `ffmpeg`.
-*   **Обложки**: Извлекает встроенные изображения (Front Cover); если встроенной нет — берёт `cover`/`folder`/`box`/`disc`/`media` (jpg, jpeg, png, webp, gif) из папки аудиофайла и упаковывает в APEv2 (с префиксом имени файла, как требует спецификация).
+*   **Обложки**: Извлекает встроенные изображения (Front Cover); если встроенной нет — берёт `cover`/`folder`/`front`/`album`/`poster`/`box`/`disc`/`media` (jpg, jpeg, png, webp, gif) из папки аудиофайла и упаковывает в APEv2 (с префиксом имени файла, как требует спецификация).
 *   **Нормализация ключей**: Приводит теги к единому виду (например, `ORGANIZATION` -> `Publisher`, `DATE` -> `Year`), предотвращая дублирование полей в foobar2000.
 *   **Matroska**: читает `Tags/SimpleTag` (TITLE, ARTIST, GENRE, …), `Info/Title` и вложения-картинки как обложку; учитывает область тегов как foobar2000 (альбомные `ARTIST`/`PART_NUMBER` → `Album artist`/`Disc`). Track-level теги (`Artist` у дорожки) foobar2000 сам не показывает, но мы их переносим — в нашем `.tag` они появятся; `Cluster`/`Cues` пропускаются, большие видео не загружаются в память.
 *   **APE и ASF**: APEv2 из хвоста `.ape` и Content Description из `.wmv`/`.wma`; технические поля (`WMFSDK*`, `IsVBR`, …) отбрасываются.
@@ -159,7 +159,7 @@ cover:
   enabled: true
   field: Cover Art (Front)
   filename: cover              # базовое имя в .tag (расширение — по картинке)
-  names: [cover, folder, box, disc, media]  # имена: вложения и файлы в папке
+  names: [cover, folder, front, album, poster, box, disc, media]  # имена: вложения и файлы в папке
   directory: true              # если встроенной обложки нет — искать в папке аудио
 
 fields:
@@ -179,10 +179,30 @@ fields:
   exclude: []
 ```
 
+### Обратный импорт (MP3)
+
+`ext-tags import` читает `<file>.tag` и записывает его поля обратно в MP3.
+Поддерживаются ID3v2.2/2.3/2.4 (`--id3v2-version`, по умолчанию 3) и
+опционально ID3v1 (`--id3v1`). Writer собственный (`internal/id3`), без
+внешних библиотек.
+
+```bash
+ext-tags import track.mp3
+ext-tags import --replace --backup --dry-run --id3v2-version 4 --id3v1 track.mp3
+```
+
+- `--replace` — удалить кадры, которых нет в `.tag` (иначе существующие
+  кадры той же версии сохраняются);
+- `--backup` — сохранить копию аудиофайла как `<file>.bak`;
+- `--dry-run` — показать, что было бы записано.
+
+Стандартные поля мапятся в TT2/TP1/… (v2.2) или TIT2/TPE1/… (v2.3/2.4),
+год — в TYE/TYER/TDRC, обложка — в PIC/APIC, неизвестные поля — в TXX/TXXX.
+Текст пишется в UTF-16 с BOM для v2.2/2.3 и в UTF-8 для v2.4.
 ### Обложка из папки
 
 Если в аудиофайле нет встроенной картинки, утилита ищет её рядом с файлом:
-сначала `cover`, затем `folder`, `box`, `disc`, `media`; расширения —
+сначала `cover`, затем `folder`, `front`, `album`, `poster`, `box`, `disc`, `media`; расширения —
 `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` (регистр не важен). Порядок имён и
 список имён настраиваются в `cover.names`, поиск в папке отключается через
 `cover.directory: false`.
@@ -194,7 +214,7 @@ fields:
 cover:
   enabled: true
   directory: true
-  names: [cover, folder, box, disc, media]
+  names: [cover, folder, front, album, poster, box, disc, media]
 ```
 ### Правила
 
