@@ -8,7 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/importer"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 type importOptions struct {
@@ -101,7 +103,19 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		return
 	}
 
-	if err := importTags(path, tf, opts); err != nil {
+	writer, ok := a.getRegistry().WriterFor(path)
+	if !ok {
+		res.Status = "unsupported"
+		res.Reason = "no writer for this format"
+		a.report(res)
+		return
+	}
+	if err := writer.Write(path, documentFromTagFile(tf), format.WriteOptions{
+		Replace:    opts.replace,
+		Backup:     opts.backup,
+		ID3Version: opts.version,
+		ID3V1:      opts.v1,
+	}); err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
 		a.failed = true
@@ -116,54 +130,6 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		res.Warning = "Ogg/Opus in a .flac file: foobar2000 picks the artwork reader by extension; rename to .opus to see embedded art"
 	}
 	a.report(res)
-}
-func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
-	if kind := sniffContainer(path); kind != "" {
-		switch kind {
-		case "ogg":
-			return importer.ImportOgg(path, tf, importer.Options{Replace: opts.replace, Backup: opts.backup})
-		case "flac":
-			return importer.ImportFLAC(path, tf, importer.Options{Replace: opts.replace, Backup: opts.backup})
-		}
-	}
-	switch strings.ToLower(filepath.Ext(path)) {
-	case ".flac":
-		return importer.ImportFLAC(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	case ".ogg", ".oga", ".opus", ".spx":
-		return importer.ImportOgg(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	case ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts":
-		return importer.ImportAPEv2(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	case ".m4a", ".m4b", ".mp4":
-		return importer.ImportMP4(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	case ".mkv", ".webm":
-		return importer.ImportMatroska(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	case ".wma", ".wmv", ".asf":
-		return importer.ImportASF(path, tf, importer.Options{
-			Replace: opts.replace,
-			Backup:  opts.backup,
-		})
-	}
-	return importer.ImportMP3(path, tf, importer.Options{
-		Version: opts.version,
-		V1:      opts.v1,
-		Replace: opts.replace,
-		Backup:  opts.backup,
-	})
 }
 func sniffContainer(path string) string {
 	f, err := os.Open(path)
@@ -182,4 +148,15 @@ func sniffContainer(path string) string {
 		return "flac"
 	}
 	return ""
+}
+func documentFromTagFile(tf *importer.TagFile) *metadata.Document {
+	doc := metadata.New()
+	for key, value := range tf.Fields {
+		doc.Fields[key] = value
+	}
+	for kind, cover := range tf.Covers {
+		doc.Artwork[kind] = cover
+	}
+	doc.Cover = tf.Cover
+	return doc
 }

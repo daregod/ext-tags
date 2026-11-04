@@ -15,27 +15,18 @@ import (
 	"unicode/utf8"
 
 	"github.com/dhowden/tag"
+
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 // ErrNoTags means the file has no metadata block at all.
 var ErrNoTags = errors.New("no tags")
 
 // Cover is a picture embedded in the container.
-type Cover struct {
-	// Filename is a suggested name for the APEv2 cover item ("cover.jpg").
-	Filename string
-	MIME     string
-	Data     []byte
-}
+type Cover = metadata.Cover
 
 // Result is raw metadata, before any field rules are applied.
-type Result struct {
-	Format  string
-	Fields  map[string]string
-	Vars    map[string]string
-	Cover   *Cover
-	Artwork map[string]*Cover // front, back, artist, disc, icon
-}
+type Result = metadata.Document
 
 // IsSupported reports whether path has one of the configured extensions.
 func IsSupported(path string, extensions []string) bool {
@@ -227,7 +218,7 @@ func applyTagMetadata(m tag.Metadata, res *Result) {
 }
 
 func empty() *Result {
-	return &Result{Fields: map[string]string{}, Vars: map[string]string{}, Artwork: map[string]*Cover{}}
+	return metadata.New()
 }
 
 func putVar(m map[string]string, key, val string) {

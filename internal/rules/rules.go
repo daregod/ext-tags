@@ -13,7 +13,7 @@ import (
 	"unicode"
 
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 // Meta is per-file context available to templates.
@@ -100,7 +100,7 @@ func New(cfg *config.Config) (*Engine, error) {
 }
 
 // Build applies aliases and rules to raw metadata and returns final fields.
-func (e *Engine) Build(res *extractor.Result, meta Meta) (map[string]string, error) {
+func (e *Engine) Build(res *metadata.Document, meta Meta) (map[string]string, error) {
 	fields := make(map[string]string, len(res.Fields))
 	index := make(map[string]string, len(res.Fields))
 

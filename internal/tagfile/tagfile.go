@@ -10,7 +10,7 @@ import (
 
 	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 // Result describes what happened to a single output file.
@@ -39,7 +39,7 @@ type artworkSpec struct {
 // Build serialises fields and artwork into an APEv2 tag file body.
 // When existing is not nil and merge_existing is enabled, fields and artwork
 // that are present only in the existing tag are preserved.
-func Build(fields map[string]string, covers map[string]*extractor.Cover, existing *ape.ParsedTag, cfg *config.Config) ([]byte, int, map[string]string, error) {
+func Build(fields map[string]string, covers map[string]*metadata.Cover, existing *ape.ParsedTag, cfg *config.Config) ([]byte, int, map[string]string, error) {
 	merged := make(map[string]string, len(fields))
 	index := make(map[string]string, len(fields))
 	set := func(key, value string) {
@@ -112,7 +112,7 @@ func Build(fields map[string]string, covers map[string]*extractor.Cover, existin
 
 // Write builds and stores <audio>.<suffix>, honouring the on_existing policy
 // and merging fields from an existing tag file when configured.
-func Write(audioPath string, fields map[string]string, covers map[string]*extractor.Cover, cfg *config.Config, dryRun bool) (Result, error) {
+func Write(audioPath string, fields map[string]string, covers map[string]*metadata.Cover, cfg *config.Config, dryRun bool) (Result, error) {
 	target := audioPath + cfg.TagFile.Suffix
 	res := Result{Path: target}
 

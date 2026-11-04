@@ -11,14 +11,11 @@ import (
 
 	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/id3"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 // Cover is an embedded picture read from a .tag file.
-type Cover struct {
-	Filename string
-	MIME     string
-	Data     []byte
-}
+type Cover = metadata.Cover
 
 // TagFile is the decoded content of a .tag file.
 type TagFile struct {

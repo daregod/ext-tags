@@ -16,6 +16,8 @@ import (
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagfile"
 	"github.com/daregod/ext-tags/internal/version"
@@ -37,13 +39,14 @@ type options struct {
 }
 
 type app struct {
-	opts   *options
-	failed bool
+	opts     *options
+	registry *format.Registry
+	failed   bool
 }
 
 // Execute runs the CLI and returns the process exit code.
 func Execute() int {
-	a := &app{opts: &options{}}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
 	if err := a.rootCmd().Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return 1
@@ -267,7 +270,14 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		Now:      time.Now(),
 	}
 
-	md, err := extractor.ExtractWithOptions(path, extractor.Options{CoverNames: cfg.Cover.Names})
+	reader, ok := a.getRegistry().ReaderFor(path)
+	if !ok {
+		res.Status = "unsupported"
+		res.Reason = fmt.Sprintf("unsupported format %s", strings.ToLower(filepath.Ext(path)))
+		a.report(res)
+		return
+	}
+	md, err := reader.Read(path, format.ReadOptions{CoverNames: cfg.Cover.Names})
 	if errors.Is(err, extractor.ErrNoTags) {
 		res.Status = "no-tags"
 		a.report(res)
@@ -416,4 +426,10 @@ func expandPaths(paths []string, recursive bool, extensions []string) ([]string,
 		}
 	}
 	return files, nil
+}
+func (a *app) getRegistry() *format.Registry {
+	if a.registry == nil {
+		a.registry = registry.NewDefault()
+	}
+	return a.registry
 }
