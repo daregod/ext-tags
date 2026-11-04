@@ -4,14 +4,15 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.8.0] — 2026-11-04
 
 ### Добавлено
 
 - Обратный импорт ASF/WMA/WMV: Content Description, Extended Content
   Description и `WM/Picture` (пять artwork-типов, лимит 64 КиБ на descriptor).
 - Обратный импорт Matroska/WebM: `Tags`/`SimpleTag`, `Attachments` с пятью
-  artwork-слотами, обновление `Cues`/`SeekHead`, без перепаковки кластеров.
+  artwork-слотами, обновление `Cues`, без перепаковки кластеров; необязательный
+  `SeekHead` удаляется, чтобы не оставалось устаревших позиций.
 - Обратный импорт MP4/M4A: iTunes-атомы (`©nam`, `©ART`, `aART`, `trkn`,
   `covr`, …), пересчёт `stco`/`co64` при сдвиге `moov`; front cover.
 - Обратный импорт APEv2: APE, WavPack, Musepack, TAK, AC3/DTS — в конец
@@ -29,8 +30,14 @@
 
 ### Исправлено
 
+- ASF: reserved-байты заголовка `01 02`, правильные типы Extended Content
+  (строки — type 0), `date` и `WM/Year` пишутся оба; WMF/fb2k снова открывает
+  metadata editor.
+- Ogg: непрерывные sequence-номера страниц и корректные continuation-флаги
+  при больших comment-пакетах.
 - Ogg/Opus с расширением `.flac`: контейнер определяется по магии; при импорте
   выводится предупреждение, что foobar2000 показывает artwork только для `.opus`.
+- MP4: пересчёт `stco`/`co64` при сдвиге `moov`, включая faststart-файлы.
 
 ## [0.7.0] — 2026-11-04
 

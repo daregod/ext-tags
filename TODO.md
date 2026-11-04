@@ -24,9 +24,9 @@
 | Wave64 | `.w64` | ID3v2-чанк до `data`, 64-битные размеры | ✅ эталон foobar2000 совпал |
 | RF64 | `.rf64` | как WAV, 64-битные размеры | ✅ `internal/riff` + фикстура |
 | AIFF | `.aif`, `.aiff` | NAME/AUTH/ANNO + ID3v2-чанк | ✅ свой IFF-ридер, фикстура с ID3 |
-| WMA | `.wma` | ASF Content Description | ✅ |
-| WMV / ASF | `.wmv`, `.asf` | ASF Content Description | ✅ |
-| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ |
+| WMA | `.wma` | ASF Content Description + Extended + WM/Picture | ✅ |
+| WMV / ASF | `.wmv`, `.asf` | ASF Content Description + Extended + WM/Picture | ✅ |
+| Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ fb2k показывает 4/5 слотов, `icon` не поддерживает |
 | Speex | `.spx` | Vorbis comments в Ogg | ✅ свой Ogg-ридер, эталон foobar2000 совпал |
 | AC3 | `.ac3` | APEv2 в конце файла (как foobar2000) | ✅ |
 | DTS | `.dts` | APEv2; `.dts` может быть Matroska с DTS | ✅ расширение приоритетнее магии |
@@ -52,8 +52,9 @@
 - [x] MP4/M4A (AAC/ALAC): запись iTunes-атомов (front cover).
 - [x] APEv2 (APE, WavPack, TAK, Musepack, AC3/DTS).
 - [x] Matroska/WebM: запись Tags и Attachments.
-- [ ] ASF/WMA: запись Content Description (осторожно, Windows-only сложности).
-- [ ] Общая инфраструктура: `--backup`, `--dry-run`, атомарная запись, проверка после записи.
+- [x] ASF/WMA/WMV: Content Description, Extended Content Description и WM/Picture.
+- [x] `--backup` и `--dry-run` для импорта.
+- [ ] Атомарная запись и проверка результата после записи.
 
 ## Инфраструктура
 
