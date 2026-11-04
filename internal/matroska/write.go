@@ -69,16 +69,11 @@ func Write(path string, fields map[string]string, covers map[string]*Cover) erro
 	content := make([]byte, 0, len(old)+len(tags)+len(attachments))
 	mapping := make(map[int]int, len(children))
 	for _, c := range children {
-		if c.id == idTags || c.id == idAttachments {
+		if c.id == idTags || c.id == idAttachments || c.id == idSeekHead {
 			continue
 		}
 		mapping[c.start] = len(content)
 		content = append(content, old[c.start:c.end]...)
-	}
-	tagsPos := len(content)
-	attachPos := tagsPos + len(tags)
-	if err := patchSeekHeads(content, old, children, mapping, tagsPos, attachPos, okTags, okAtt); err != nil {
-		return err
 	}
 	if err := patchCues(content, mapping); err != nil {
 		return err
@@ -306,95 +301,6 @@ func split(value string) (string, string) {
 	}
 	return parts[0], ""
 }
-func patchSeekHeads(content, old []byte, oldChildren []childRange, mapping map[int]int, tagsPos, attachPos int, hasTags, hasAtt bool) error {
-	children, err := childRanges(content, 0, len(content))
-	if err != nil {
-		return err
-	}
-	for _, c := range children {
-		if c.id != idSeekHead {
-			continue
-		}
-		h, err := readHeader(content, c.start)
-		if err != nil {
-			return err
-		}
-		seekChildren, err := childRanges(content, c.start+h.idLen+h.sizeLen, c.end)
-		if err != nil {
-			return err
-		}
-		for _, s := range seekChildren {
-			if s.id != idSeek {
-				continue
-			}
-			sh, err := readHeader(content, s.start)
-			if err != nil {
-				return err
-			}
-			fields, err := childRanges(content, s.start+sh.idLen+sh.sizeLen, s.end)
-			if err != nil {
-				return err
-			}
-			var seekID uint64
-			var posRange childRange
-			var havePos bool
-			for _, f := range fields {
-				fh, err := readHeader(content, f.start)
-				if err != nil {
-					return err
-				}
-				dataStart := f.start + fh.idLen + fh.sizeLen
-				switch f.id {
-				case idSeekID:
-					for i := dataStart; i < f.end; i++ {
-						seekID = seekID<<8 | uint64(content[i])
-					}
-				case idSeekPosition:
-					posRange = f
-					havePos = true
-				}
-			}
-			if !havePos {
-				continue
-			}
-			target := -1
-			switch {
-			case seekID == idTags && hasTags:
-				target = tagsPos
-			case seekID == idAttachments && hasAtt:
-				target = attachPos
-			default:
-				for _, oc := range oldChildren {
-					if oc.id == seekID {
-						if pos, ok := mapping[oc.start]; ok {
-							target = pos
-						}
-						break
-					}
-				}
-			}
-			if target < 0 {
-				continue
-			}
-			ph, err := readHeader(content, posRange.start)
-			if err != nil {
-				return err
-			}
-			size := ph.sizeLen
-			if size < 1 || uint64(target) >= (uint64(1)<<(8*size)) {
-				continue
-			}
-			value := uint64(target)
-			pos := posRange.start + ph.idLen + ph.sizeLen
-			for i := size - 1; i >= 0; i-- {
-				content[pos+i] = byte(value)
-				value >>= 8
-			}
-		}
-	}
-	return nil
-}
-
 func patchCues(content []byte, mapping map[int]int) error {
 	children, err := childRanges(content, 0, len(content))
 	if err != nil {
