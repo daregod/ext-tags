@@ -112,6 +112,8 @@ func Write(path string, fields map[string]string, covers map[string]*Cover, repl
 	copy(out[0:16], guidHeader[:])
 	binary.LittleEndian.PutUint64(out[16:24], uint64(newHeaderSize))
 	binary.LittleEndian.PutUint32(out[24:28], uint32(len(kept)))
+	out[28] = 1
+	out[29] = 2
 	for _, obj := range kept {
 		out = append(out, obj.raw...)
 	}

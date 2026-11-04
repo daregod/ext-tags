@@ -33,6 +33,13 @@ func TestWrite(t *testing.T) {
 	if err := asf.Write(path, fields, covers, true); err != nil {
 		t.Fatal(err)
 	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if raw[28] != 1 || raw[29] != 2 {
+		t.Fatalf("reserved bytes = % X", raw[28:30])
+	}
 	md, err := asf.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
