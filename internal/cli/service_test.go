@@ -7,9 +7,9 @@ import (
 
 	"github.com/daregod/ext-tags/internal/ape"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
 	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/rules"
 )
 
@@ -102,7 +102,7 @@ func TestProcessFileNoTags(t *testing.T) {
 	if err := os.WriteFile(path, []byte("audio"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{&serviceReader{err: extractor.ErrNoTags}}, nil)}
+	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{&serviceReader{err: read.ErrNoTags}}, nil)}
 	cfg := testConfig()
 	engine, err := rules.New(cfg)
 	if err != nil {

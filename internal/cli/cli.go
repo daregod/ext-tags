@@ -15,8 +15,9 @@ import (
 
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
 	"github.com/daregod/ext-tags/internal/format"
+	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagfile"
@@ -153,12 +154,12 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 // isOwnOutput reports whether path is a .tag (or its .bak) we produce ourselves.
 // applySidecarArtwork embeds images found next to the audio file for every
 // artwork slot that has no embedded picture yet.
-func (a *app) applySidecarArtwork(md *extractor.Result, path string, cfg *config.Config) {
+func (a *app) applySidecarArtwork(md *metadata.Document, path string, cfg *config.Config) {
 	if !cfg.Cover.Enabled || !cfg.Cover.Directory {
 		return
 	}
 	if md.Artwork == nil {
-		md.Artwork = map[string]*extractor.Cover{}
+		md.Artwork = map[string]*metadata.Cover{}
 	}
 	if md.Cover != nil {
 		md.Artwork["front"] = md.Cover
@@ -185,7 +186,7 @@ func (a *app) applySidecarArtwork(md *extractor.Result, path string, cfg *config
 		if spec.kind == "front" {
 			name = "cover" + strings.ToLower(filepath.Ext(img.Filename))
 		}
-		md.Artwork[spec.kind] = &extractor.Cover{Filename: name, MIME: img.MIME, Data: img.Data}
+		md.Artwork[spec.kind] = &metadata.Cover{Filename: name, MIME: img.MIME, Data: img.Data}
 	}
 	if front := md.Artwork["front"]; front != nil {
 		md.Cover = front
@@ -254,7 +255,7 @@ type fileResult struct {
 func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine) {
 	res := fileResult{File: path}
 
-	if !extractor.IsSupported(path, cfg.Files.Extensions) {
+	if !read.IsSupported(path, cfg.Files.Extensions) {
 		res.Status = "unsupported"
 		res.Reason = fmt.Sprintf("unsupported format %s", strings.ToLower(filepath.Ext(path)))
 		a.report(res)
@@ -278,7 +279,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		return
 	}
 	md, err := reader.Read(path, format.ReadOptions{CoverNames: cfg.Cover.Names})
-	if errors.Is(err, extractor.ErrNoTags) {
+	if errors.Is(err, read.ErrNoTags) {
 		res.Status = "no-tags"
 		a.report(res)
 		return
@@ -414,7 +415,7 @@ func expandPaths(paths []string, recursive bool, extensions []string) ([]string,
 					}
 					return nil
 				}
-				if !extractor.IsSupported(path, extensions) {
+				if !read.IsSupported(path, extensions) {
 					return nil
 				}
 				files = append(files, path)

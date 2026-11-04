@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/metadata"
 )
 
 func TestExpandPathsRecursive(t *testing.T) {
@@ -175,20 +175,20 @@ func TestApplySidecarCover(t *testing.T) {
 	cfg := config.Default()
 	a := &app{opts: &options{}}
 
-	md := &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	md := &metadata.Document{Fields: map[string]string{}, Vars: map[string]string{}}
 	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
 	if md.Cover == nil || md.Cover.Filename != "cover.jpg" || md.Cover.MIME != "image/jpeg" {
 		t.Fatalf("cover = %+v", md.Cover)
 	}
 
-	embedded := &extractor.Result{Cover: &extractor.Cover{Filename: "embedded.png", MIME: "image/png"}}
+	embedded := &metadata.Document{Cover: &metadata.Cover{Filename: "embedded.png", MIME: "image/png"}}
 	a.applySidecarArtwork(embedded, filepath.Join(dir, "track.flac"), cfg)
 	if embedded.Cover.Filename != "embedded.png" {
 		t.Fatal("embedded cover must win")
 	}
 
 	cfg.Cover.Directory = false
-	md = &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	md = &metadata.Document{Fields: map[string]string{}, Vars: map[string]string{}}
 	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
 	if md.Cover != nil {
 		t.Fatal("sidecar must be disabled")
@@ -209,7 +209,7 @@ func TestApplySidecarAllArtwork(t *testing.T) {
 	}
 	cfg := config.Default()
 	a := &app{opts: &options{}}
-	md := &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	md := &metadata.Document{Fields: map[string]string{}, Vars: map[string]string{}}
 	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
 	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
 		if md.Artwork[kind] == nil {

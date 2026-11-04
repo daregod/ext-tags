@@ -20,7 +20,8 @@ ext-tags/
 │   ├── artwork/          <-- поиск cover/folder/box/disc/media рядом с аудио
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
-│   ├── extractor/        <-- чтение контейнеров → metadata.Document
+│   ├── extractor/        <-- compatibility facade над registry
+│   ├── read/             <-- общие read-хелперы + taglib adapter
 │   ├── metadata/         <-- Document/Cover/ArtworkKind
 │   ├── format/           <-- Reader/Writer + Registry
 │   ├── registry/         <-- явный NewDefault

@@ -3,11 +3,18 @@ package registry
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/asf"
 	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/importer"
+	"github.com/daregod/ext-tags/internal/matroska"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/ogg"
+	"github.com/daregod/ext-tags/internal/read"
+	"github.com/daregod/ext-tags/internal/riff"
 )
 
 // NewDefault returns the production registry. The list is explicit so tests
@@ -29,20 +36,63 @@ func (r readerSpec) Read(path string, opts format.ReadOptions) (*metadata.Docume
 }
 
 func defaultReaders() []format.Reader {
-	read := func(path string, opts format.ReadOptions) (*metadata.Document, error) {
-		return extractor.ExtractWithOptions(path, extractor.Options{CoverNames: opts.CoverNames})
-	}
 	return []format.Reader{
-		readerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, read},
-		readerSpec{"flac", []string{".flac"}, read},
-		readerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, read},
-		readerSpec{"apev2", []string{".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts"}, read},
-		readerSpec{"mp4", []string{".m4a", ".m4b", ".mp4", ".alac"}, read},
-		readerSpec{"matroska", []string{".mkv", ".webm"}, read},
-		readerSpec{"asf", []string{".wma", ".wmv", ".asf"}, read},
-		readerSpec{"riff", []string{".wav", ".rf64", ".w64", ".aif", ".aiff"}, read},
-		readerSpec{"aac", []string{".aac"}, read},
+		readerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, readTaglib},
+		readerSpec{"flac", []string{".flac"}, readFLAC},
+		readerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, readOgg},
+		readerSpec{"apev2", []string{".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts"}, readAPEv2},
+		readerSpec{"mp4", []string{".m4a", ".m4b", ".mp4", ".alac"}, readTaglib},
+		readerSpec{"matroska", []string{".mkv", ".webm"}, readMatroska},
+		readerSpec{"asf", []string{".wma", ".wmv", ".asf"}, readASF},
+		readerSpec{"riff", []string{".wav", ".rf64", ".w64", ".aif", ".aiff"}, readRIFF},
+		readerSpec{"aac", []string{".aac"}, readTaglib},
 	}
+}
+
+func readTaglib(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	return read.Taglib(path)
+}
+
+func readFLAC(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	magic, err := read.ReadMagic(path, 4)
+	if err == nil && string(magic) == "OggS" {
+		return ogg.Read(path)
+	}
+	return read.Taglib(path)
+}
+
+func readOgg(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	return ogg.Read(path)
+}
+
+func readAPEv2(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".ac3":
+		return ape.Read(path, "AC3")
+	case ".dts":
+		return ape.Read(path, "DTS")
+	case ".ape":
+		return ape.Read(path, "APE")
+	case ".wv":
+		return ape.Read(path, "WAVPACK")
+	case ".mpc":
+		return ape.Read(path, "MUSEPACK")
+	case ".tak":
+		return ape.Read(path, "TAK")
+	}
+	return ape.Read(path, "APEv2")
+}
+
+func readMatroska(path string, opts format.ReadOptions) (*metadata.Document, error) {
+	return matroska.Read(path, opts.CoverNames)
+}
+
+func readASF(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	return asf.Read(path)
+}
+
+func readRIFF(path string, _ format.ReadOptions) (*metadata.Document, error) {
+	return riff.Read(path)
 }
 
 type writerSpec struct {

@@ -42,7 +42,8 @@ internal/config     YAML-схема, слои, профили, валидаци�
 internal/metadata   Document/Cover/ArtworkKind — общие типы
 internal/format     Reader/Writer + Registry, явный format.New
 internal/registry   NewDefault: явный список reader/writer по форматам
-internal/extractor  чтение контейнеров → metadata.Document
+internal/extractor  compatibility facade над registry (для compat/старых тестов)
+internal/read       общие read-хелперы + dhowden/tag adapter
 internal/rules      aliases/ignore/set/copy/rename/default/remove
 internal/tagfile    запись .tag: merge, backup, dry-run
 internal/importer   .tag → формат (ID3, APEv2, FLAC, Ogg, MP4…)
@@ -56,7 +57,8 @@ internal/version    версия, коммит, дата
 Поток данных:
 
 ```
-cli → registry.NewDefault → format.Reader → extractor → metadata.Document
+cli → registry.NewDefault → format.Reader → формат-пакет/read.Taglib
+                                             → metadata.Document
                                              → rules → tagfile
 
 cli → registry.NewDefault → format.Writer → importer → формат
