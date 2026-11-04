@@ -23,10 +23,23 @@ func extractAPEv2(path, format string) (*Result, error) {
 	res := empty()
 	res.Format = format
 
+	artKeys := map[string]string{
+		"cover art (front)": "front",
+		"cover art (back)":  "back",
+		"artist picture":    "artist",
+		"cover art (disc)":  "disc",
+		"cover art (icon)":  "icon",
+	}
 	for _, item := range tag.Items {
 		if item.Flags&2 != 0 {
-			if strings.EqualFold(item.Key, "Cover Art (Front)") {
-				res.Cover = apeCover(item.Value)
+			if kind, ok := artKeys[strings.ToLower(item.Key)]; ok {
+				cover := apeCover(item.Value)
+				if len(cover.Data) > 0 {
+					res.Artwork[kind] = cover
+					if kind == "front" {
+						res.Cover = cover
+					}
+				}
 			}
 			continue
 		}
@@ -51,7 +64,7 @@ func extractAPEv2(path, format string) (*Result, error) {
 	putVar(res.Vars, "discnumber", disc)
 	putVar(res.Vars, "disctotal", discTotal)
 
-	if len(res.Fields) == 0 && res.Cover == nil {
+	if len(res.Fields) == 0 && len(res.Artwork) == 0 {
 		return res, ErrNoTags
 	}
 	return res, nil

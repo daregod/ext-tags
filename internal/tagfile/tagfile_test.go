@@ -126,7 +126,7 @@ func TestWriteDryRun(t *testing.T) {
 func TestBuildCover(t *testing.T) {
 	cfg := config.Default()
 	cover := &extractor.Cover{Filename: "cover.jpg", MIME: "image/jpeg", Data: []byte{0xFF, 0xD8}}
-	data, items, _, err := Build(map[string]string{"Title": "Song"}, cover, nil, cfg)
+	data, items, _, err := Build(map[string]string{"Title": "Song"}, map[string]*extractor.Cover{"front": cover}, nil, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,4 +240,34 @@ func hasSuffix(value, suffix []byte) bool {
 		return false
 	}
 	return string(value[len(value)-len(suffix):]) == string(suffix)
+}
+func TestBuildAllArtwork(t *testing.T) {
+	cfg := config.Default()
+	covers := map[string]*extractor.Cover{
+		"front":  {Filename: "cover.jpg", Data: []byte{1}},
+		"back":   {Filename: "back.png", Data: []byte{2}},
+		"artist": {Filename: "artist.jpg", Data: []byte{3}},
+		"disc":   {Filename: "disc.jpg", Data: []byte{4}},
+		"icon":   {Filename: "icon.png", Data: []byte{5}},
+	}
+	data, items, _, err := Build(map[string]string{"Title": "Song"}, covers, nil, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items != 6 {
+		t.Fatalf("items = %d, want 6", items)
+	}
+	parsed, err := ape.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{
+		"Cover Art (Front)", "Cover Art (Back)", "Artist Picture",
+		"Cover Art (Disc)", "Cover Art (Icon)",
+	} {
+		item, ok := parsed.Get(key)
+		if !ok || item.Flags&2 == 0 || len(item.Value) == 0 {
+			t.Fatalf("%s: ok=%v flags=%d len=%d", key, ok, item.Flags, len(item.Value))
+		}
+	}
 }

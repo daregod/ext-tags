@@ -23,7 +23,8 @@ type Cover struct {
 // TagFile is the decoded content of a .tag file.
 type TagFile struct {
 	Fields map[string]string
-	Cover  *Cover
+	Cover  *Cover            // front cover alias
+	Covers map[string]*Cover // front, back, artist, disc, icon
 }
 
 // ReadTagFile parses a .tag file produced by ext-tags or foo_external_tags.
@@ -32,12 +33,28 @@ func ReadTagFile(path string) (*TagFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	tf := &TagFile{Fields: make(map[string]string)}
+	artKeys := map[string]string{
+		"cover art (front)": "front",
+		"cover art (back)":  "back",
+		"artist picture":    "artist",
+		"cover art (disc)":  "disc",
+		"cover art (icon)":  "icon",
+	}
+	tf := &TagFile{Fields: make(map[string]string), Covers: make(map[string]*Cover)}
 	for _, item := range parsed.Items {
 		if item.Flags&2 != 0 {
+			kind, ok := artKeys[strings.ToLower(item.Key)]
+			if !ok {
+				continue
+			}
 			filename, data := splitCover(item.Value)
-			if len(data) > 0 {
-				tf.Cover = &Cover{Filename: filename, MIME: mimeFor(filename), Data: data}
+			if len(data) == 0 {
+				continue
+			}
+			cover := &Cover{Filename: filename, MIME: mimeFor(filename), Data: data}
+			tf.Covers[kind] = cover
+			if kind == "front" {
+				tf.Cover = cover
 			}
 			continue
 		}

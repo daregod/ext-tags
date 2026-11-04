@@ -15,23 +15,23 @@
 | Ogg Vorbis | `.ogg` | Vorbis comments | ✅ |
 | Opus | `.opus` | Vorbis comments | ✅ |
 | FLAC | `.flac` | Vorbis comments | ✅ |
-| Ogg FLAC | `.oga` | FLAC-комментарии в Ogg | ✅ свой Ogg-ридер, эталон fb2k совпал |
+| Ogg FLAC | `.oga` | FLAC-комментарии в Ogg | ✅ свой Ogg-ридер, эталон foobar2000 совпал |
 | WavPack | `.wv` | APEv2 в конце файла | ✅ |
 | Monkey's Audio | `.ape` | APEv2 в конце файла | ✅ |
 | Musepack | `.mpc` | APEv2 в конце файла | ✅ магия `MPCK`/`MP+` (синтетический тест) |
 | TAK | `.tak` | APEv2 в конце файла | ✅ магия `tBaK` (синтетический тест) |
 | WAV | `.wav` | LIST/INFO + ID3v2 (в т.ч. после RIFF) | ✅ |
-| Wave64 | `.w64` | ID3v2-чанк до `data`, 64-битные размеры | ✅ эталон fb2k совпал |
+| Wave64 | `.w64` | ID3v2-чанк до `data`, 64-битные размеры | ✅ эталон foobar2000 совпал |
 | RF64 | `.rf64` | как WAV, 64-битные размеры | ✅ `internal/riff` + фикстура |
 | AIFF | `.aif`, `.aiff` | NAME/AUTH/ANNO + ID3v2-чанк | ✅ свой IFF-ридер, фикстура с ID3 |
 | WMA | `.wma` | ASF Content Description | ✅ |
 | WMV / ASF | `.wmv`, `.asf` | ASF Content Description | ✅ |
 | Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ |
-| Speex | `.spx` | Vorbis comments в Ogg | ✅ свой Ogg-ридер, эталон fb2k совпал |
-| AC3 | `.ac3` | APEv2 в конце файла (как fb2k) | ✅ |
+| Speex | `.spx` | Vorbis comments в Ogg | ✅ свой Ogg-ридер, эталон foobar2000 совпал |
+| AC3 | `.ac3` | APEv2 в конце файла (как foobar2000) | ✅ |
 | DTS | `.dts` | APEv2; `.dts` может быть Matroska с DTS | ✅ расширение приоритетнее магии |
 | AU / SND | `.au`, `.snd` | нет стандартных тегов | ⏸ вне области |
-| MPEG Transport Stream | `.ts` | нет тег-контейнера | ⏸ fb2k не читает даже заполненный внешний `.tag` (только обложку) — не поддерживаем |
+| MPEG Transport Stream | `.ts` | нет тег-контейнера | ⏸ foobar2000 не читает даже заполненный внешний `.tag` (только обложку) — не поддерживаем |
 | Audio CD | — | CD-TEXT через Windows API | ⏸ вне области CLI |
 
 ### Приоритеты

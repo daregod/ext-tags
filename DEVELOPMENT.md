@@ -205,3 +205,19 @@ make tag TAG=vX.Y.Z
 - Ошибки — с контекстом (`fmt.Errorf("...: %w", err)`), без паник в
   библиотечном коде.
 - Новое поведение — с тестом; пользовательские изменения — в CHANGELOG.
+## Обложки
+
+Пять слотов fb2k хранятся в `.tag` под фиксированными ключами APEv2:
+
+| Слот | Ключ | Sidecar по умолчанию |
+|---|---|---|
+| front | `Cover Art (Front)` | `cover`, `folder`, `front`, `album`, `poster`, `box` |
+| back | `Cover Art (Back)` | `back` |
+| artist | `Artist Picture` | `artist` |
+| disc | `Cover Art (Disc)` | `disc`, `media` |
+| icon | `Cover Art (Icon)` | `icon` |
+
+`extractor.Result.Artwork` — map `front/back/artist/disc/icon` → `*Cover`.
+Встроенные картинки сейчас дают только front; остальные слоты заполняются
+sidecar-файлами (`cover.back`, `cover.artist`, …). `tagfile.Build` принимает
+этот map и пишет/сохраняет соответствующие APEv2-элементы.

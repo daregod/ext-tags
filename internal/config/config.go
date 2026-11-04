@@ -50,8 +50,12 @@ type CoverConfig struct {
 	Enabled   bool     `yaml:"enabled"`
 	Field     string   `yaml:"field"`
 	Filename  string   `yaml:"filename"`
-	Names     []string `yaml:"names"`
+	Names     []string `yaml:"names"` // front cover
 	Directory bool     `yaml:"directory"`
+	Back      []string `yaml:"back"`
+	Artist    []string `yaml:"artist"`
+	Disc      []string `yaml:"disc"`
+	Icon      []string `yaml:"icon"`
 }
 
 // FieldsConfig controls how container fields become tag fields.
@@ -198,8 +202,12 @@ func Default() *Config {
 			Enabled:   true,
 			Field:     "Cover Art (Front)",
 			Filename:  "cover",
-			Names:     []string{"cover", "folder", "front", "album", "poster", "box", "disc", "media"},
+			Names:     []string{"cover", "folder", "front", "album", "poster", "box"},
 			Directory: true,
+			Back:      []string{"back"},
+			Artist:    []string{"artist"},
+			Disc:      []string{"disc", "media"},
+			Icon:      []string{"icon"},
 		},
 		Fields: FieldsConfig{
 			Aliases: aliases,
@@ -454,9 +462,17 @@ func (c *Config) Validate() error {
 	if c.Cover.Enabled && c.Cover.Field == "" {
 		return fmt.Errorf("cover.field is empty")
 	}
-	for _, name := range c.Cover.Names {
-		if name == "" || strings.ContainsAny(name, `\/:*?"<>|.`) {
-			return fmt.Errorf("cover.names: invalid name %q", name)
+	for listName, names := range map[string][]string{
+		"cover.names":  c.Cover.Names,
+		"cover.back":   c.Cover.Back,
+		"cover.artist": c.Cover.Artist,
+		"cover.disc":   c.Cover.Disc,
+		"cover.icon":   c.Cover.Icon,
+	} {
+		for _, name := range names {
+			if name == "" || strings.ContainsAny(name, `\/:*?"<>|.`) {
+				return fmt.Errorf("%s: invalid name %q", listName, name)
+			}
 		}
 	}
 	switch c.Fields.RulesMode {
@@ -540,10 +556,15 @@ files:
   # extensions: [.mp3, .flac, .m4a]
 
 cover:
-  # embed the front cover into the .tag file
+  # embed artwork into the .tag file
   enabled: true
-  # fall back to cover/folder/front/album/poster/box/disc/media.*
+  # look for front/back/artist/disc/icon images next to the audio file
   directory: true
+  names: [cover, folder, front, album, poster, box]  # front
+  back: [back]
+  artist: [artist]
+  disc: [disc, media]
+  icon: [icon]
 
 # fields:
 #   aliases:                    # container key -> foobar2000 field

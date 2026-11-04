@@ -158,6 +158,12 @@ func TestAPEv2Containers(t *testing.T) {
 			tag := ape.NewTag()
 			tag.AddText("Title", "APEv2 Title")
 			tag.AddText("Artist", "APEv2 Artist")
+			for _, key := range []string{
+				"Cover Art (Front)", "Cover Art (Back)", "Artist Picture",
+				"Cover Art (Disc)", "Cover Art (Icon)",
+			} {
+				tag.AddCoverArt(key, "cover.jpg", []byte{0xFF, 0xD8, 0xFF})
+			}
 			data, err := tag.Serialize()
 			if err != nil {
 				t.Fatal(err)
@@ -175,6 +181,11 @@ func TestAPEv2Containers(t *testing.T) {
 			}
 			if res.Fields["Title"] != "APEv2 Title" || res.Fields["Artist"] != "APEv2 Artist" {
 				t.Fatalf("fields = %v", res.Fields)
+			}
+			for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+				if res.Artwork[kind] == nil {
+					t.Fatalf("missing %s artwork: %v", kind, res.Artwork)
+				}
 			}
 		})
 	}

@@ -30,10 +30,11 @@ type Cover struct {
 
 // Result is raw metadata, before any field rules are applied.
 type Result struct {
-	Format string
-	Fields map[string]string
-	Vars   map[string]string
-	Cover  *Cover
+	Format  string
+	Fields  map[string]string
+	Vars    map[string]string
+	Cover   *Cover
+	Artwork map[string]*Cover // front, back, artist, disc, icon
 }
 
 // IsSupported reports whether path has one of the configured extensions.
@@ -61,6 +62,22 @@ func Extract(path string) (*Result, error) {
 // ExtractWithOptions reads metadata from path. It returns ErrNoTags when the
 // file has no tag block at all.
 func ExtractWithOptions(path string, opts Options) (*Result, error) {
+	res, err := extractWithOptions(path, opts)
+	if res == nil {
+		return res, err
+	}
+	if res.Artwork == nil {
+		res.Artwork = map[string]*Cover{}
+	}
+	if res.Cover != nil {
+		res.Artwork["front"] = res.Cover
+	} else if front := res.Artwork["front"]; front != nil {
+		res.Cover = front
+	}
+	return res, err
+}
+
+func extractWithOptions(path string, opts Options) (*Result, error) {
 	// AC3 and DTS have no native tag container; foobar2000 appends APEv2.
 	// Extension wins over magic: a .dts file may actually be Matroska with DTS.
 	switch strings.ToLower(filepath.Ext(path)) {
@@ -202,7 +219,7 @@ func applyTagMetadata(m tag.Metadata, res *Result) {
 }
 
 func empty() *Result {
-	return &Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	return &Result{Fields: map[string]string{}, Vars: map[string]string{}, Artwork: map[string]*Cover{}}
 }
 
 func putVar(m map[string]string, key, val string) {

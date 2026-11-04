@@ -148,23 +148,46 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 }
 
 // isOwnOutput reports whether path is a .tag (or its .bak) we produce ourselves.
-// applySidecarCover embeds a cover image found next to the audio file when
-// the file itself has no embedded picture.
-func (a *app) applySidecarCover(md *extractor.Result, path string, cfg *config.Config) {
-	if md.Cover != nil || !cfg.Cover.Enabled || !cfg.Cover.Directory {
+// applySidecarArtwork embeds images found next to the audio file for every
+// artwork slot that has no embedded picture yet.
+func (a *app) applySidecarArtwork(md *extractor.Result, path string, cfg *config.Config) {
+	if !cfg.Cover.Enabled || !cfg.Cover.Directory {
 		return
 	}
-	img, err := artwork.Find(filepath.Dir(path), cfg.Cover.Names)
-	if err != nil {
-		return
+	if md.Artwork == nil {
+		md.Artwork = map[string]*extractor.Cover{}
 	}
-	md.Cover = &extractor.Cover{
-		Filename: "cover" + strings.ToLower(filepath.Ext(img.Filename)),
-		MIME:     img.MIME,
-		Data:     img.Data,
+	if md.Cover != nil {
+		md.Artwork["front"] = md.Cover
+	}
+	specs := []struct {
+		kind  string
+		names []string
+	}{
+		{"front", cfg.Cover.Names},
+		{"back", cfg.Cover.Back},
+		{"artist", cfg.Cover.Artist},
+		{"disc", cfg.Cover.Disc},
+		{"icon", cfg.Cover.Icon},
+	}
+	for _, spec := range specs {
+		if len(spec.names) == 0 || md.Artwork[spec.kind] != nil {
+			continue
+		}
+		img, err := artwork.Find(filepath.Dir(path), spec.names)
+		if err != nil {
+			continue
+		}
+		name := spec.kind + strings.ToLower(filepath.Ext(img.Filename))
+		if spec.kind == "front" {
+			name = "cover" + strings.ToLower(filepath.Ext(img.Filename))
+		}
+		md.Artwork[spec.kind] = &extractor.Cover{Filename: name, MIME: img.MIME, Data: img.Data}
+	}
+	if front := md.Artwork["front"]; front != nil {
+		md.Cover = front
 	}
 }
-
 func (a *app) isOwnOutput(path string, cfg *config.Config) bool {
 	lower := strings.ToLower(path)
 	suffix := strings.ToLower(cfg.TagFile.Suffix)
@@ -256,7 +279,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		return
 	}
 
-	a.applySidecarCover(md, path, cfg)
+	a.applySidecarArtwork(md, path, cfg)
 
 	fields, err := engine.Build(md, meta)
 	if err != nil {
@@ -267,7 +290,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		return
 	}
 
-	written, err := tagfile.Write(path, fields, md.Cover, cfg, a.opts.dryRun)
+	written, err := tagfile.Write(path, fields, md.Artwork, cfg, a.opts.dryRun)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()

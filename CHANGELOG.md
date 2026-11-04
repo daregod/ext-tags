@@ -8,6 +8,9 @@
 
 ### Добавлено
 
+- Обложки: пять artwork-слотов foobar2000 — `front`/`back`/`artist`/`disc`/`icon`.
+  Ключи APEv2: `Cover Art (Front/Back/Disc/Icon)` и `Artist Picture`; имена
+  sidecar-файлов настраиваются отдельно (`cover.names`, `cover.back`, …).
 - AC3 и DTS: чтение APEv2-тега из конца файла (как это делает foobar2000);
   для `.dts` расширение приоритетнее магии, потому что файл может быть Matroska.
 

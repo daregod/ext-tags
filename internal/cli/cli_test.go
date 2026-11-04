@@ -176,21 +176,53 @@ func TestApplySidecarCover(t *testing.T) {
 	a := &app{opts: &options{}}
 
 	md := &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
-	a.applySidecarCover(md, filepath.Join(dir, "track.flac"), cfg)
+	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
 	if md.Cover == nil || md.Cover.Filename != "cover.jpg" || md.Cover.MIME != "image/jpeg" {
 		t.Fatalf("cover = %+v", md.Cover)
 	}
 
 	embedded := &extractor.Result{Cover: &extractor.Cover{Filename: "embedded.png", MIME: "image/png"}}
-	a.applySidecarCover(embedded, filepath.Join(dir, "track.flac"), cfg)
+	a.applySidecarArtwork(embedded, filepath.Join(dir, "track.flac"), cfg)
 	if embedded.Cover.Filename != "embedded.png" {
 		t.Fatal("embedded cover must win")
 	}
 
 	cfg.Cover.Directory = false
 	md = &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
-	a.applySidecarCover(md, filepath.Join(dir, "track.flac"), cfg)
+	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
 	if md.Cover != nil {
 		t.Fatal("sidecar must be disabled")
+	}
+}
+func TestApplySidecarAllArtwork(t *testing.T) {
+	dir := t.TempDir()
+	for name, data := range map[string][]byte{
+		"cover.jpg":  {0xFF, 0xD8},
+		"back.png":   {0x89, 0x50},
+		"artist.jpg": {0xFF, 0xD8},
+		"disc.jpg":   {0xFF, 0xD8},
+		"icon.gif":   {0x47, 0x49},
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := config.Default()
+	a := &app{opts: &options{}}
+	md := &extractor.Result{Fields: map[string]string{}, Vars: map[string]string{}}
+	a.applySidecarArtwork(md, filepath.Join(dir, "track.flac"), cfg)
+	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+		if md.Artwork[kind] == nil {
+			t.Fatalf("missing %s: %v", kind, md.Artwork)
+		}
+	}
+	if md.Cover == nil || md.Cover.Filename != "cover.jpg" {
+		t.Fatalf("front = %+v", md.Cover)
+	}
+	if got := md.Artwork["back"].Filename; got != "back.png" {
+		t.Fatalf("back = %q", got)
+	}
+	if got := md.Artwork["icon"].Filename; got != "icon.gif" {
+		t.Fatalf("icon = %q", got)
 	}
 }

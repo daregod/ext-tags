@@ -49,7 +49,8 @@ ext-tags extract .
 ```
 
 Встроенная обложка имеет приоритет; если её нет, будет взята картинка из
-папки. Найденная обложка попадёт в `.tag` как `Cover Art (Front)`.
+папки. Поддерживаются все пять artwork-слотов foobar2000: front, back, artist,
+disc, icon.
 
 ### Массовая нормализация тегов
 
@@ -227,7 +228,11 @@ files:
 cover:
   enabled: true
   directory: true
-  names: [cover, folder, front, album, poster, box, disc, media]
+  names: [cover, folder, front, album, poster, box]  # front
+  back: [back]
+  artist: [artist]
+  disc: [disc, media]
+  icon: [icon]
 
 fields:
   rules:
@@ -241,14 +246,34 @@ fields:
 
 ## Обложки
 
-1. Сначала берётся встроенная картинка из файла.
-2. Если её нет — ищется файл в папке: `cover`, `folder`, `front`, `album`,
-   `poster`, `box`, `disc`, `media` с расширениями `.jpg`, `.jpeg`, `.png`,
-   `.webp`, `.gif` (регистр не важен).
-3. Найденная картинка попадает в `.tag` как `Cover Art (Front)`.
+foobar2000 знает пять типов artwork; каждый хранится в `.tag` под своим ключом:
 
-Отключить: `--cover=false` или `cover.enabled: false`. Поиск в папке
-отключается через `cover.directory: false`.
+| Слот foobar2000 | Ключ в `.tag` | Имена файлов по умолчанию |
+|---|---|---|
+| Front Cover | `Cover Art (Front)` | `cover`, `folder`, `front`, `album`, `poster`, `box` |
+| Back Cover | `Cover Art (Back)` | `back` |
+| Artist | `Artist Picture` | `artist` |
+| Disc | `Cover Art (Disc)` | `disc`, `media` |
+| Icon | `Cover Art (Icon)` | `icon` |
+
+1. Сначала берётся встроенная картинка (сейчас это front cover).
+2. Остальные слоты ищутся в папке по именам из таблицы; расширения —
+   `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` (регистр не важен).
+3. Найденные картинки попадают в `.tag` под соответствующими ключами.
+
+Отключить всё: `--cover=false` или `cover.enabled: false`. Поиск в папке
+отключается через `cover.directory: false`. Списки имён настраиваются:
+
+```yaml
+cover:
+  enabled: true
+  directory: true
+  names: [cover, folder, front, album, poster, box]
+  back: [back]
+  artist: [artist]
+  disc: [disc, media]
+  icon: [icon]
+```
 
 ## Поддерживаемые форматы
 
@@ -258,7 +283,7 @@ WMA/WMV/ASF, Matroska/WebM, AC3 и DTS (APEv2 в конце файла — та�
 foobar2000).
 
 Форматы без тегов (AU, TS, Audio CD) не поддерживаются — см.
-[TODO.md](TODO.md). В MPEG-TS нет контейнера тегов, и fb2k не читает даже заполненный внешний
+[TODO.md](TODO.md). В MPEG-TS нет контейнера тегов, и foobar2000 не читает даже заполненный внешний
 `.tag` (видит только обложку).
 
 ## Решение проблем
