@@ -21,7 +21,7 @@ func TestWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	fields := map[string]string{
-		"Title": "WMA Title", "Artist": "WMA Artist", "Album": "WMA Album", "Track": "3",
+		"Title": "WMA Title", "Artist": "WMA Artist", "Album": "WMA Album", "Track": "3", "Year": "2026",
 	}
 	covers := map[string]*asf.Cover{
 		"front":  {Filename: "front.jpg", MIME: "image/jpeg", Data: []byte{1}},
