@@ -64,7 +64,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".opus", ".spx":
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx":
 	default:
 		res.Status = "unsupported"
 		res.Reason = "import is implemented for MP3, FLAC and Ogg Vorbis/Opus/Speex"
@@ -121,7 +121,7 @@ func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
 			Replace: opts.replace,
 			Backup:  opts.backup,
 		})
-	case ".ogg", ".opus", ".spx":
+	case ".ogg", ".oga", ".opus", ".spx":
 		return importer.ImportOgg(path, tf, importer.Options{
 			Replace: opts.replace,
 			Backup:  opts.backup,

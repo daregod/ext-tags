@@ -45,6 +45,9 @@ func WriteComments(path string, comments []vorbis.Comment, pictures []vorbis.Pic
 	if len(packets) < 2 {
 		return fmt.Errorf("too few Ogg packets")
 	}
+	if isOggFLAC(packets) {
+		return writeOggFLAC(path, pages, packets, comments, pictures, replace)
+	}
 
 	codec, commentIndex, headerCount, err := detectCodec(packets)
 	if err != nil {
@@ -139,8 +142,6 @@ func detectCodec(packets []packet) (string, int, int, error) {
 		return "opus", 1, 2, nil
 	case len(first) >= 8 && string(first[:8]) == "Speex   ":
 		return "speex", 1, 2, nil
-	case len(first) >= 5 && first[0] == 0x7F && string(first[1:5]) == "FLAC":
-		return "", 0, 0, fmt.Errorf("ogg FLAC import is not implemented yet")
 	}
 	return "", 0, 0, fmt.Errorf("unsupported Ogg codec")
 }

@@ -8,6 +8,8 @@
 
 ### Добавлено
 
+- Обратный импорт для Ogg FLAC: FLAC-блоки внутри Ogg, счётчик header-пакетов
+  и перепаковка Ogg-страниц.
 - Обратный импорт для Ogg Vorbis/Opus/Speex: Vorbis comments и
   `METADATA_BLOCK_PICTURE`, с перепаковкой Ogg-страниц и CRC; аудио не
   перекодируется.

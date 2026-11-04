@@ -48,7 +48,7 @@
 - [x] MP3: запись ID3v1/2.2/2.3/2.4 (`ext-tags import`, свой writer `internal/id3`).
 - [x] FLAC: запись Vorbis comments и PICTURE-блоков.
 - [x] Ogg Vorbis / Opus / Speex: запись Vorbis comments и artwork (Ogg-перепаковка).
-- [ ] Ogg FLAC: запись FLAC-блоков в Ogg (отдельный контейнерный кейс).
+- [x] Ogg FLAC: запись FLAC-блоков в Ogg, счётчик header-пакетов.
 - [ ] MP4/M4A (AAC/ALAC): запись iTunes-атомов.
 - [ ] APEv2 (APE, WavPack, TAK, Musepack).
 - [ ] Matroska/WebM: запись Tags.
