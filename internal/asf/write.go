@@ -161,6 +161,7 @@ func buildContentDescription(fields map[string]string) []byte {
 
 type extDescriptor struct {
 	name  string
+	typ   uint16
 	value []byte
 }
 
@@ -172,7 +173,7 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 			continue
 		}
 		replaced[strings.ToLower(name)] = true
-		descriptors = append(descriptors, extDescriptor{name: name, value: utf16Bytes(fields[field])})
+		descriptors = append(descriptors, extDescriptor{name: name, typ: 0, value: utf16Z(fields[field])})
 	}
 	added := make(map[byte]bool)
 	for kind, pictureType := range pictureTypes {
@@ -184,7 +185,7 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 		if err != nil {
 			continue
 		}
-		descriptors = append(descriptors, extDescriptor{name: "WM/Picture", value: value})
+		descriptors = append(descriptors, extDescriptor{name: "WM/Picture", typ: 1, value: value})
 		added[pictureType] = true
 	}
 	if !replace {
@@ -194,13 +195,13 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 				if len(d.Value) > 0 && added[d.Value[0]] {
 					continue
 				}
-				descriptors = append(descriptors, extDescriptor{name: d.Name, value: d.Value})
+				descriptors = append(descriptors, extDescriptor{name: d.Name, typ: d.Type, value: d.Value})
 				continue
 			}
 			if replaced[lower] {
 				continue
 			}
-			descriptors = append(descriptors, extDescriptor{name: d.Name, value: d.Value})
+			descriptors = append(descriptors, extDescriptor{name: d.Name, typ: d.Type, value: d.Value})
 		}
 	}
 	if len(descriptors) == 0 {
@@ -219,7 +220,7 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 		out = append(out, length...)
 		out = append(out, name...)
 		meta := make([]byte, 4)
-		binary.LittleEndian.PutUint16(meta[0:2], 1)
+		binary.LittleEndian.PutUint16(meta[0:2], d.typ)
 		binary.LittleEndian.PutUint16(meta[2:4], uint16(len(d.value)))
 		out = append(out, meta...)
 		out = append(out, d.value...)
