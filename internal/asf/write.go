@@ -23,7 +23,7 @@ var descriptorFields = map[string]string{
 	"Album":        "WM/AlbumTitle",
 	"Album artist": "WM/AlbumArtist",
 	"Genre":        "WM/Genre",
-	"Year":         "WM/Year",
+	"Year":         "date",
 	"Track":        "WM/TrackNumber",
 	"Disc":         "WM/PartOfSet",
 	"Composer":     "WM/Composer",

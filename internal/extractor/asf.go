@@ -52,7 +52,7 @@ func extractASF(path string) (*Result, error) {
 			key = "ALBUMARTIST"
 		case "genre":
 			key = "GENRE"
-		case "year":
+		case "year", "date":
 			key = "YEAR"
 		case "tracknumber":
 			key = "TRACKNUMBER"
