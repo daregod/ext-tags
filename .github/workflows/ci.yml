@@ -26,7 +26,7 @@ jobs:
       - name: Format check, vet, lint and tests
         run: make check
       - name: Test with coverage
-        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -race -covermode=atomic -coverpkg=./internal/... -coverprofile=coverage.out ./...
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
