@@ -4,7 +4,11 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.6.0] — 2026-11-04
+
+### Добавлено
+
+- Лицензия MIT (`LICENSE`).
 
 ### Изменено
 
