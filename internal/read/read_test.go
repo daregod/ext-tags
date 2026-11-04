@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dhowden/tag"
+
 	"github.com/daregod/ext-tags/internal/metadata"
 )
 
@@ -105,4 +107,53 @@ func field(doc *metadata.Document, name string) string {
 		}
 	}
 	return ""
+}
+func TestCoverFilenameAndName(t *testing.T) {
+	cases := []struct {
+		ext, mime, want string
+	}{
+		{"jpg", "", "cover.jpg"},
+		{"png", "", "cover.png"},
+		{"", "image/jpeg", "cover.jpg"},
+		{"", "image/png", "cover.png"},
+		{"webp", "", "cover.webp"},
+	}
+	for _, tc := range cases {
+		if got := CoverFilename(&tag.Picture{Ext: tc.ext, MIMEType: tc.mime}); got != tc.want {
+			t.Errorf("CoverFilename(%q,%q) = %q, want %q", tc.ext, tc.mime, got, tc.want)
+		}
+	}
+	if got := CoverName("folder.png", ""); got != "cover.png" {
+		t.Errorf("CoverName = %q", got)
+	}
+	if got := CoverName("", "image/webp"); got != "cover.webp" {
+		t.Errorf("CoverName webp = %q", got)
+	}
+	if got := CoverName("", "application/octet-stream"); got != "cover.octet-stream" {
+		t.Errorf("CoverName unknown = %q", got)
+	}
+}
+
+func TestGetStr(t *testing.T) {
+	cases := []struct {
+		in   interface{}
+		want string
+	}{
+		{"x", "x"},
+		{[]string{"x", "y"}, "x"},
+		{int(3), "3"},
+		{int64(4), "4"},
+		{true, ""},
+	}
+	for _, tc := range cases {
+		if got := getStr(tc.in); got != tc.want {
+			t.Errorf("getStr(%v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestNormalizeKeyInvalid(t *testing.T) {
+	if _, ok := NormalizeKey("\xff"); ok {
+		t.Fatal("invalid UTF-8 must be rejected")
+	}
 }
