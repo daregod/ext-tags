@@ -6,22 +6,22 @@ import (
 	"testing"
 
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 type serviceReader struct {
 	doc     *metadata.Document
 	err     error
-	gotOpts format.ReadOptions
+	gotOpts tagformat.ReadOptions
 }
 
 func (r *serviceReader) Name() string         { return "fake" }
 func (r *serviceReader) Extensions() []string { return []string{".flac"} }
-func (r *serviceReader) Read(_ string, opts format.ReadOptions) (*metadata.Document, error) {
+func (r *serviceReader) Read(_ string, opts tagformat.ReadOptions) (*metadata.Document, error) {
 	r.gotOpts = opts
 	return r.doc, r.err
 }
@@ -29,13 +29,13 @@ func (r *serviceReader) Read(_ string, opts format.ReadOptions) (*metadata.Docum
 type serviceWriter struct {
 	called bool
 	doc    *metadata.Document
-	opts   format.WriteOptions
+	opts   tagformat.WriteOptions
 	err    error
 }
 
 func (w *serviceWriter) Name() string         { return "fake" }
 func (w *serviceWriter) Extensions() []string { return []string{".flac"} }
-func (w *serviceWriter) Write(_ string, doc *metadata.Document, opts format.WriteOptions) error {
+func (w *serviceWriter) Write(_ string, doc *metadata.Document, opts tagformat.WriteOptions) error {
 	w.called = true
 	w.doc = doc
 	w.opts = opts
@@ -57,7 +57,7 @@ func TestProcessFileUsesInjectedReader(t *testing.T) {
 	doc := metadata.New()
 	doc.Fields["Title"] = "Injected"
 	reader := &serviceReader{doc: doc}
-	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{reader}, nil)}
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{reader}, nil)}
 	cfg := testConfig()
 	engine, err := rules.New(cfg)
 	if err != nil {
@@ -84,7 +84,7 @@ func TestProcessFileUnknownReader(t *testing.T) {
 	if err := os.WriteFile(path, []byte("audio"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	a := &app{opts: &options{quiet: true}, registry: format.New(nil, nil)}
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New(nil, nil)}
 	cfg := testConfig()
 	engine, err := rules.New(cfg)
 	if err != nil {
@@ -102,7 +102,7 @@ func TestProcessFileNoTags(t *testing.T) {
 	if err := os.WriteFile(path, []byte("audio"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{&serviceReader{err: read.ErrNoTags}}, nil)}
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{&serviceReader{err: read.ErrNoTags}}, nil)}
 	cfg := testConfig()
 	engine, err := rules.New(cfg)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestImportFileUsesInjectedWriter(t *testing.T) {
 	writer := &serviceWriter{}
 	doc := metadata.New()
 	doc.Fields["Title"] = "Imported"
-	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{&serviceReader{doc: doc}}, []format.Writer{writer})}
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{&serviceReader{doc: doc}}, []tagformat.Writer{writer})}
 	a.importFile(path, ".tag", &importOptions{replace: true, backup: true, version: 4, v1: true})
 
 	if !writer.called {
@@ -148,7 +148,7 @@ func TestImportFileUnknownWriter(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeTestTag(t, path+".tag", "Imported")
-	a := &app{opts: &options{quiet: true}, registry: format.New(nil, nil)}
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New(nil, nil)}
 	a.importFile(path, ".tag", &importOptions{})
 	if a.failed {
 		t.Fatal("unknown writer must not mark failure")

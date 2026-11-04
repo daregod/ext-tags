@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/formats/asf"
 	"github.com/daregod/ext-tags/internal/formats/matroska"
@@ -15,28 +14,29 @@ import (
 	"github.com/daregod/ext-tags/internal/importer"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 // NewDefault returns the production registry. The list is explicit so tests
-// can build a smaller registry with format.New instead.
-func NewDefault() *format.Registry {
-	return format.New(defaultReaders(), defaultWriters())
+// can build a smaller registry with tagformat.New instead.
+func NewDefault() *tagformat.Registry {
+	return tagformat.New(defaultReaders(), defaultWriters())
 }
 
 type readerSpec struct {
 	name       string
 	extensions []string
-	read       func(string, format.ReadOptions) (*metadata.Document, error)
+	read       func(string, tagformat.ReadOptions) (*metadata.Document, error)
 }
 
 func (r readerSpec) Name() string         { return r.name }
 func (r readerSpec) Extensions() []string { return r.extensions }
-func (r readerSpec) Read(path string, opts format.ReadOptions) (*metadata.Document, error) {
+func (r readerSpec) Read(path string, opts tagformat.ReadOptions) (*metadata.Document, error) {
 	return r.read(path, opts)
 }
 
-func defaultReaders() []format.Reader {
-	return []format.Reader{
+func defaultReaders() []tagformat.Reader {
+	return []tagformat.Reader{
 		readerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, readTaglib},
 		readerSpec{"flac", []string{".flac"}, readFLAC},
 		readerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, readOgg},
@@ -49,11 +49,11 @@ func defaultReaders() []format.Reader {
 	}
 }
 
-func readTaglib(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readTaglib(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	return read.Taglib(path)
 }
 
-func readFLAC(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readFLAC(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	magic, err := read.ReadMagic(path, 4)
 	if err == nil && string(magic) == "OggS" {
 		return ogg.Read(path)
@@ -61,11 +61,11 @@ func readFLAC(path string, _ format.ReadOptions) (*metadata.Document, error) {
 	return read.Taglib(path)
 }
 
-func readOgg(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readOgg(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	return ogg.Read(path)
 }
 
-func readAPEv2(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readAPEv2(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".ac3":
 		return ape.Read(path, "AC3")
@@ -83,15 +83,15 @@ func readAPEv2(path string, _ format.ReadOptions) (*metadata.Document, error) {
 	return ape.Read(path, "APEv2")
 }
 
-func readMatroska(path string, opts format.ReadOptions) (*metadata.Document, error) {
+func readMatroska(path string, opts tagformat.ReadOptions) (*metadata.Document, error) {
 	return matroska.Read(path, opts.CoverNames)
 }
 
-func readASF(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readASF(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	return asf.Read(path)
 }
 
-func readRIFF(path string, _ format.ReadOptions) (*metadata.Document, error) {
+func readRIFF(path string, _ tagformat.ReadOptions) (*metadata.Document, error) {
 	return riff.Read(path)
 }
 
@@ -103,7 +103,7 @@ type writerSpec struct {
 
 func (w writerSpec) Name() string         { return w.name }
 func (w writerSpec) Extensions() []string { return w.extensions }
-func (w writerSpec) Write(path string, doc *metadata.Document, opts format.WriteOptions) error {
+func (w writerSpec) Write(path string, doc *metadata.Document, opts tagformat.WriteOptions) error {
 	return w.write(path, tagFile(doc), importer.Options{
 		Replace: opts.Replace,
 		Backup:  opts.Backup,
@@ -112,8 +112,8 @@ func (w writerSpec) Write(path string, doc *metadata.Document, opts format.Write
 	})
 }
 
-func defaultWriters() []format.Writer {
-	return []format.Writer{
+func defaultWriters() []tagformat.Writer {
+	return []tagformat.Writer{
 		writerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, importer.ImportMP3},
 		writerSpec{"flac", []string{".flac"}, writeFLAC},
 		writerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, importer.ImportOgg},

@@ -21,7 +21,7 @@ ext-tags/
 │   ├── metadata/         <-- Document/Cover/ArtworkKind
 │   ├── formats/          <-- ape/asf/flac/id3/matroska/mp4/ogg/riff/vorbis
 │   ├── read/             <-- общие read-хелперы + taglib adapter
-│   ├── format/           <-- Reader/Writer + Registry
+│   ├── tagformat/        <-- Reader/Writer + Registry
 │   ├── registry/         <-- явный NewDefault
 │   ├── importer/         <-- обратный импорт: .tag → формат
 │   ├── rules/            <-- aliases/ignore/шаблоны/copy/rename/default/remove

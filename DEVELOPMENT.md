@@ -40,7 +40,7 @@ cmd/genfixtures     генератор testdata/formats
 internal/cli        команды cobra, вывод text/json, импорт
 internal/config     YAML-схема, слои, профили, валидация
 internal/metadata   Document/Cover/ArtworkKind — общие типы
-internal/format     Reader/Writer + Registry, явный format.New
+internal/tagformat  Reader/Writer + Registry, явный tagformat.New
 internal/registry   NewDefault: явный список reader/writer по форматам
 internal/read       общие read-хелперы + dhowden/tag adapter
 internal/rules      aliases/ignore/set/copy/rename/default/remove
@@ -56,11 +56,11 @@ internal/version    версия, коммит, дата
 Поток данных:
 
 ```
-cli → registry.NewDefault → format.Reader → формат-пакет/read.Taglib
+cli → registry.NewDefault → tagformat.Reader → формат-пакет/read.Taglib
                                              → metadata.Document
                                              → rules → tagfile
 
-cli → registry.NewDefault → format.Writer → importer → формат
+cli → registry.NewDefault → tagformat.Writer → importer → формат
 ```
 
 `extract` ничего не пишет в аудио. `import` — единственная команда, которая

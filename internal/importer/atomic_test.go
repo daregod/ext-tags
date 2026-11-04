@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/importer"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 type atomicWriter struct {
@@ -18,7 +18,7 @@ type atomicWriter struct {
 
 func (w *atomicWriter) Name() string         { return "fake" }
 func (w *atomicWriter) Extensions() []string { return []string{".wav"} }
-func (w *atomicWriter) Write(path string, _ *metadata.Document, _ format.WriteOptions) error {
+func (w *atomicWriter) Write(path string, _ *metadata.Document, _ tagformat.WriteOptions) error {
 	w.path = path
 	if w.err != nil {
 		return w.err
@@ -33,7 +33,7 @@ type atomicReader struct {
 
 func (r *atomicReader) Name() string         { return "fake" }
 func (r *atomicReader) Extensions() []string { return []string{".wav"} }
-func (r *atomicReader) Read(string, format.ReadOptions) (*metadata.Document, error) {
+func (r *atomicReader) Read(string, tagformat.ReadOptions) (*metadata.Document, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -53,7 +53,7 @@ func TestWriteAtomicVerifyFailureKeepsOriginal(t *testing.T) {
 	reader := &atomicReader{err: errors.New("verify failed")}
 	doc := metadata.New()
 	doc.Fields["Title"] = "x"
-	if err := importer.WriteAtomic(path, writer, reader, doc, format.WriteOptions{}); err == nil {
+	if err := importer.WriteAtomic(path, writer, reader, doc, tagformat.WriteOptions{}); err == nil {
 		t.Fatal("expected verify error")
 	}
 	data, err := os.ReadFile(path)
@@ -81,7 +81,7 @@ func TestWriteAtomicSuccessReplacesOriginal(t *testing.T) {
 	doc := metadata.New()
 	doc.Fields["Title"] = "x"
 	reader := &atomicReader{doc: doc}
-	if err := importer.WriteAtomic(path, writer, reader, doc, format.WriteOptions{}); err != nil {
+	if err := importer.WriteAtomic(path, writer, reader, doc, tagformat.WriteOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(path)

@@ -1,5 +1,5 @@
 // Package format defines reader/writer interfaces and a format registry.
-package format
+package tagformat
 
 import (
 	"path/filepath"

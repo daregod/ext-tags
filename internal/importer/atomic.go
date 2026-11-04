@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 // WriteAtomic writes through a temporary file, verifies the result with a
 // reader, and only then replaces the original.
-func WriteAtomic(path string, writer format.Writer, reader format.Reader, doc *metadata.Document, opts format.WriteOptions) error {
+func WriteAtomic(path string, writer tagformat.Writer, reader tagformat.Reader, doc *metadata.Document, opts tagformat.WriteOptions) error {
 	backup := opts.Backup
 	opts.Backup = false
 	if backup {
@@ -43,7 +43,7 @@ func WriteAtomic(path string, writer format.Writer, reader format.Reader, doc *m
 	if err := writer.Write(tmpPath, doc, opts); err != nil {
 		return err
 	}
-	got, err := reader.Read(tmpPath, format.ReadOptions{})
+	got, err := reader.Read(tmpPath, tagformat.ReadOptions{})
 	if err != nil {
 		return fmt.Errorf("verify: %w", err)
 	}

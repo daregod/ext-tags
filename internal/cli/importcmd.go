@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/importer"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 type importOptions struct {
@@ -117,7 +117,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		a.report(res)
 		return
 	}
-	if err := importer.WriteAtomic(path, writer, reader, documentFromTagFile(tf), format.WriteOptions{
+	if err := importer.WriteAtomic(path, writer, reader, documentFromTagFile(tf), tagformat.WriteOptions{
 		Replace:    opts.replace,
 		Backup:     opts.backup,
 		ID3Version: opts.version,

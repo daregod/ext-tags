@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/registry"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 func TestRoundTrip(t *testing.T) {
@@ -62,14 +62,14 @@ func TestRoundTrip(t *testing.T) {
 			if !ok {
 				t.Fatalf("no writer for %s", path)
 			}
-			if err := writer.Write(path, doc, format.WriteOptions{Replace: true}); err != nil {
+			if err := writer.Write(path, doc, tagformat.WriteOptions{Replace: true}); err != nil {
 				t.Fatal(err)
 			}
 			reader, ok := reg.ReaderFor(path)
 			if !ok {
 				t.Fatalf("no reader for %s", path)
 			}
-			got, err := reader.Read(path, format.ReadOptions{})
+			got, err := reader.Read(path, tagformat.ReadOptions{})
 			if err != nil {
 				t.Fatal(err)
 			}

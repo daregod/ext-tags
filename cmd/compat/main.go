@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagfile"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 func main() {
@@ -83,7 +83,7 @@ func run(dir, referenceDir string, verbose bool) int {
 		if !ok {
 			continue
 		}
-		md, err := reader.Read(audio, format.ReadOptions{CoverNames: cfg.Cover.Names})
+		md, err := reader.Read(audio, tagformat.ReadOptions{CoverNames: cfg.Cover.Names})
 		if errors.Is(err, read.ErrNoTags) {
 			if len(ref.Items) == 0 {
 				fmt.Printf("OK    %-60s no tags in audio and in reference\n", entry.Name())

@@ -9,11 +9,11 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/importer"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/registry"
+	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 func copyFile(t *testing.T, src, dst string) {
@@ -214,5 +214,5 @@ func readAudio(t *testing.T, path string) (*metadata.Document, error) {
 	if !ok {
 		t.Fatalf("no reader for %s", path)
 	}
-	return reader.Read(path, format.ReadOptions{})
+	return reader.Read(path, tagformat.ReadOptions{})
 }

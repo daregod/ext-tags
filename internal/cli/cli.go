@@ -15,12 +15,12 @@ import (
 
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
-	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagfile"
+	"github.com/daregod/ext-tags/internal/tagformat"
 	"github.com/daregod/ext-tags/internal/version"
 )
 
@@ -41,7 +41,7 @@ type options struct {
 
 type app struct {
 	opts     *options
-	registry *format.Registry
+	registry *tagformat.Registry
 	failed   bool
 }
 
@@ -278,7 +278,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		a.report(res)
 		return
 	}
-	md, err := reader.Read(path, format.ReadOptions{CoverNames: cfg.Cover.Names})
+	md, err := reader.Read(path, tagformat.ReadOptions{CoverNames: cfg.Cover.Names})
 	if errors.Is(err, read.ErrNoTags) {
 		res.Status = "no-tags"
 		a.report(res)
@@ -428,7 +428,7 @@ func expandPaths(paths []string, recursive bool, extensions []string) ([]string,
 	}
 	return files, nil
 }
-func (a *app) getRegistry() *format.Registry {
+func (a *app) getRegistry() *tagformat.Registry {
 	if a.registry == nil {
 		a.registry = registry.NewDefault()
 	}
