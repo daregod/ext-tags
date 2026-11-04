@@ -13,6 +13,8 @@
 
 ### Исправлено
 
+- `make tag` создаёт тег через `cmd/devtool` (Go), без shell-кавычек:
+  одинаково работает в `cmd.exe`, PowerShell и `sh`.
 - Вспомогательные утилиты переписаны на Go: `cmd/builddate` (BUILD_DATE),
   `cmd/devtool` (mkdir/rm/rmglob для Makefile) и `cmd/genfixtures` (тестовые
   фикстуры). PowerShell-скрипты удалены: `go run` одинаково работает на

@@ -256,9 +256,7 @@ compat:
 ## tag: create an annotated release tag, e.g. make tag TAG=v0.4.0
 tag:
 	@$(if $(TAG),,$(error TAG is required, e.g. make tag TAG=v0.4.0))
-	@$(if $(shell $(GIT) status --porcelain),$(error working tree is dirty, commit the release first))
-	@$(GIT) tag -a $(TAG) -m "Release $(TAG)"
-	@echo Created tag $(TAG)
+	@$(DEVTOOL) tag $(TAG)
 ## version: print the version stamp
 version:
 	@echo $(VERSION) (commit $(COMMIT), built $(BUILD_DATE))
