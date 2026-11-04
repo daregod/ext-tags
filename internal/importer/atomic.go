@@ -2,6 +2,8 @@ package importer
 
 import (
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,34 +12,64 @@ import (
 	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
+// fileOps is the narrow filesystem surface used by the atomic import path.
+type fileOps interface {
+	Stat(name string) (fs.FileInfo, error)
+	CreateTemp(dir, pattern string) (string, io.Closer, error)
+	Copy(src, dst string) error
+	Remove(name string) error
+	Rename(oldpath, newpath string) error
+	Chmod(name string, mode fs.FileMode) error
+}
+
+type osOps struct{}
+
+func (osOps) Stat(name string) (fs.FileInfo, error) { return os.Stat(name) }
+func (osOps) CreateTemp(dir, pattern string) (string, io.Closer, error) {
+	f, err := os.CreateTemp(dir, pattern)
+	if err != nil {
+		return "", nil, err
+	}
+	return f.Name(), f, nil
+}
+func (osOps) Copy(src, dst string) error { return copyFile(src, dst) }
+func (osOps) Remove(name string) error   { return os.Remove(name) }
+func (osOps) Rename(oldpath, newpath string) error {
+	return os.Rename(oldpath, newpath)
+}
+func (osOps) Chmod(name string, mode fs.FileMode) error { return os.Chmod(name, mode) }
+
 // WriteAtomic writes through a temporary file, verifies the result with a
 // reader, and only then replaces the original.
 func WriteAtomic(path string, writer tagformat.Writer, reader tagformat.Reader, doc *metadata.Document, opts tagformat.WriteOptions) error {
+	return writeAtomic(path, writer, reader, doc, opts, osOps{})
+}
+
+func writeAtomic(path string, writer tagformat.Writer, reader tagformat.Reader, doc *metadata.Document, opts tagformat.WriteOptions, ops fileOps) error {
 	backup := opts.Backup
 	opts.Backup = false
 	if backup {
-		if err := copyFile(path, path+".bak"); err != nil {
+		if err := ops.Copy(path, path+".bak"); err != nil {
 			return fmt.Errorf("backup: %w", err)
 		}
 	}
-	info, err := os.Stat(path)
+	info, err := ops.Stat(path)
 	if err != nil {
 		return err
 	}
 	dir := filepath.Dir(path)
 	base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	tmp, err := os.CreateTemp(dir, "."+base+".tmp-*"+filepath.Ext(path))
+	tmpPath, closer, err := ops.CreateTemp(dir, "."+base+".tmp-*"+filepath.Ext(path))
 	if err != nil {
 		return err
 	}
-	tmpPath := tmp.Name()
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
+	if err := closer.Close(); err != nil {
+		_ = ops.Remove(tmpPath)
 		return err
 	}
-	defer os.Remove(tmpPath)
+	defer func() { _ = ops.Remove(tmpPath) }()
 
-	if err := copyFile(path, tmpPath); err != nil {
+	if err := ops.Copy(path, tmpPath); err != nil {
 		return fmt.Errorf("prepare temp: %w", err)
 	}
 	if err := writer.Write(tmpPath, doc, opts); err != nil {
@@ -50,14 +82,14 @@ func WriteAtomic(path string, writer tagformat.Writer, reader tagformat.Reader, 
 	if err := verifyFields(doc, got); err != nil {
 		return fmt.Errorf("verify: %w", err)
 	}
-	if err := os.Chmod(tmpPath, info.Mode().Perm()); err != nil {
+	if err := ops.Chmod(tmpPath, info.Mode().Perm()); err != nil {
 		return err
 	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		if removeErr := os.Remove(path); removeErr != nil {
+	if err := ops.Rename(tmpPath, path); err != nil {
+		if removeErr := ops.Remove(path); removeErr != nil {
 			return fmt.Errorf("replace: %w", err)
 		}
-		if err := os.Rename(tmpPath, path); err != nil {
+		if err := ops.Rename(tmpPath, path); err != nil {
 			return fmt.Errorf("replace: %w", err)
 		}
 	}
