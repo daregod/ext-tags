@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -78,5 +80,38 @@ func TestRunFilesystemErrors(t *testing.T) {
 	}
 	if code := run([]string{"rm", sub}, &out, &errOut); code != 1 {
 		t.Fatalf("rm non-empty code = %d", code)
+	}
+}
+func TestGitOutputError(t *testing.T) {
+	if _, err := gitOutput("not-a-command"); err == nil {
+		t.Fatal("invalid git command must fail")
+	}
+}
+
+func TestTagDirtyRepo(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	dir := t.TempDir()
+	if err := exec.Command("git", "init", dir).Run(); err != nil {
+		t.Skipf("git init: %v", err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(old) }()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("dirty.txt", []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"tag", "v1"}, &out, &errOut); code != 1 {
+		t.Fatalf("dirty tag code = %d", code)
+	}
+	if !strings.Contains(errOut.String(), "dirty") {
+		t.Fatalf("stderr = %q", errOut.String())
 	}
 }

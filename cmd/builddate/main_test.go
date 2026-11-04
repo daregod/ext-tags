@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"os/exec"
 	"testing"
 )
 
@@ -22,5 +23,17 @@ func TestRunErrors(t *testing.T) {
 	run(&out, func() ([]byte, error) { return []byte("no date"), nil })
 	if out.Len() != 0 {
 		t.Fatalf("out = %q", out.String())
+	}
+}
+func TestGitLog(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	data, err := gitLog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte("Date:")) {
+		t.Fatalf("git log = %q", data)
 	}
 }
