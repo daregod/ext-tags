@@ -8,6 +8,8 @@
 
 ### Добавлено
 
+- Обратный импорт для FLAC: Vorbis comments + PICTURE-блоки (пять artwork-
+  слотов), аудиокадры не меняются.
 - Обратный импорт переносит все пять artwork-слотов в ID3 APIC (front/back/
   artist/disc/icon) — проверено на MP3.
 - Обложки: пять artwork-слотов foobar2000 — `front`/`back`/`artist`/`disc`/`icon`.

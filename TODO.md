@@ -46,7 +46,8 @@
 ## Обратный импорт тегов в файлы
 
 - [x] MP3: запись ID3v1/2.2/2.3/2.4 (`ext-tags import`, свой writer `internal/id3`).
-- [ ] FLAC / Ogg Vorbis / Opus: запись Vorbis comments.
+- [x] FLAC: запись Vorbis comments и PICTURE-блоков.
+- [ ] Ogg Vorbis / Opus: запись Vorbis comments (Ogg-перепаковка).
 - [ ] MP4/M4A (AAC/ALAC): запись iTunes-атомов.
 - [ ] APEv2 (APE, WavPack, TAK, Musepack).
 - [ ] Matroska/WebM: запись Tags.

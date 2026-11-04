@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dhowden/tag"
 
 	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/extractor"
 	"github.com/daregod/ext-tags/internal/importer"
 )
 
@@ -129,4 +131,44 @@ func TestImportMP3(t *testing.T) {
 	if m := readTags(t, audio); m.Title() != "Updated Title" {
 		t.Fatalf("v2.2 title = %q", m.Title())
 	}
+}
+func TestImportFLAC(t *testing.T) {
+	src := filepath.Join("..", "..", "testdata", "formats", "audio.flac")
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFile(t, src, audio)
+
+	tf := &importer.TagFile{
+		Fields: map[string]string{
+			"Title": "Flac Title", "Artist": "Flac Artist", "Track": "3/12",
+		},
+		Covers: map[string]*importer.Cover{
+			"front": {Filename: "front.jpg", MIME: "image/jpeg", Data: []byte{1}},
+			"back":  {Filename: "back.jpg", MIME: "image/jpeg", Data: []byte{2}},
+		},
+	}
+	if err := importer.ImportFLAC(audio, tf, importer.Options{Replace: true, Backup: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(audio + ".bak"); err != nil {
+		t.Fatalf("backup missing: %v", err)
+	}
+	res, err := extractor.Extract(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.ToLower(fieldValue(res.Fields, "title")) != "flac title" || strings.ToLower(fieldValue(res.Fields, "artist")) != "flac artist" {
+		t.Fatalf("fields = %v", res.Fields)
+	}
+	if res.Cover == nil || len(res.Cover.Data) != 1 {
+		t.Fatalf("front = %+v", res.Cover)
+	}
+}
+func fieldValue(fields map[string]string, key string) string {
+	for k, v := range fields {
+		if strings.EqualFold(k, key) {
+			return v
+		}
+	}
+	return ""
 }

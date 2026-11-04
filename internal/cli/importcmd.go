@@ -22,7 +22,7 @@ func (a *app) importCmd() *cobra.Command {
 	opts := &importOptions{}
 	cmd := &cobra.Command{
 		Use:   "import <audio files...>",
-		Short: "Write .tag fields back into audio files (MP3/ID3v2)",
+		Short: "Write .tag fields back into audio files (MP3, FLAC)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return a.runImport(args, opts)
@@ -64,10 +64,10 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1":
+	case ".mp3", ".mp2", ".mp1", ".flac":
 	default:
 		res.Status = "unsupported"
-		res.Reason = "import is implemented for MP3/MP2/MP1 only"
+		res.Reason = "import is implemented for MP3/MP2/MP1 and FLAC only"
 		a.report(res)
 		return
 	}
@@ -101,12 +101,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		return
 	}
 
-	if err := importer.ImportMP3(path, tf, importer.Options{
-		Version: opts.version,
-		V1:      opts.v1,
-		Replace: opts.replace,
-		Backup:  opts.backup,
-	}); err != nil {
+	if err := importTags(path, tf, opts); err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
 		a.failed = true
@@ -118,4 +113,18 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	}
 	res.Status = "imported"
 	a.report(res)
+}
+func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
+	if strings.EqualFold(filepath.Ext(path), ".flac") {
+		return importer.ImportFLAC(path, tf, importer.Options{
+			Replace: opts.replace,
+			Backup:  opts.backup,
+		})
+	}
+	return importer.ImportMP3(path, tf, importer.Options{
+		Version: opts.version,
+		V1:      opts.v1,
+		Replace: opts.replace,
+		Backup:  opts.backup,
+	})
 }
