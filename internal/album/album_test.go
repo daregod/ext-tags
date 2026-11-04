@@ -17,6 +17,7 @@ tracks:
   "3":
     Title: Track Override
     Artist: Track Artist
+    Genre: Track Genre
 artwork:
   front: cover.jpg
 `
@@ -37,7 +38,7 @@ artwork:
 	doc.Fields["Album"] = "Old"
 	doc.Fields["Track"] = "3/8"
 	cfg.Apply(doc, filepath.Join(dir, "3. track.flac"))
-	if doc.Fields["Album"] != "Album Override" || doc.Fields["Title"] != "Track Override" {
+	if doc.Fields["Album"] != "Album Override" || doc.Fields["Title"] != "Track Override" || doc.Fields["Genre"] != "Track Genre" {
 		t.Fatalf("fields = %v", doc.Fields)
 	}
 	if doc.Vars["tracknumber"] != "3" || doc.Vars["totaltracks"] != "8" {

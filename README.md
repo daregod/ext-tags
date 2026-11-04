@@ -41,69 +41,6 @@ ext-tags extract .
 Рядом с каждым треком появятся `.tag`-файлы. В foobar2000 добавь папку —
 компонент foo_external_tags подхватит теги, а файлы останутся нетронутыми.
 
-#### Глобальные правила стиля
-
-Шаблоны умеют `year` (выделить год) и `formatTrack` (отформатировать `X/Y`
-по количеству треков). Пример правил, которые можно положить в
-`ext-tags.yaml`:
-
-```yaml
-cover:
-  prefer: sidecar          # embedded | sidecar | existing
-
-fields:
-  rules:
-    - set: Releasetime
-      when: '{{ eq .releasetime "" }}'
-      template: '{{ .year }}'
-    - set: Year
-      template: '{{ year .releasetime }}'
-    - set: Track
-      template: '{{ formatTrack .track }}'
-    - default: {field: "Comment catalog number", from: Catalognumber}
-    - default: {field: "Catalog #", from: Catalognumber}
-    - default: {field: Publisher, from: Label}
-    - set: Artist
-      template: '{{ replace ", " " feat. " .artist }}'
-```
-
-Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
-`.releasetime`, `.catalognumber`.
-
-### Конфиг альбома
-
-Рядом с аудиофайлами можно положить `album.yaml` (или `album.yml`,
-`.ext-tags.album.yaml`). Он переопределяет поля альбома и отдельных треков:
-
-```yaml
-album:
-  Album: The Future Is Now
-  Album artist: Shiny Radio
-  Releasetime: 2016-05-16
-  Genre: Drum & Bass
-  Label: Soul Deep Digital
-  Catalognumber: SDD042
-  Www: |
-    https://www.beatport.com/release/the-future-is-now/1755915
-    https://tidal.com/album/60225885
-
-artwork:
-  front: cover.jpg
-
-tracks:
-  "1":
-    Title: Yes Y'all
-    Artist: Shiny Radio feat. La Kos
-    Remixer: La Kos
-  "8":
-    Title: Funky Spell
-    Artist: Shiny Radio feat. DJ Erik
-    Remixer: DJ Erik
-```
-
-Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
-расширения. `album.yaml` — декларативные данные, а не команды редактирования:
-`extract` по-прежнему только пишет `.tag`.
 ## Обложки для foo_external_tags
 
 Положи `cover.jpg` (или `folder.jpg`, `front.jpg`, `album.jpg`, `poster.jpg`)
@@ -352,7 +289,7 @@ fields:
     - default: {field: "Catalog #", from: Catalognumber}
     - default: {field: Publisher, from: Label}
     - set: Artist
-      template: '{{ replace ", " " feat. " .artist }}'
+      template: '{{ replace ", " " & " .artist }}'
 ```
 
 Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
@@ -361,36 +298,54 @@ fields:
 ### Конфиг альбома
 
 Рядом с аудиофайлами можно положить `album.yaml` (или `album.yml`,
-`.ext-tags.album.yaml`). Он переопределяет поля альбома и отдельных треков:
+`.ext-tags.album.yaml`). Он нужен только для данных, которых нет во
+встроенных тегах или которые нужно явно переопределить. Не дублируй в нём
+поля, уже правильно заполненные в аудио.
+
+Для этого альбома embedded-теги уже содержат альбом, артиста, дату, жанр,
+лейбл и каталожный номер. Во внешнем `.tag` не хватает только списка `Www`
+и полной `cover.jpg`, поэтому достаточно такого оверлея:
 
 ```yaml
 album:
-  Album: The Future Is Now
-  Album artist: Shiny Radio
-  Releasetime: 2016-05-16
-  Genre: Drum & Bass
-  Label: Soul Deep Digital
-  Catalognumber: SDD042
   Www: |
     https://www.beatport.com/release/the-future-is-now/1755915
+    https://www.discogs.com/master/1869963-Shiny-Radio-The-Future-Is-Now
+    https://www.discogs.com/release/11490696-Shiny-Radio-The-Future-Is-Now
+    https://www.discogs.com/release/16475013-Shiny-Radio-The-Future-Is-Now
+    https://www.junodownload.com/products/shiny-radio-the-future-is-now/3081831-02/
     https://tidal.com/album/60225885
+    https://www.deezer.com/album/13108392
 
 artwork:
   front: cover.jpg
+```
 
+Если конкретный трек нужно поправить, добавь только его:
+
+```yaml
 tracks:
-  "1":
-    Title: Yes Y'all
-    Artist: Shiny Radio feat. La Kos
-    Remixer: La Kos
-  "8":
-    Title: Funky Spell
-    Artist: Shiny Radio feat. DJ Erik
-    Remixer: DJ Erik
+  "4":
+    Title: Signature of The Soul
 ```
 
 Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
-расширения. `album.yaml` — декларативные данные, а не команды редактирования:
+расширения. Поля `Album`, `Album artist`, `Label`, `Catalognumber` и т.п.
+можно задавать в `album:` при необходимости, но не нужно повторять их,
+если они уже верны во встроенных тегах.
+
+Поля из `album:` применяются ко всем трекам. Если у отдельного трека
+другой жанр — например, у трека 8 здесь `Breaks / Breakbeat / UK Bass` —
+не задавай `Genre` на уровне альбома: оставь встроенное значение или
+переопредели только этот трек:
+
+```yaml
+tracks:
+  "8":
+    Genre: Breaks / Breakbeat / UK Bass
+```
+
+`album.yaml` — декларативные данные, а не команды редактирования:
 `extract` по-прежнему только пишет `.tag`.
 ## Обложки
 
