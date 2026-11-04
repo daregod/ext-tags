@@ -1,6 +1,7 @@
 package extractor
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,6 +14,9 @@ var apeMagic = []byte("MAC ")
 func extractAPEv2(path, format string) (*Result, error) {
 	tag, err := ape.ReadFromFileEnd(path)
 	if err != nil {
+		if errors.Is(err, ape.ErrNoTag) {
+			return nil, ErrNoTags
+		}
 		return nil, fmt.Errorf("read ape tag: %w", err)
 	}
 

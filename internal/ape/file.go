@@ -2,10 +2,14 @@ package ape
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 )
+
+// ErrNoTag means the file has no APEv2 tag at the end.
+var ErrNoTag = errors.New("no APEv2 tag")
 
 // ReadFromFileEnd reads an APEv2 tag stored at the end of a file
 // (as used by Monkey's Audio and other formats with appended tags).
@@ -22,7 +26,7 @@ func ReadFromFileEnd(path string) (*ParsedTag, error) {
 	}
 	size := info.Size()
 	if size < 32 {
-		return nil, fmt.Errorf("file is too small for an APEv2 tag")
+		return nil, ErrNoTag
 	}
 
 	footer := make([]byte, 32)
@@ -30,7 +34,7 @@ func ReadFromFileEnd(path string) (*ParsedTag, error) {
 		return nil, err
 	}
 	if string(footer[0:8]) != apeSignature {
-		return nil, fmt.Errorf("no APEv2 tag at the end of the file")
+		return nil, ErrNoTag
 	}
 	tagSize := int64(binary.LittleEndian.Uint32(footer[12:16]))
 	if tagSize < 32 || tagSize > size || tagSize > 64<<20 {

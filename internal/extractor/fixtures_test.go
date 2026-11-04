@@ -150,6 +150,8 @@ func TestAPEv2Containers(t *testing.T) {
 	}{
 		{"sample.mpc", "MPCK"},
 		{"sample.tak", "tBaK"},
+		{"sample.ac3", "\x0b\x77"},
+		{"sample.dts", "\x1a\x45\xdf\xa3"}, // EBML: extension must win over magic
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

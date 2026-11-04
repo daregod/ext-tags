@@ -188,7 +188,7 @@ func Default() *Config {
 	return &Config{
 		Version: 1,
 		Files: FilesConfig{
-			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".oga", ".spx", ".m4a", ".mp4", ".webm", ".mkv", ".ape", ".wv", ".mpc", ".tak", ".wmv", ".wma", ".asf", ".wav", ".rf64", ".w64", ".aif", ".aiff", ".alac", ".aac", ".mp1", ".mp2"},
+			Extensions:    []string{".mp3", ".flac", ".opus", ".ogg", ".oga", ".spx", ".m4a", ".mp4", ".webm", ".mkv", ".ape", ".wv", ".mpc", ".tak", ".wmv", ".wma", ".asf", ".wav", ".rf64", ".w64", ".aif", ".aiff", ".alac", ".aac", ".mp1", ".mp2", ".ac3", ".dts"},
 			Recursive:     false,
 			OnExisting:    OnExistingBackup,
 			MergeExisting: true,

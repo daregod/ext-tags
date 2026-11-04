@@ -254,9 +254,10 @@ fields:
 
 MP3 (ID3v1/v2.2–2.4), MP2, MP1, M4A/MP4 (AAC, ALAC), FLAC, Ogg Vorbis, Opus,
 Ogg FLAC, Speex, APE, WavPack, Musepack, TAK, WAV, RF64, Wave64, AIFF,
-WMA/WMV/ASF, Matroska/WebM.
+WMA/WMV/ASF, Matroska/WebM, AC3 и DTS (APEv2 в конце файла — так их тегирует
+foobar2000).
 
-Форматы без тегов (AC3, DTS, AU, TS, Audio CD) не поддерживаются — см.
+Форматы без тегов (AU, TS, Audio CD) не поддерживаются — см.
 [TODO.md](TODO.md).
 
 ## Решение проблем

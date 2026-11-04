@@ -28,8 +28,8 @@
 | WMV / ASF | `.wmv`, `.asf` | ASF Content Description | ✅ |
 | Matroska / WebM | `.mkv`, `.webm` | Matroska Tags (с учётом TargetTypeValue), вложения | ✅ |
 | Speex | `.spx` | Vorbis comments в Ogg | ✅ свой Ogg-ридер, эталон fb2k совпал |
-| AC3 | `.ac3` | тегов обычно нет | ⏸ вне области (нет метаданных) |
-| DTS | `.dts` | тегов обычно нет | ⏸ вне области |
+| AC3 | `.ac3` | APEv2 в конце файла (как fb2k) | ✅ |
+| DTS | `.dts` | APEv2; `.dts` может быть Matroska с DTS | ✅ расширение приоритетнее магии |
 | AU / SND | `.au`, `.snd` | нет стандартных тегов | ⏸ вне области |
 | MPEG Transport Stream | `.ts` | ID3v2 в PES — редкость | ⏸ вне области |
 | Audio CD | — | CD-TEXT через Windows API | ⏸ вне области CLI |
@@ -38,7 +38,7 @@
 
 1. **P1**: ✅ все форматы «в области» закрыты — Musepack/TAK, Ogg FLAC/Speex, MP2/MP1/raw AAC/ALAC, RF64, Wave64.
 2. **P2**: обратный импорт тегов в файлы (раздел ниже).
-3. **P3**: AC3, DTS, AU, TS, Audio CD — стандартных тегов нет или нужен Windows API, ценность низкая.
+3. **P3**: AU, TS, Audio CD — стандартных тегов нет или нужен Windows API.
 
 Фикстуры для всех перечисленных форматов уже лежат в `testdata/formats/`
 (`make fixtures`), так что новый ридер можно сразу проверять тестом.

@@ -61,6 +61,14 @@ func Extract(path string) (*Result, error) {
 // ExtractWithOptions reads metadata from path. It returns ErrNoTags when the
 // file has no tag block at all.
 func ExtractWithOptions(path string, opts Options) (*Result, error) {
+	// AC3 and DTS have no native tag container; foobar2000 appends APEv2.
+	// Extension wins over magic: a .dts file may actually be Matroska with DTS.
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".ac3":
+		return extractAPEv2(path, "AC3")
+	case ".dts":
+		return extractAPEv2(path, "DTS")
+	}
 	if magic, err := readMagic(path, 40); err == nil {
 		switch {
 		case bytes.HasPrefix(magic, ebmlMagic):
