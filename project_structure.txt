@@ -1,4 +1,4 @@
-external-tags/
+ext-tags/
 ├── Makefile              <-- сборка, тесты, линт, релизы
 ├── CHANGELOG.md          <-- история версий (Keep a Changelog)
 ├── DEVELOPMENT.md        <-- архитектура, тесты, фикстуры, релизы
