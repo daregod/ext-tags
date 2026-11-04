@@ -32,6 +32,7 @@ func TestDefaultRegistry(t *testing.T) {
 		".m4a": "mp4", ".m4b": "mp4", ".mp4": "mp4", ".alac": "mp4",
 		".mkv": "matroska", ".webm": "matroska",
 		".wma": "asf", ".wmv": "asf", ".asf": "asf",
+		".wav": "riff", ".rf64": "riff", ".w64": "riff", ".aif": "riff", ".aiff": "riff",
 	}
 	for ext, name := range wantWriters {
 		writer, ok := reg.WriterFor("track" + ext)

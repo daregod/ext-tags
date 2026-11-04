@@ -122,7 +122,9 @@ func TestImportFileUsesInjectedWriter(t *testing.T) {
 	}
 	writeTestTag(t, path+".tag", "Imported")
 	writer := &serviceWriter{}
-	a := &app{opts: &options{quiet: true}, registry: format.New(nil, []format.Writer{writer})}
+	doc := metadata.New()
+	doc.Fields["Title"] = "Imported"
+	a := &app{opts: &options{quiet: true}, registry: format.New([]format.Reader{&serviceReader{doc: doc}}, []format.Writer{writer})}
 	a.importFile(path, ".tag", &importOptions{replace: true, backup: true, version: 4, v1: true})
 
 	if !writer.called {
@@ -131,8 +133,11 @@ func TestImportFileUsesInjectedWriter(t *testing.T) {
 	if writer.doc.Fields["Title"] != "Imported" {
 		t.Fatalf("fields = %v", writer.doc.Fields)
 	}
-	if !writer.opts.Replace || !writer.opts.Backup || writer.opts.ID3Version != 4 || !writer.opts.ID3V1 {
+	if !writer.opts.Replace || writer.opts.Backup || writer.opts.ID3Version != 4 || !writer.opts.ID3V1 {
 		t.Fatalf("opts = %+v", writer.opts)
+	}
+	if _, err := os.Stat(path + ".bak"); err != nil {
+		t.Fatalf("backup missing: %v", err)
 	}
 }
 

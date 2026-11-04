@@ -29,6 +29,14 @@ type rawFrame struct {
 	payload []byte
 }
 
+// Build returns a standalone ID3v2 tag for fields and artwork.
+func Build(fields map[string]string, covers map[string]*Cover, version int) ([]byte, error) {
+	if version != 2 && version != 4 {
+		version = 3
+	}
+	return composeTag(version, buildFrames(version, fields, covers)), nil
+}
+
 // Write replaces the ID3v2 tag of path with fields and cover.
 func Write(path string, fields map[string]string, covers map[string]*Cover, opts Options) error {
 	version := opts.Version

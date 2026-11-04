@@ -29,6 +29,10 @@ func TestRoundTrip(t *testing.T) {
 		{"audio-alac.m4a", true},
 		{"audio.mkv", true},
 		{"audio.wma", true},
+		{"audio.wav", true},
+		{"audio.aiff", true},
+		{"audio.w64", true},
+		{"audio.rf64", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.fixture, func(t *testing.T) {

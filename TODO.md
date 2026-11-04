@@ -53,11 +53,13 @@
 - [x] APEv2 (APE, WavPack, TAK, Musepack, AC3/DTS).
 - [x] Matroska/WebM: запись Tags и Attachments.
 - [x] ASF/WMA/WMV: Content Description, Extended Content Description и WM/Picture.
+- [x] WAV/RF64/Wave64/AIFF: ID3v2-чанк, замена LIST/INFO и IFF-текста.
 - [x] `--backup` и `--dry-run` для импорта.
-- [ ] Атомарная запись и проверка результата после записи.
+- [x] Атомарная запись через temp + проверка чтением + rename.
 
 ## Инфраструктура
 
 - [ ] `make compat` на фикстурах в CI (сейчас нужны `bin/examples`, которых нет в git).
 - [ ] Тесты на реальных файлах для P1-форматов.
 - [ ] `merge_existing` для бинарных полей, кроме обложки.
+- [ ] RIFF-писатели читают файл целиком; нужна потоковая запись для больших WAV.

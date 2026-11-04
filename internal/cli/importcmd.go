@@ -66,7 +66,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4", ".alac", ".mkv", ".webm", ".wma", ".wmv", ".asf":
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4", ".alac", ".mkv", ".webm", ".wma", ".wmv", ".asf", ".wav", ".rf64", ".w64", ".aif", ".aiff":
 	default:
 		res.Status = "unsupported"
 		res.Reason = "import is implemented for MP3, FLAC and Ogg Vorbis/Opus/Speex"
@@ -110,7 +110,14 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		a.report(res)
 		return
 	}
-	if err := writer.Write(path, documentFromTagFile(tf), format.WriteOptions{
+	reader, ok := a.getRegistry().ReaderFor(path)
+	if !ok {
+		res.Status = "unsupported"
+		res.Reason = "no reader for verification"
+		a.report(res)
+		return
+	}
+	if err := importer.WriteAtomic(path, writer, reader, documentFromTagFile(tf), format.WriteOptions{
 		Replace:    opts.replace,
 		Backup:     opts.backup,
 		ID3Version: opts.version,

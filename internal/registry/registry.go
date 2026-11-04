@@ -121,6 +121,7 @@ func defaultWriters() []format.Writer {
 		writerSpec{"mp4", []string{".m4a", ".m4b", ".mp4", ".alac"}, importer.ImportMP4},
 		writerSpec{"matroska", []string{".mkv", ".webm"}, importer.ImportMatroska},
 		writerSpec{"asf", []string{".wma", ".wmv", ".asf"}, importer.ImportASF},
+		writerSpec{"riff", []string{".wav", ".rf64", ".w64", ".aif", ".aiff"}, importer.ImportRIFF},
 	}
 }
 
