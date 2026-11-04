@@ -69,6 +69,23 @@ func Find(dir string, names []string) (*Image, error) {
 	return nil, ErrNotFound
 }
 
+// Load reads an image file and returns its metadata and bytes.
+func Load(path string) (*Image, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if info.Size() > MaxSize {
+		return nil, fmt.Errorf("image %s is too large", path)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	ext := filepath.Ext(path)
+	return &Image{Path: path, Filename: filepath.Base(path), MIME: mimeFor(ext), Data: data}, nil
+}
+
 func mimeFor(ext string) string {
 	switch strings.ToLower(ext) {
 	case ".jpg", ".jpeg":

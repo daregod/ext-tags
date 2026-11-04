@@ -41,7 +41,70 @@ ext-tags extract .
 Рядом с каждым треком появятся `.tag`-файлы. В foobar2000 добавь папку —
 компонент foo_external_tags подхватит теги, а файлы останутся нетронутыми.
 
-### Обложки для foo_external_tags
+#### Глобальные правила стиля
+
+Шаблоны умеют `year` (выделить год) и `formatTrack` (отформатировать `X/Y`
+по количеству треков). Пример правил, которые можно положить в
+`ext-tags.yaml`:
+
+```yaml
+cover:
+  prefer: sidecar          # embedded | sidecar | existing
+
+fields:
+  rules:
+    - set: Releasetime
+      when: '{{ eq .releasetime "" }}'
+      template: '{{ .year }}'
+    - set: Year
+      template: '{{ year .releasetime }}'
+    - set: Track
+      template: '{{ formatTrack .track }}'
+    - default: {field: "Comment catalog number", from: Catalognumber}
+    - default: {field: "Catalog #", from: Catalognumber}
+    - default: {field: Publisher, from: Label}
+    - set: Artist
+      template: '{{ replace ", " " feat. " .artist }}'
+```
+
+Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
+`.releasetime`, `.catalognumber`.
+
+### Конфиг альбома
+
+Рядом с аудиофайлами можно положить `album.yaml` (или `album.yml`,
+`.ext-tags.album.yaml`). Он переопределяет поля альбома и отдельных треков:
+
+```yaml
+album:
+  Album: The Future Is Now
+  Album artist: Shiny Radio
+  Releasetime: 2016-05-16
+  Genre: Drum & Bass
+  Label: Soul Deep Digital
+  Catalognumber: SDD042
+  Www: |
+    https://www.beatport.com/release/the-future-is-now/1755915
+    https://tidal.com/album/60225885
+
+artwork:
+  front: cover.jpg
+
+tracks:
+  "1":
+    Title: Yes Y'all
+    Artist: Shiny Radio feat. La Kos
+    Remixer: La Kos
+  "8":
+    Title: Funky Spell
+    Artist: Shiny Radio feat. DJ Erik
+    Remixer: DJ Erik
+```
+
+Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
+расширения. `album.yaml` — декларативные данные, а не команды редактирования:
+`extract` по-прежнему только пишет `.tag`.
+## Обложки для foo_external_tags
 
 Положи `cover.jpg` (или `folder.jpg`, `front.jpg`, `album.jpg`, `poster.jpg`)
 в папку с альбомом и запусти:
@@ -266,6 +329,69 @@ fields:
 продвинутая настройка; полный список ключей и примеры даёт
 `ext-tags config init --full`.
 
+### Глобальные правила стиля
+
+Шаблоны умеют `year` (выделить год) и `formatTrack` (отформатировать `X/Y`
+по количеству треков). Пример правил, которые можно положить в
+`ext-tags.yaml`:
+
+```yaml
+cover:
+  prefer: sidecar          # embedded | sidecar | existing
+
+fields:
+  rules:
+    - set: Releasetime
+      when: '{{ eq .releasetime "" }}'
+      template: '{{ .year }}'
+    - set: Year
+      template: '{{ year .releasetime }}'
+    - set: Track
+      template: '{{ formatTrack .track }}'
+    - default: {field: "Comment catalog number", from: Catalognumber}
+    - default: {field: "Catalog #", from: Catalognumber}
+    - default: {field: Publisher, from: Label}
+    - set: Artist
+      template: '{{ replace ", " " feat. " .artist }}'
+```
+
+Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
+`.releasetime`, `.catalognumber`.
+
+### Конфиг альбома
+
+Рядом с аудиофайлами можно положить `album.yaml` (или `album.yml`,
+`.ext-tags.album.yaml`). Он переопределяет поля альбома и отдельных треков:
+
+```yaml
+album:
+  Album: The Future Is Now
+  Album artist: Shiny Radio
+  Releasetime: 2016-05-16
+  Genre: Drum & Bass
+  Label: Soul Deep Digital
+  Catalognumber: SDD042
+  Www: |
+    https://www.beatport.com/release/the-future-is-now/1755915
+    https://tidal.com/album/60225885
+
+artwork:
+  front: cover.jpg
+
+tracks:
+  "1":
+    Title: Yes Y'all
+    Artist: Shiny Radio feat. La Kos
+    Remixer: La Kos
+  "8":
+    Title: Funky Spell
+    Artist: Shiny Radio feat. DJ Erik
+    Remixer: DJ Erik
+```
+
+Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
+расширения. `album.yaml` — декларативные данные, а не команды редактирования:
+`extract` по-прежнему только пишет `.tag`.
 ## Обложки
 
 foobar2000 знает пять типов artwork; каждый хранится в `.tag` под своим ключом:
@@ -278,10 +404,15 @@ foobar2000 знает пять типов artwork; каждый хранится
 | Disc | `Cover Art (Disc)` | `disc`, `media` |
 | Icon | `Cover Art (Icon)` | `icon` |
 
-1. Сначала берётся встроенная картинка (сейчас это front cover).
-2. Остальные слоты ищутся в папке по именам из таблицы; расширения —
+1. При `cover.prefer: embedded` (по умолчанию) сначала берётся встроенная
+   картинка; sidecar заполняет только пустые слоты.
+2. При `cover.prefer: sidecar` картинка из папки имеет приоритет над
+   встроенной.
+3. При `cover.prefer: existing` сохраняется обложка из уже существующего
+   `.tag`, если она есть.
+4. Остальные слоты ищутся в папке по именам из таблицы; расширения —
    `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` (регистр не важен).
-3. Найденные картинки попадают в `.tag` под соответствующими ключами.
+5. Найденные картинки попадают в `.tag` под соответствующими ключами.
 
 Отключить всё: `--cover=false` или `cover.enabled: false`. Поиск в папке
 отключается через `cover.directory: false`. Списки имён настраиваются:

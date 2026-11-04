@@ -43,6 +43,7 @@ internal/metadata   Document/Cover/ArtworkKind — общие типы
 internal/tagformat  Reader/Writer + Registry, явный tagformat.New
 internal/registry   NewDefault: явный список reader/writer по форматам
 internal/read       общие read-хелперы + dhowden/tag adapter
+internal/album      per-album album.yaml overlay
 internal/rules      aliases/ignore/set/copy/rename/default/remove
 internal/tagfile    запись .tag: merge, backup, dry-run
 internal/importer   .tag → формат (ID3, APEv2, FLAC, Ogg, MP4…)

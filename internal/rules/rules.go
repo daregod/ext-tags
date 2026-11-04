@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -61,6 +62,8 @@ var funcs = template.FuncMap{
 		}
 		return re.ReplaceAllString(s, repl), nil
 	},
+	"year":        yearOf,
+	"formatTrack": formatTrack,
 }
 
 // New compiles the configured rules.
@@ -287,4 +290,34 @@ func title(s string) string {
 		fields[i] = string(runes)
 	}
 	return strings.Join(fields, " ")
+}
+
+var yearPattern = regexp.MustCompile(`(?:19|20)\d{2}`)
+
+func yearOf(value string) string {
+	return yearPattern.FindString(value)
+}
+
+func formatTrack(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	numPart, totalPart, withTotal := strings.Cut(value, "/")
+	num, err := strconv.Atoi(strings.TrimSpace(numPart))
+	if err != nil {
+		return value
+	}
+	if !withTotal {
+		return strconv.Itoa(num)
+	}
+	total, err := strconv.Atoi(strings.TrimSpace(totalPart))
+	if err != nil || total <= 0 {
+		return value
+	}
+	width := 1
+	if total >= 10 {
+		width = len(strconv.Itoa(total))
+	}
+	return fmt.Sprintf("%0*d/%0*d", width, num, width, total)
 }

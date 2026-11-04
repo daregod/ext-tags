@@ -48,6 +48,7 @@ type TagFileConfig struct {
 // CoverConfig controls embedded cover art.
 type CoverConfig struct {
 	Enabled   bool     `yaml:"enabled"`
+	Prefer    string   `yaml:"prefer,omitempty"`
 	Field     string   `yaml:"field"`
 	Filename  string   `yaml:"filename"`
 	Names     []string `yaml:"names"` // front cover
@@ -200,6 +201,7 @@ func Default() *Config {
 		TagFile: TagFileConfig{Suffix: ".tag"},
 		Cover: CoverConfig{
 			Enabled:   true,
+			Prefer:    "embedded",
 			Field:     "Cover Art (Front)",
 			Filename:  "cover",
 			Names:     []string{"cover", "folder", "front", "album", "poster", "box"},
@@ -458,6 +460,11 @@ func (c *Config) Validate() error {
 	}
 	if !strings.HasPrefix(c.TagFile.Suffix, ".") {
 		return fmt.Errorf("tagfile.suffix %q must start with a dot", c.TagFile.Suffix)
+	}
+	switch c.Cover.Prefer {
+	case "", "embedded", "sidecar", "existing":
+	default:
+		return fmt.Errorf("cover.prefer: unknown value %q (want embedded, sidecar or existing)", c.Cover.Prefer)
 	}
 	if c.Cover.Enabled && c.Cover.Field == "" {
 		return fmt.Errorf("cover.field is empty")

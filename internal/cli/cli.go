@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/daregod/ext-tags/internal/album"
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/metadata"
@@ -175,7 +176,10 @@ func (a *app) applySidecarArtwork(md *metadata.Document, path string, cfg *confi
 		{"icon", cfg.Cover.Icon},
 	}
 	for _, spec := range specs {
-		if len(spec.names) == 0 || md.Artwork[spec.kind] != nil {
+		if len(spec.names) == 0 {
+			continue
+		}
+		if cfg.Cover.Prefer != "sidecar" && md.Artwork[spec.kind] != nil {
 			continue
 		}
 		img, err := artwork.Find(filepath.Dir(path), spec.names)
@@ -292,7 +296,34 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		return
 	}
 
+	albumCfg, err := album.Load(filepath.Dir(path))
+	if err != nil {
+		res.Status = "error"
+		res.Error = err.Error()
+		a.failed = true
+		a.report(res)
+		return
+	}
+	if albumCfg != nil {
+		albumCfg.Apply(md, path)
+	}
 	a.applySidecarArtwork(md, path, cfg)
+	if albumCfg != nil {
+		covers, err := albumCfg.ArtworkCovers()
+		if err != nil {
+			res.Status = "error"
+			res.Error = err.Error()
+			a.failed = true
+			a.report(res)
+			return
+		}
+		for kind, cover := range covers {
+			md.Artwork[kind] = cover
+			if kind == "front" {
+				md.Cover = cover
+			}
+		}
+	}
 
 	fields, err := engine.Build(md, meta)
 	if err != nil {

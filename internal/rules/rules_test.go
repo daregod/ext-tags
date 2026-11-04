@@ -172,3 +172,32 @@ func TestInvalidTemplate(t *testing.T) {
 		t.Fatal("expected template parse error")
 	}
 }
+func TestYearAndFormatTrack(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.Rules = []config.Rule{
+		{Set: "Year", Template: `{{ year .releasetime }}`},
+		{Set: "Track", Template: `{{ formatTrack .track }}`},
+	}
+	fields := build(t, cfg, map[string]string{
+		"Releasetime": "2016-05-16",
+		"Track":       "1/12",
+	}, nil)
+	if fields["Year"] != "2016" {
+		t.Fatalf("Year = %q", fields["Year"])
+	}
+	if fields["Track"] != "01/12" {
+		t.Fatalf("Track = %q", fields["Track"])
+	}
+	if got := formatTrack("1/8"); got != "1/8" {
+		t.Fatalf("formatTrack(1/8) = %q", got)
+	}
+	if got := formatTrack("7/12"); got != "07/12" {
+		t.Fatalf("formatTrack(7/12) = %q", got)
+	}
+	if got := formatTrack("7"); got != "7" {
+		t.Fatalf("formatTrack(7) = %q", got)
+	}
+	if got := yearOf("2025"); got != "2025" {
+		t.Fatalf("yearOf = %q", got)
+	}
+}

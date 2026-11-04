@@ -89,6 +89,12 @@ func Build(fields map[string]string, covers map[string]*metadata.Cover, existing
 			if spec.key == "" {
 				continue
 			}
+			if cfg.Cover.Prefer == "existing" {
+				if raw, ok := existingArt[strings.ToLower(spec.key)]; ok && len(raw) > 0 {
+					tag.AddBinary(spec.key, raw)
+					continue
+				}
+			}
 			if cover := covers[spec.kind]; cover != nil && len(cover.Data) > 0 {
 				name := cover.Filename
 				if spec.filename != "" {

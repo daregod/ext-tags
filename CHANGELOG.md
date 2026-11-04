@@ -4,6 +4,14 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Добавлено
+
+- Per-album `album.yaml`: переопределение полей альбома, треков и artwork.
+- `cover.prefer`: `embedded`, `sidecar` или `existing`.
+- Шаблонные функции `year` и `formatTrack`.
+
 ## [0.9.0] — 2026-11-04
 
 ### Добавлено

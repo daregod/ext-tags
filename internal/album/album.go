@@ -1,0 +1,170 @@
+// Package album loads optional per-album metadata overrides.
+package album
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/daregod/ext-tags/internal/artwork"
+	"github.com/daregod/ext-tags/internal/metadata"
+)
+
+var names = []string{"album.yaml", "album.yml", ".ext-tags.album.yaml"}
+
+// Config is an optional album.yaml overlay stored next to the audio files.
+type Config struct {
+	Album   map[string]string            `yaml:"album"`
+	Tracks  map[string]map[string]string `yaml:"tracks"`
+	Artwork map[string]string            `yaml:"artwork"`
+
+	dir  string
+	path string
+}
+
+// Path returns the album.yaml path, if one was loaded.
+func (c *Config) Path() string {
+	if c == nil {
+		return ""
+	}
+	return c.path
+}
+
+// Load finds and parses album.yaml/album.yml/.ext-tags.album.yaml in dir.
+// A missing file is not an error and returns (nil, nil).
+func Load(dir string) (*Config, error) {
+	for _, name := range names {
+		path := filepath.Join(dir, name)
+		data, err := os.ReadFile(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		cfg := &Config{dir: dir, path: path}
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, err)
+		}
+		return cfg, nil
+	}
+	return nil, nil
+}
+
+// Apply overlays album-level fields and the matching track override onto doc.
+func (c *Config) Apply(doc *metadata.Document, audioPath string) {
+	if c == nil || doc == nil {
+		return
+	}
+	for key, value := range c.Album {
+		if value != "" {
+			setField(doc.Fields, key, value)
+		}
+	}
+	for _, key := range c.trackKeys(doc, audioPath) {
+		if fields, ok := c.Tracks[key]; ok {
+			for field, value := range fields {
+				if value != "" {
+					setField(doc.Fields, field, value)
+				}
+			}
+			break
+		}
+	}
+	updateTrackVars(doc)
+}
+
+// ArtworkCovers loads files referenced by the artwork map.
+func (c *Config) ArtworkCovers() (map[string]*metadata.Cover, error) {
+	if c == nil || len(c.Artwork) == 0 {
+		return nil, nil
+	}
+	covers := make(map[string]*metadata.Cover, len(c.Artwork))
+	for kind, name := range c.Artwork {
+		if name == "" {
+			continue
+		}
+		img, err := artwork.Load(filepath.Join(c.dir, name))
+		if err != nil {
+			return nil, fmt.Errorf("album artwork %s: %w", kind, err)
+		}
+		covers[kind] = &metadata.Cover{Filename: img.Filename, MIME: img.MIME, Data: img.Data}
+	}
+	return covers, nil
+}
+
+func (c *Config) trackKeys(doc *metadata.Document, audioPath string) []string {
+	var keys []string
+	for _, track := range []string{
+		fieldsValue(doc.Fields, "Track"),
+		fieldsValue(doc.Fields, "TRACKNUMBER"),
+		doc.Vars["tracknumber"],
+	} {
+		if track == "" {
+			continue
+		}
+		keys = append(keys, track)
+		if i := strings.IndexByte(track, '/'); i >= 0 {
+			keys = append(keys, track[:i])
+		}
+		keys = append(keys, trimNumber(track))
+	}
+	base := filepath.Base(audioPath)
+	keys = append(keys, base, strings.TrimSuffix(base, filepath.Ext(base)))
+	return keys
+}
+
+func updateTrackVars(doc *metadata.Document) {
+	if doc.Vars == nil {
+		doc.Vars = map[string]string{}
+	}
+	for _, spec := range []struct {
+		field, number, total string
+	}{
+		{"Track", "tracknumber", "totaltracks"},
+		{"Disc", "discnumber", "disctotal"},
+	} {
+		value := fieldsValue(doc.Fields, spec.field)
+		if value == "" {
+			continue
+		}
+		num, total, ok := strings.Cut(value, "/")
+		doc.Vars[spec.number] = trimNumber(num)
+		if ok {
+			doc.Vars[spec.total] = trimNumber(total)
+		}
+	}
+}
+
+func fieldsValue(fields map[string]string, name string) string {
+	for key, value := range fields {
+		if strings.EqualFold(key, name) {
+			return value
+		}
+	}
+	return ""
+}
+
+func trimNumber(value string) string {
+	value = strings.TrimSpace(value)
+	if n, err := strconv.Atoi(value); err == nil {
+		return strconv.Itoa(n)
+	}
+	return strings.TrimLeft(value, "0")
+}
+func setField(fields map[string]string, name, value string) {
+	found := false
+	for key := range fields {
+		if strings.EqualFold(key, name) {
+			fields[key] = value
+			found = true
+		}
+	}
+	if !found {
+		fields[name] = value
+	}
+}

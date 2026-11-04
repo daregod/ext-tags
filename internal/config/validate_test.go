@@ -10,6 +10,7 @@ func TestValidateAllErrors(t *testing.T) {
 		func(c *Config) { c.Files.OnExisting = "bad" },
 		func(c *Config) { c.TagFile.Suffix = "tag" },
 		func(c *Config) { c.Cover.Field = "" },
+		func(c *Config) { c.Cover.Prefer = "bad" },
 		func(c *Config) { c.Cover.Names = []string{"bad/name"} },
 		func(c *Config) { c.Fields.RulesMode = "bad" },
 		func(c *Config) { c.Fields.Rules = []Rule{{}} },

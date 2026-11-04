@@ -246,3 +246,20 @@ func TestSniffContainer(t *testing.T) {
 		}
 	}
 }
+func TestApplySidecarPrefer(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.flac")
+	if err := os.WriteFile(filepath.Join(dir, "cover.jpg"), []byte{3, 4, 5}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Default()
+	cfg.Cover.Prefer = "sidecar"
+	md := metadata.New()
+	md.Cover = &metadata.Cover{Filename: "embedded.jpg", MIME: "image/jpeg", Data: []byte{1, 2}}
+	md.Artwork["front"] = md.Cover
+	a := &app{opts: &options{}}
+	a.applySidecarArtwork(md, path, cfg)
+	if md.Cover == nil || string(md.Cover.Data) != string([]byte{3, 4, 5}) {
+		t.Fatalf("cover = %+v", md.Cover)
+	}
+}
