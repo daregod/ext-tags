@@ -85,7 +85,7 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
 	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
 
-	root.AddCommand(a.extractCmd(), a.importCmd(), a.configCmd(), a.versionCmd())
+	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.configCmd(), a.versionCmd())
 	return root
 }
 
@@ -242,6 +242,7 @@ type fileResult struct {
 	Bytes   int               `json:"bytes,omitempty"`
 	Fields  map[string]string `json:"fields,omitempty"`
 	Cover   *coverInfo        `json:"cover,omitempty"`
+	Target  string            `json:"target,omitempty"`
 	Reason  string            `json:"reason,omitempty"`
 	Warning string            `json:"warning,omitempty"`
 	Error   string            `json:"error,omitempty"`
@@ -347,6 +348,10 @@ func (a *app) report(r fileResult) {
 		}
 	case "dry-run":
 		fmt.Printf("DRY-RUN %s → %s (%d items, %d bytes)\n", r.File, r.TagFile, r.Items, r.Bytes)
+	case "rename-dry":
+		fmt.Printf("DRY-RUN %s → %s\n", r.File, r.Target)
+	case "renamed":
+		fmt.Printf("RENAME  %s → %s\n", r.File, r.Target)
 	case "imported":
 		fmt.Printf("IMPORT  %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)
 		if r.Backup != "" {

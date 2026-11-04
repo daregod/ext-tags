@@ -36,6 +36,30 @@ func readPrefix(path string, limit int) ([]byte, error) {
 	return buf[:n], nil
 }
 
+// Extension returns the canonical extension for an Ogg stream, or "".
+func Extension(path string) string {
+	data, err := readPrefix(path, 64<<10)
+	if err != nil {
+		return ""
+	}
+	packets := packetsOf(data)
+	if len(packets) == 0 {
+		return ""
+	}
+	first := packets[0]
+	switch {
+	case len(first) >= 8 && string(first[:8]) == "OpusHead":
+		return ".opus"
+	case len(first) >= 7 && first[0] == 1 && string(first[1:7]) == "vorbis":
+		return ".ogg"
+	case len(first) >= 8 && string(first[:8]) == "Speex   ":
+		return ".spx"
+	case len(first) >= 5 && first[0] == 0x7F && string(first[1:5]) == "FLAC":
+		return ".oga"
+	}
+	return ""
+}
+
 // ReadTags parses comments of a Speex or Ogg-FLAC stream.
 func ReadTags(path string) ([]Tag, *Picture, error) {
 	data, err := readPrefix(path, 4<<20)

@@ -178,8 +178,9 @@ ext-tags --json extract track.flac
 | Команда | Назначение |
 |---|---|
 | `ext-tags extract <пути...>` | создать `.tag` (по умолчанию) |
-| `ext-tags import <mp3...>` | записать `.tag` обратно в MP3 |
+| `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg |
 | `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
+| `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
 | `ext-tags version` | версия и дата сборки |
 
 Глобальные флаги:
@@ -199,6 +200,25 @@ ext-tags --json extract track.flac
 
 При `backup` (по умолчанию) старый `track.flac.tag` сохраняется как
 `track.flac.tag.bak`.
+
+### fixext
+
+Некоторые стриминговые сервисы отдают Ogg/Opus с расширением `.flac`.
+fb2k выбирает artwork-ридер по расширению и не показывает обложки у таких
+файлов. `fixext` определяет контейнер по магии и переименовывает файл в
+правильное расширение (`.opus`, `.ogg`, `.oga`, `.spx`), вместе с sidecar
+`.tag`:
+
+```bash
+# dry-run: только показать, что будет переименовано
+ext-tags fixext -r ~/Music
+
+# применить
+ext-tags fixext -r ~/Music --apply
+```
+
+По умолчанию ничего не меняется. Если целевое имя уже существует, файл
+пропускается.
 
 ## Конфигурация
 
