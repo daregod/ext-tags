@@ -49,9 +49,9 @@
 - [x] FLAC: запись Vorbis comments и PICTURE-блоков.
 - [x] Ogg Vorbis / Opus / Speex: запись Vorbis comments и artwork (Ogg-перепаковка).
 - [x] Ogg FLAC: запись FLAC-блоков в Ogg, счётчик header-пакетов.
-- [ ] MP4/M4A (AAC/ALAC): запись iTunes-атомов.
-- [ ] APEv2 (APE, WavPack, TAK, Musepack).
-- [ ] Matroska/WebM: запись Tags.
+- [x] MP4/M4A (AAC/ALAC): запись iTunes-атомов (front cover).
+- [x] APEv2 (APE, WavPack, TAK, Musepack, AC3/DTS).
+- [x] Matroska/WebM: запись Tags и Attachments.
 - [ ] ASF/WMA: запись Content Description (осторожно, Windows-only сложности).
 - [ ] Общая инфраструктура: `--backup`, `--dry-run`, атомарная запись, проверка после записи.
 

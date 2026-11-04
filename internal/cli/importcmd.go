@@ -22,7 +22,7 @@ func (a *app) importCmd() *cobra.Command {
 	opts := &importOptions{}
 	cmd := &cobra.Command{
 		Use:   "import <audio files...>",
-		Short: "Write .tag fields back into audio files (MP3, FLAC, Ogg, MP4, APEv2)",
+		Short: "Write .tag fields back into audio files (MP3, FLAC, Ogg, MP4, APEv2, Matroska)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return a.runImport(args, opts)
@@ -64,7 +64,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4":
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4", ".mkv", ".webm":
 	default:
 		res.Status = "unsupported"
 		res.Reason = "import is implemented for MP3, FLAC and Ogg Vorbis/Opus/Speex"
@@ -144,6 +144,11 @@ func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
 		})
 	case ".m4a", ".m4b", ".mp4":
 		return importer.ImportMP4(path, tf, importer.Options{
+			Replace: opts.replace,
+			Backup:  opts.backup,
+		})
+	case ".mkv", ".webm":
+		return importer.ImportMatroska(path, tf, importer.Options{
 			Replace: opts.replace,
 			Backup:  opts.backup,
 		})

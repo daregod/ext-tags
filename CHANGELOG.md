@@ -8,6 +8,8 @@
 
 ### Добавлено
 
+- Обратный импорт Matroska/WebM: `Tags`/`SimpleTag`, `Attachments` с пятью
+  artwork-слотами, обновление `Cues`/`SeekHead`, без перепаковки кластеров.
 - Обратный импорт MP4/M4A: iTunes-атомы (`©nam`, `©ART`, `aART`, `trkn`,
   `covr`, …), пересчёт `stco`/`co64` при сдвиге `moov`; front cover.
 - Обратный импорт APEv2: APE, WavPack, Musepack, TAK, AC3/DTS — в конец
