@@ -115,6 +115,14 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	a.report(res)
 }
 func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
+	if kind := sniffContainer(path); kind != "" {
+		switch kind {
+		case "ogg":
+			return importer.ImportOgg(path, tf, importer.Options{Replace: opts.replace, Backup: opts.backup})
+		case "flac":
+			return importer.ImportFLAC(path, tf, importer.Options{Replace: opts.replace, Backup: opts.backup})
+		}
+	}
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".flac":
 		return importer.ImportFLAC(path, tf, importer.Options{
@@ -133,4 +141,22 @@ func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
 		Replace: opts.replace,
 		Backup:  opts.backup,
 	})
+}
+func sniffContainer(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	head := make([]byte, 4)
+	if _, err := f.Read(head); err != nil {
+		return ""
+	}
+	switch string(head) {
+	case "OggS":
+		return "ogg"
+	case "fLaC":
+		return "flac"
+	}
+	return ""
 }

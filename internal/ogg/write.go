@@ -317,18 +317,20 @@ func paginateHeader(packets [][]byte, serial uint32, split bool) []page {
 	var lacing []byte
 	var payload []byte
 	first := true
-	flush := func(granule uint64, continued bool) {
+	startsContinued := false
+	flush := func(granule uint64, nextContinued bool) {
 		ht := byte(0)
 		if first {
 			ht = 0x02
 			first = false
 		}
-		if continued {
+		if startsContinued {
 			ht |= 0x01
 		}
 		pages = append(pages, page{headerType: ht, granule: granule, serial: serial, lacing: lacing, payload: payload})
 		lacing = nil
 		payload = nil
+		startsContinued = nextContinued
 	}
 
 	for _, data := range packets {
@@ -362,7 +364,6 @@ func paginateHeader(packets [][]byte, serial uint32, split bool) []page {
 	if len(lacing) > 0 {
 		flush(0, false)
 	}
-	// Header pages always carry granule 0.
 	for i := range pages {
 		if pages[i].granule != ^uint64(0) {
 			pages[i].granule = 0
@@ -370,7 +371,6 @@ func paginateHeader(packets [][]byte, serial uint32, split bool) []page {
 	}
 	return pages
 }
-
 func lacingFor(n int) []byte {
 	out := make([]byte, 0, n/255+1)
 	for n >= 255 {

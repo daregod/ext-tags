@@ -58,6 +58,9 @@ func ReadTagFile(path string) (*TagFile, error) {
 			}
 			continue
 		}
+		if strings.EqualFold(item.Key, "METADATA_BLOCK_PICTURE") || strings.EqualFold(item.Key, "COVERART") {
+			continue
+		}
 		tf.Fields[item.Key] = string(item.Value)
 	}
 	return tf, nil

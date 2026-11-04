@@ -69,6 +69,11 @@ func ExtractWithOptions(path string, opts Options) (*Result, error) {
 	if res.Artwork == nil {
 		res.Artwork = map[string]*Cover{}
 	}
+	for key := range res.Fields {
+		if isArtworkField(strings.ToUpper(key)) {
+			delete(res.Fields, key)
+		}
+	}
 	if res.Cover != nil {
 		res.Artwork["front"] = res.Cover
 	} else if front := res.Artwork["front"]; front != nil {
@@ -151,6 +156,9 @@ func applyTagMetadata(m tag.Metadata, res *Result) {
 			continue
 		}
 		upperKey := strings.ToUpper(key)
+		if isArtworkField(upperKey) {
+			continue
+		}
 		if (isTrackKey(upperKey) || isTrackTotalKey(upperKey) || isDiscKey(upperKey) || isDiscTotalKey(upperKey)) && val == "0" {
 			continue
 		}
@@ -378,4 +386,11 @@ func coverFilename(p *tag.Picture) string {
 		return "cover." + strings.ToLower(p.Ext)
 	}
 	return "cover"
+}
+func isArtworkField(key string) bool {
+	switch key {
+	case "METADATA_BLOCK_PICTURE", "COVERART", "COVERARTMIME":
+		return true
+	}
+	return false
 }

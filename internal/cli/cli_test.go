@@ -226,3 +226,23 @@ func TestApplySidecarAllArtwork(t *testing.T) {
 		t.Fatalf("icon = %q", got)
 	}
 }
+func TestSniffContainer(t *testing.T) {
+	dir := t.TempDir()
+	cases := map[string]string{"x.flac": "OggS", "y.flac": "fLaC", "z.mp3": "ID3\x04"}
+	for name, magic := range cases {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(magic), 0644); err != nil {
+			t.Fatal(err)
+		}
+		want := ""
+		switch magic[:4] {
+		case "OggS":
+			want = "ogg"
+		case "fLaC":
+			want = "flac"
+		}
+		if got := sniffContainer(path); got != want {
+			t.Fatalf("%s: got %q want %q", name, got, want)
+		}
+	}
+}

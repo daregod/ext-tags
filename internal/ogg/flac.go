@@ -99,7 +99,7 @@ func writeOggFLAC(path string, pages []page, packets []packet, comments []vorbis
 
 	audioStart := packets[1+count].startPage
 	if packets[count].endPage >= audioStart {
-		return fmt.Errorf("Ogg FLAC headers share a page with audio")
+		return fmt.Errorf("ogg FLAC headers share a page with audio")
 	}
 	headerPages := paginateHeader(headerPackets, pages[0].serial, true)
 	for i := range headerPages {
