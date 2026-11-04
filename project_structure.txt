@@ -5,10 +5,14 @@ external-tags/
 ├── go.mod
 ├── bin/                  <-- сюда собираются бинарники, здесь же тестовые примеры
 ├── cmd/
+│   ├── builddate/        <-- дата последнего коммита для -ldflags
 │   ├── compat/
 │   │   └── main.go       <-- сверка с эталонами foo_external_tags (make compat)
-│   └── ext-tags/
-│       └── main.go       <-- тонкая точка входа (internal/cli)
+│   ├── devtool/          <-- mkdir/rm/rmglob для Makefile (кроссплатформенно)
+│   ├── ext-tags/
+│   │   └── main.go       <-- тонкая точка входа (internal/cli)
+│   └── genfixtures/
+│       └── main.go       <-- генерация testdata/formats (make fixtures)
 ├── internal/
 │   ├── ape/              <-- APEv2: запись (Serialize), чтение (Parse, ReadFromFileEnd)
 │   ├── asf/              <-- ASF/WMV/WMA: Content Description, WM/Picture

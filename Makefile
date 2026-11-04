@@ -7,7 +7,7 @@
 #    make check       format check + go vet + golangci-lint + tests
 #
 #  Requirements:
-#    * Go 1.24+            https://go.dev/dl/
+#    * Go 1.26+            https://go.dev/dl/
 #    * GNU Make 4.x        Windows: scoop install make
 #    * golangci-lint v2    Windows: scoop install golangci-lint
 #
@@ -26,20 +26,19 @@ ifeq ($(OS),Windows_NT)
   .SHELLFLAGS := /c
   EXE         := .exe
   NULL        := NUL
-  MKDIR        = powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(1)' | Out-Null"
-  RMDIR        = powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(1)') { Remove-Item -LiteralPath '$(1)' -Recurse -Force }"
-  RMFILE       = powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(1)') { Remove-Item -LiteralPath '$(1)' -Force }"
-  RMGLOB       = powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Path '$(1)' -Force -ErrorAction SilentlyContinue"
   ENV          = set "GOOS=$(1)" && set "GOARCH=$(2)" &&
 else
   EXE         :=
   NULL        := /dev/null
-  MKDIR        = mkdir -p $(1)
-  RMDIR        = rm -rf $(1)
-  RMFILE       = rm -f $(1)
-  RMGLOB       = rm -f $(1)
   ENV          = GOOS=$(1) GOARCH=$(2)
 endif
+
+# Filesystem helpers are Go code (cmd/devtool) so recipes work in cmd.exe and sh.
+DEVTOOL  = $(GO) run ./cmd/devtool
+MKDIR     = $(DEVTOOL) mkdir $(1)
+RMDIR     = $(DEVTOOL) rmdir $(1)
+RMFILE    = $(DEVTOOL) rm $(1)
+RMGLOB    = $(DEVTOOL) rmglob $(1)
 
 APP      := ext-tags
 PKG      := ./cmd/$(APP)
@@ -66,17 +65,16 @@ endif
 GOLANGCI_LINT ?= golangci-lint
 GOLANGCI_VERSION ?= v2.15.0
 
-# cmd.exe eats a lone % in command lines, so the date format is escaped on Windows.
-ifeq ($(OS),Windows_NT)
-  DATE_FMT := %%cI
-else
-  DATE_FMT := %cI
-endif
-
 # Version stamp: tag or short hash, plus -dirty when the tree is modified.
 VERSION    ?= $(shell $(GIT) describe --tags --always --dirty 2>$(NULL))
 COMMIT     ?= $(shell $(GIT) rev-parse --short HEAD 2>$(NULL))
-BUILD_DATE ?= $(shell $(GIT) log -1 --format=$(DATE_FMT) 2>$(NULL))
+# BUILD_DATE is parsed from `git log --pretty=medium` so the command contains no
+# '%' format specifiers: some make builds (MSYS/Git) pass "%%cI" through to git.
+ifeq ($(OS),Windows_NT)
+  BUILD_DATE ?= $(shell $(GO) run ./cmd/builddate 2>$(NULL))
+else
+  BUILD_DATE ?= $(shell $(GIT) log -1 --date=iso-strict --pretty=medium | sed -n 's/^Date:[[:space:]]*//p')
+endif
 
 ifeq ($(strip $(VERSION)),)
   VERSION := 0.0.0-dev
@@ -249,7 +247,7 @@ compat-fixtures:
 	@$(COMPAT_BIN) -examples testdata/formats -reference testdata/reference
 ## fixtures: regenerate tiny test files in testdata/formats (needs ffmpeg)
 fixtures:
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-fixtures.ps1 $(if $(FORCE),-Force,)
+	@$(GO) run ./cmd/genfixtures $(if $(FORCE),-force,)
 ## compat: compare generated .tag files with foobar2000 references in bin/examples
 compat:
 	@$(call MKDIR,$(BIN_DIR))

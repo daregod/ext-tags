@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Исправлено
+
+- Вспомогательные утилиты переписаны на Go: `cmd/builddate` (BUILD_DATE),
+  `cmd/devtool` (mkdir/rm/rmglob для Makefile) и `cmd/genfixtures` (тестовые
+  фикстуры). PowerShell-скрипты удалены: `go run` одинаково работает на
+  Windows, Linux и macOS, Makefile закреплён как LF через `.gitattributes`.
+
 ## [0.5.0] — 2026-11-04
 
 ### Добавлено

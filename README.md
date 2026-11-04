@@ -37,7 +37,7 @@
 
 ## 🚀 Сборка и установка
 
-Для сборки нужны Go 1.24+ и GNU Make 4.x. В Windows всё ставится через scoop:
+Для сборки нужны Go 1.26+ и GNU Make 4.x. В Windows всё ставится через scoop:
 
 ```powershell
 scoop install make golangci-lint
