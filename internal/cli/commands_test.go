@@ -202,3 +202,29 @@ func TestRunFixExtTargetTagExists(t *testing.T) {
 		t.Fatal("source must stay in place")
 	}
 }
+func TestRunExtractAndFixExtConfigError(t *testing.T) {
+	bad := filepath.Join(t.TempDir(), "bad.yaml")
+	if err := os.WriteFile(bad, []byte("files: [\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{configPath: bad}}
+	if err := a.runExtract(a.extractCmd(), []string{"x.flac"}); err == nil {
+		t.Fatal("extract config error expected")
+	}
+	a = &app{opts: &options{configPath: bad}}
+	if err := a.runFixExt([]string{"x.flac"}, &fixOptions{}); err == nil {
+		t.Fatal("fixext config error expected")
+	}
+}
+
+func TestGetRegistryDefaultAndOverrides(t *testing.T) {
+	a := &app{opts: &options{}}
+	if a.getRegistry() == nil {
+		t.Fatal("default registry is nil")
+	}
+	a = &app{opts: &options{recursive: true, onExisting: "skip", cover: true, merge: true}}
+	cfg := config.Default()
+	if err := a.applyOverrides(cfg, func(flag string) bool { return flag == "merge" || flag == "no-merge" }); err == nil {
+		t.Fatal("merge conflict expected")
+	}
+}

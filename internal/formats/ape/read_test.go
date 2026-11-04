@@ -63,3 +63,25 @@ func TestSerializeEmbedded(t *testing.T) {
 		t.Fatalf("parsed = %+v", parsed.Items)
 	}
 }
+func TestReadFile(t *testing.T) {
+	tag := ape.NewTag()
+	tag.AddText("Title", "File")
+	data, err := tag.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "track.tag")
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := ape.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item, ok := parsed.Get("Title"); !ok || string(item.Value) != "File" {
+		t.Fatalf("items = %+v", parsed.Items)
+	}
+	if _, err := ape.ReadFile(filepath.Join(t.TempDir(), "missing.tag")); err == nil {
+		t.Fatal("missing file must fail")
+	}
+}
