@@ -1,6 +1,7 @@
 # ext-tags
 
 [![CI](https://github.com/daregod/ext-tags/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/daregod/ext-tags/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/daregod/ext-tags/badge.svg?branch=main)](https://coveralls.io/github/daregod/ext-tags?branch=main)
 [![Release](https://img.shields.io/github/v/release/daregod/ext-tags?label=release&sort=semver)](https://github.com/daregod/ext-tags/releases/latest)
 [![Go version](https://img.shields.io/github/go-mod/go-version/daregod/ext-tags)](https://github.com/daregod/ext-tags/blob/main/go.mod)
 [![License](https://img.shields.io/github/license/daregod/ext-tags)](LICENSE)
@@ -24,8 +25,9 @@
   кладёт её в `.tag`.
 - **Массовая обработка.** Один запуск на папку или всю библиотеку, с
   рекурсией, `--dry-run` и машиночитаемым `--json`.
-- **Обратный импорт.** Когда теги всё-таки нужно записать в файлы, для MP3
-  есть `ext-tags import` (ID3v1/ID3v2.2–2.4).
+- **Обратный импорт.** Когда теги всё-таки нужно записать в файлы,
+  `ext-tags import` пишет `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2,
+  Matroska и ASF/WMA.
 
 ## Сценарии
 
@@ -70,9 +72,9 @@ cd ~/Music
 ext-tags -r .
 ```
 
-### Вернуть теги в файлы (MP3)
+### Вернуть теги в файлы
 
-Если внешние теги больше не нужны или файл будет проигрываться в плеере без поддержки внешних тегов:
+Если внешние теги больше не нужны или файл будет проигрываться в плеере без поддержки внешних тегов. Тот же вызов работает для всех форматов, где есть writer:
 
 ```bash
 ext-tags import --backup --id3v2-version 3 track.mp3

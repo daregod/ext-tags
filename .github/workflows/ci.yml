@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
 
 jobs:
   check:
@@ -24,6 +25,14 @@ jobs:
         run: make tidy-check
       - name: Format check, vet, lint and tests
         run: make check
+      - name: Test with coverage
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage.out
+          format: golang
       - name: Build
         run: make build
       - name: Cross-compile releases
