@@ -39,13 +39,16 @@ cmd/devtool         mkdir/rmdir/rm/rmglob для Makefile
 cmd/genfixtures     генератор testdata/formats
 internal/cli        команды cobra, вывод text/json, импорт
 internal/config     YAML-схема, слои, профили, валидация
-internal/extractor  чтение контейнеров → сырые поля + обложка
+internal/metadata   Document/Cover/ArtworkKind — общие типы
+internal/format     Reader/Writer + Registry, явный format.New
+internal/registry   NewDefault: явный список reader/writer по форматам
+internal/extractor  чтение контейнеров → metadata.Document
 internal/rules      aliases/ignore/set/copy/rename/default/remove
 internal/tagfile    запись .tag: merge, backup, dry-run
-internal/importer   .tag → ID3 (MP3)
+internal/importer   .tag → формат (ID3, APEv2, FLAC, Ogg, MP4…)
 internal/id3        свой writer ID3v1/2.2/2.3/2.4
 internal/ape        APEv2 (чтение и запись .tag)
-internal/{asf,matroska,ogg,riff}  парсеры контейнеров
+internal/{asf,matroska,ogg,riff,flac,mp4,vorbis}  форматы/кодеки
 internal/artwork    поиск обложки рядом с аудио
 internal/version    версия, коммит, дата
 ```
@@ -53,13 +56,15 @@ internal/version    версия, коммит, дата
 Поток данных:
 
 ```
-audio file → extractor (сырые поля, cover)
-           → rules (aliases, ignore, шаблоны)
-           → tagfile.Build/Write (.tag, APEv2 + TAGFILE)
+cli → registry.NewDefault → format.Reader → extractor → metadata.Document
+                                             → rules → tagfile
+
+cli → registry.NewDefault → format.Writer → importer → формат
 ```
 
 `extract` ничего не пишет в аудио. `import` — единственная команда, которая
-меняет аудиофайл.
+меняет аудиофайл. Реестр создаётся явно в `cmd/ext-tags`/`cli.Execute` и
+передаётся в `app`; глобального `Default`/`init()` нет.
 
 ## Вспомогательные утилиты на Go
 
@@ -140,14 +145,15 @@ make compat            # сравнить с bin/examples (локальные п
 
 ## Добавление нового формата
 
-1. Определить сигнатуру/расширение в `internal/extractor` (dispatch).
-2. Написать/расширить парсер в отдельном `internal/<format>`.
-3. Смапить поля в `internal/extractor/<format>.go`; технические поля — в
+1. Написать/расширить парсер в `internal/<format>`.
+2. Смапить поля в `internal/extractor/<format>.go`; технические поля — в
    `ignore` конфига, если они не нужны.
-4. Добавить файл в `cmd/genfixtures` и сгенерировать его.
-5. Добавить кейс в `internal/extractor/fixtures_test.go`.
-6. Снять эталон в foobar2000 → `testdata/reference`.
-7. Обновить TODO/README (форматы) и CHANGELOG.
+3. Зарегистрировать reader в `internal/registry` (имя + расширения).
+4. Для записи: `importer.Import...` + writerSpec в `internal/registry`.
+5. Добавить файл в `cmd/genfixtures` и сгенерировать его.
+6. Добавить кейс в `internal/extractor/fixtures_test.go` и round-trip тест.
+7. Снять эталон в foobar2000 → `testdata/reference`.
+8. Обновить TODO/README (форматы) и CHANGELOG.
 
 Если формат без тегов (AC3/DTS/AU/TS), он остаётся в TODO как «вне области».
 
