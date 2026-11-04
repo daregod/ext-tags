@@ -178,7 +178,7 @@ ext-tags --json extract track.flac
 | Команда | Назначение |
 |---|---|
 | `ext-tags extract <пути...>` | создать `.tag` (по умолчанию) |
-| `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, APEv2 |
+| `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2 |
 | `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
 | `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
 | `ext-tags version` | версия и дата сборки |
