@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,76 +12,83 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Fprintln(os.Stderr, "usage: devtool mkdir|rmdir|rm|rmglob <path...>")
-		os.Exit(2)
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	if len(args) < 2 {
+		fmt.Fprintln(stderr, "usage: devtool mkdir|rmdir|rm|rmglob <path...>")
+		return 2
 	}
-	switch os.Args[1] {
+	switch args[0] {
 	case "mkdir":
-		for _, p := range os.Args[2:] {
+		for _, p := range args[1:] {
 			if err := os.MkdirAll(p, 0o755); err != nil {
-				fail(err)
+				fmt.Fprintln(stderr, "devtool:", err)
+				return 1
 			}
 		}
 	case "rmdir":
-		for _, p := range os.Args[2:] {
+		for _, p := range args[1:] {
 			if err := os.RemoveAll(p); err != nil {
-				fail(err)
+				fmt.Fprintln(stderr, "devtool:", err)
+				return 1
 			}
 		}
 	case "rm":
-		for _, p := range os.Args[2:] {
+		for _, p := range args[1:] {
 			if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
-				fail(err)
+				fmt.Fprintln(stderr, "devtool:", err)
+				return 1
 			}
 		}
 	case "tag":
-		if len(os.Args) != 3 {
-			fmt.Fprintln(os.Stderr, "usage: devtool tag <name>")
-			os.Exit(2)
+		if len(args) != 2 {
+			fmt.Fprintln(stderr, "usage: devtool tag <name>")
+			return 2
 		}
-		tag := os.Args[2]
+		tag := args[1]
 		clean, err := gitOutput("status", "--porcelain")
 		if err != nil {
-			fail(err)
+			fmt.Fprintln(stderr, "devtool:", err)
+			return 1
 		}
 		if strings.TrimSpace(clean) != "" {
-			fmt.Fprintln(os.Stderr, "devtool: working tree is dirty, commit the release first")
-			os.Exit(1)
+			fmt.Fprintln(stderr, "devtool: working tree is dirty, commit the release first")
+			return 1
 		}
 		cmd := exec.Command("git", "-c", "safe.directory=*", "tag", "-a", tag,
 			"-m", "Release "+tag)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
 		if err := cmd.Run(); err != nil {
-			fail(err)
+			fmt.Fprintln(stderr, "devtool:", err)
+			return 1
 		}
-		fmt.Println("Created tag", tag)
+		fmt.Fprintln(stdout, "Created tag", tag)
 	case "rmglob":
-		for _, pattern := range os.Args[2:] {
+		for _, pattern := range args[1:] {
 			matches, err := filepath.Glob(pattern)
 			if err != nil {
-				fail(err)
+				fmt.Fprintln(stderr, "devtool:", err)
+				return 1
 			}
 			for _, p := range matches {
 				if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
-					fail(err)
+					fmt.Fprintln(stderr, "devtool:", err)
+					return 1
 				}
 			}
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "devtool: unknown command %q\n", os.Args[1])
-		os.Exit(2)
+		fmt.Fprintf(stderr, "devtool: unknown command %q\n", args[0])
+		return 2
 	}
+	return 0
 }
 
 func gitOutput(args ...string) (string, error) {
 	cmd := exec.Command("git", append([]string{"-c", "safe.directory=*"}, args...)...)
 	out, err := cmd.Output()
 	return string(out), err
-}
-
-func fail(err error) {
-	fmt.Fprintln(os.Stderr, "devtool:", err)
-	os.Exit(1)
 }
