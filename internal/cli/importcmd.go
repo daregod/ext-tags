@@ -66,7 +66,7 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4", ".mkv", ".webm", ".wma", ".wmv", ".asf":
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx", ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts", ".m4a", ".m4b", ".mp4", ".alac", ".mkv", ".webm", ".wma", ".wmv", ".asf":
 	default:
 		res.Status = "unsupported"
 		res.Reason = "import is implemented for MP3, FLAC and Ogg Vorbis/Opus/Speex"

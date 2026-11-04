@@ -4,7 +4,6 @@ package registry
 import (
 	"os"
 
-	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/extractor"
 	"github.com/daregod/ext-tags/internal/format"
 	"github.com/daregod/ext-tags/internal/importer"
@@ -14,31 +13,47 @@ import (
 // NewDefault returns the production registry. The list is explicit so tests
 // can build a smaller registry with format.New instead.
 func NewDefault() *format.Registry {
-	return format.New(
-		[]format.Reader{autoReader{extensions: config.Default().Files.Extensions}},
-		defaultWriters(),
-	)
+	return format.New(defaultReaders(), defaultWriters())
 }
 
-type autoReader struct {
+type readerSpec struct {
+	name       string
 	extensions []string
+	read       func(string, format.ReadOptions) (*metadata.Document, error)
 }
 
-func (r autoReader) Name() string         { return "auto" }
-func (r autoReader) Extensions() []string { return r.extensions }
-func (r autoReader) Read(path string, opts format.ReadOptions) (*metadata.Document, error) {
-	return extractor.ExtractWithOptions(path, extractor.Options{CoverNames: opts.CoverNames})
+func (r readerSpec) Name() string         { return r.name }
+func (r readerSpec) Extensions() []string { return r.extensions }
+func (r readerSpec) Read(path string, opts format.ReadOptions) (*metadata.Document, error) {
+	return r.read(path, opts)
 }
 
-type writerFunc struct {
+func defaultReaders() []format.Reader {
+	read := func(path string, opts format.ReadOptions) (*metadata.Document, error) {
+		return extractor.ExtractWithOptions(path, extractor.Options{CoverNames: opts.CoverNames})
+	}
+	return []format.Reader{
+		readerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, read},
+		readerSpec{"flac", []string{".flac"}, read},
+		readerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, read},
+		readerSpec{"apev2", []string{".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts"}, read},
+		readerSpec{"mp4", []string{".m4a", ".m4b", ".mp4", ".alac"}, read},
+		readerSpec{"matroska", []string{".mkv", ".webm"}, read},
+		readerSpec{"asf", []string{".wma", ".wmv", ".asf"}, read},
+		readerSpec{"riff", []string{".wav", ".rf64", ".w64", ".aif", ".aiff"}, read},
+		readerSpec{"aac", []string{".aac"}, read},
+	}
+}
+
+type writerSpec struct {
 	name       string
 	extensions []string
 	write      func(string, *importer.TagFile, importer.Options) error
 }
 
-func (w writerFunc) Name() string         { return w.name }
-func (w writerFunc) Extensions() []string { return w.extensions }
-func (w writerFunc) Write(path string, doc *metadata.Document, opts format.WriteOptions) error {
+func (w writerSpec) Name() string         { return w.name }
+func (w writerSpec) Extensions() []string { return w.extensions }
+func (w writerSpec) Write(path string, doc *metadata.Document, opts format.WriteOptions) error {
 	return w.write(path, tagFile(doc), importer.Options{
 		Replace: opts.Replace,
 		Backup:  opts.Backup,
@@ -49,14 +64,28 @@ func (w writerFunc) Write(path string, doc *metadata.Document, opts format.Write
 
 func defaultWriters() []format.Writer {
 	return []format.Writer{
-		writerFunc{"mp3", []string{".mp3", ".mp2", ".mp1"}, importer.ImportMP3},
-		flacWriter{},
-		writerFunc{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, importer.ImportOgg},
-		writerFunc{"apev2", []string{".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts"}, importer.ImportAPEv2},
-		writerFunc{"mp4", []string{".m4a", ".m4b", ".mp4"}, importer.ImportMP4},
-		writerFunc{"matroska", []string{".mkv", ".webm"}, importer.ImportMatroska},
-		writerFunc{"asf", []string{".wma", ".wmv", ".asf"}, importer.ImportASF},
+		writerSpec{"mp3", []string{".mp3", ".mp2", ".mp1"}, importer.ImportMP3},
+		writerSpec{"flac", []string{".flac"}, writeFLAC},
+		writerSpec{"ogg", []string{".ogg", ".oga", ".opus", ".spx"}, importer.ImportOgg},
+		writerSpec{"apev2", []string{".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts"}, importer.ImportAPEv2},
+		writerSpec{"mp4", []string{".m4a", ".m4b", ".mp4", ".alac"}, importer.ImportMP4},
+		writerSpec{"matroska", []string{".mkv", ".webm"}, importer.ImportMatroska},
+		writerSpec{"asf", []string{".wma", ".wmv", ".asf"}, importer.ImportASF},
 	}
+}
+
+func writeFLAC(path string, tf *importer.TagFile, opts importer.Options) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	head := make([]byte, 4)
+	_, readErr := file.Read(head)
+	file.Close()
+	if readErr == nil && string(head) == "OggS" {
+		return importer.ImportOgg(path, tf, opts)
+	}
+	return importer.ImportFLAC(path, tf, opts)
 }
 
 func tagFile(doc *metadata.Document) *importer.TagFile {
@@ -72,28 +101,4 @@ func tagFile(doc *metadata.Document) *importer.TagFile {
 		covers[metadata.Front] = doc.Cover
 	}
 	return &importer.TagFile{Fields: fields, Cover: doc.Cover, Covers: covers}
-}
-
-type flacWriter struct{}
-
-func (flacWriter) Name() string         { return "flac" }
-func (flacWriter) Extensions() []string { return []string{".flac"} }
-func (flacWriter) Write(path string, doc *metadata.Document, opts format.WriteOptions) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	head := make([]byte, 4)
-	_, readErr := file.Read(head)
-	file.Close()
-	if readErr == nil && string(head) == "OggS" {
-		return importer.ImportOgg(path, tagFile(doc), importer.Options{
-			Replace: opts.Replace,
-			Backup:  opts.Backup,
-		})
-	}
-	return importer.ImportFLAC(path, tagFile(doc), importer.Options{
-		Replace: opts.Replace,
-		Backup:  opts.Backup,
-	})
 }
