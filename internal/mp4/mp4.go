@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 )
 
 // Cover is the front cover written to the covr atom.
@@ -299,13 +300,14 @@ func parseBoxes(data []byte) ([]box, error) {
 		size := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 		typ := string(data[offset+4 : offset+8])
 		header := 8
-		if size == 1 {
+		switch size {
+		case 1:
 			if offset+16 > len(data) {
 				return nil, fmt.Errorf("mp4: truncated 64-bit box")
 			}
 			size = int(binary.BigEndian.Uint64(data[offset+8 : offset+16]))
 			header = 16
-		} else if size == 0 {
+		case 0:
 			size = len(data) - offset
 		}
 		if size < header || offset+size > len(data) {
@@ -379,7 +381,6 @@ func splitPair(value string) (string, string) {
 }
 
 func setBE16(dst []byte, value string) {
-	var n uint16
-	fmt.Sscanf(value, "%d", &n)
-	binary.BigEndian.PutUint16(dst, n)
+	n, _ := strconv.Atoi(value)
+	binary.BigEndian.PutUint16(dst, uint16(n))
 }
