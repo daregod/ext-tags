@@ -61,3 +61,38 @@ func TestUserAndProjectPaths(t *testing.T) {
 		t.Fatalf("ProjectPath = %q/%v", got, ok)
 	}
 }
+func TestResolveLayersUserAndProject(t *testing.T) {
+	dir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", dir)
+	} else {
+		t.Setenv("XDG_CONFIG_HOME", dir)
+	}
+	userDir := filepath.Join(dir, "ext-tags")
+	if err := os.MkdirAll(userDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	userFile := filepath.Join(userDir, "config.yaml")
+	if err := os.WriteFile(userFile, []byte("version: 1\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(old) }()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	projectFile := filepath.Join(dir, "ext-tags.yaml")
+	if err := os.WriteFile(projectFile, []byte("version: 1\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	layers := ResolveLayers("")
+	if layers.User != userFile || layers.Project != projectFile {
+		t.Fatalf("layers = %+v", layers)
+	}
+	if got := layers.Label(); got != userFile+" + "+projectFile {
+		t.Fatalf("label = %q", got)
+	}
+}

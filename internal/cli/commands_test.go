@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/rules"
 	"github.com/daregod/ext-tags/internal/tagformat"
@@ -154,4 +156,49 @@ func TestImportFileEdgeCases(t *testing.T) {
 	}
 	a = &app{opts: &options{quiet: true}}
 	a.importFile(unsupported, ".tag", &importOptions{})
+}
+func TestProcessFileSkipExisting(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.flac")
+	if err := os.WriteFile(path, []byte("audio"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tagPath := path + ".tag"
+	if err := os.WriteFile(tagPath, []byte("existing"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := testConfig()
+	cfg.Files.OnExisting = config.OnExistingSkip
+	engine, err := rules.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Title"] = "New"
+	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{&serviceReader{doc: doc}}, nil)}
+	a.processFile(path, cfg, engine)
+	data, err := os.ReadFile(tagPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "existing" {
+		t.Fatalf("tag overwritten: %q", data)
+	}
+}
+
+func TestRunFixExtTargetTagExists(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.opus"), path)
+	targetTag := filepath.Join(dir, "track.opus.tag")
+	if err := os.WriteFile(targetTag, []byte("tag"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{quiet: true}}
+	if err := a.runFixExt([]string{path}, &fixOptions{apply: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal("source must stay in place")
+	}
 }
