@@ -54,6 +54,16 @@ func (t *Tag) AddCoverArt(key, filename string, data []byte) {
 }
 
 func (t *Tag) Serialize() ([]byte, error) {
+	return t.serialize(true)
+}
+
+// SerializeEmbedded returns a bare APEv2 tag (header, items, footer) without
+// the TAGFILE marker, suitable for appending to an audio file.
+func (t *Tag) SerializeEmbedded() ([]byte, error) {
+	return t.serialize(false)
+}
+
+func (t *Tag) serialize(prefix bool) ([]byte, error) {
 	var itemsBuf bytes.Buffer
 
 	for _, item := range t.Items {
@@ -79,7 +89,9 @@ func (t *Tag) Serialize() ([]byte, error) {
 	footer := buildHeader(tagSize, itemCount, false)
 
 	var out bytes.Buffer
-	out.WriteString(apeTAGFILE)
+	if prefix {
+		out.WriteString(apeTAGFILE)
+	}
 	out.Write(header)
 	out.Write(itemsData)
 	out.Write(footer)

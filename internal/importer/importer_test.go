@@ -172,3 +172,37 @@ func fieldValue(fields map[string]string, key string) string {
 	}
 	return ""
 }
+func TestImportAPEv2(t *testing.T) {
+	src := filepath.Join("..", "..", "testdata", "formats", "audio.wv")
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.wv")
+	copyFile(t, src, audio)
+
+	tf := &importer.TagFile{
+		Fields: map[string]string{
+			"Title": "Wv Title", "Artist": "Wv Artist", "Track": "3",
+		},
+		Covers: map[string]*importer.Cover{
+			"front":  {Filename: "front.jpg", MIME: "image/jpeg", Data: []byte{1}},
+			"back":   {Filename: "back.png", MIME: "image/png", Data: []byte{2}},
+			"artist": {Filename: "artist.jpg", MIME: "image/jpeg", Data: []byte{3}},
+			"disc":   {Filename: "disc.jpg", MIME: "image/jpeg", Data: []byte{4}},
+			"icon":   {Filename: "icon.png", MIME: "image/png", Data: []byte{5}},
+		},
+	}
+	if err := importer.ImportAPEv2(audio, tf, importer.Options{Replace: true, Backup: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := extractor.Extract(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Fields["Title"] != "Wv Title" || res.Fields["Artist"] != "Wv Artist" {
+		t.Fatalf("fields = %v", res.Fields)
+	}
+	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+		if res.Artwork[kind] == nil {
+			t.Fatalf("missing %s artwork", kind)
+		}
+	}
+}
