@@ -85,6 +85,9 @@ func WriteComments(path string, comments []vorbis.Comment, pictures []vorbis.Pic
 	}
 
 	headerPages := paginateHeader(headerPackets, pages[0].serial, codec == "opus")
+	for i := range headerPages {
+		headerPages[i].seq = uint32(i)
+	}
 	out := make([]byte, 0, len(data)+len(packetData))
 	for _, p := range headerPages {
 		out = append(out, encodePage(p)...)
