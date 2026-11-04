@@ -28,7 +28,7 @@ func TestWriteVersions(t *testing.T) {
 	for _, version := range []int{2, 3, 4} {
 		t.Run(string(rune('0'+version)), func(t *testing.T) {
 			path := writeSample(t)
-			if err := Write(path, fields(), cover, Options{Version: version, Replace: true}); err != nil {
+			if err := Write(path, fields(), map[string]*Cover{"front": cover}, Options{Version: version, Replace: true}); err != nil {
 				t.Fatal(err)
 			}
 			data, err := os.ReadFile(path)
@@ -129,6 +129,47 @@ func TestPreserveAndReplace(t *testing.T) {
 	for _, f := range frames {
 		if f.id == "TALB" || f.id == "TPE1" {
 			t.Fatalf("frame %s survived --replace", f.id)
+		}
+	}
+}
+func TestWriteAllArtwork(t *testing.T) {
+	path := writeSample(t)
+	covers := map[string]*Cover{
+		"front":  {Filename: "front.jpg", MIME: "image/jpeg", Data: []byte{1}},
+		"back":   {Filename: "back.png", MIME: "image/png", Data: []byte{2}},
+		"artist": {Filename: "artist.jpg", MIME: "image/jpeg", Data: []byte{3}},
+		"disc":   {Filename: "disc.jpg", MIME: "image/jpeg", Data: []byte{4}},
+		"icon":   {Filename: "icon.png", MIME: "image/png", Data: []byte{5}},
+	}
+	if err := Write(path, map[string]string{"Title": "Song"}, covers, Options{Version: 3, Replace: true}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	frames, _, _, _, err := parseTag(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	types := map[byte]bool{}
+	for _, f := range frames {
+		if f.id != "APIC" {
+			continue
+		}
+		// encoding, MIME (NUL terminated), picture type
+		i := 1
+		for i < len(f.payload) && f.payload[i] != 0 {
+			i++
+		}
+		if i+1 >= len(f.payload) {
+			t.Fatalf("short APIC frame: % X", f.payload)
+		}
+		types[f.payload[i+1]] = true
+	}
+	for _, want := range []byte{3, 4, 8, 6, 1} {
+		if !types[want] {
+			t.Fatalf("missing APIC type %d, got %v", want, types)
 		}
 	}
 }

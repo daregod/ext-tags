@@ -8,6 +8,8 @@
 
 ### Добавлено
 
+- Обратный импорт переносит все пять artwork-слотов в ID3 APIC (front/back/
+  artist/disc/icon) — проверено на MP3.
 - Обложки: пять artwork-слотов foobar2000 — `front`/`back`/`artist`/`disc`/`icon`.
   Ключи APEv2: `Cover Art (Front/Back/Disc/Icon)` и `Artist Picture`; имена
   sidecar-файлов настраиваются отдельно (`cover.names`, `cover.back`, …).

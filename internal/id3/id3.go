@@ -30,7 +30,7 @@ type rawFrame struct {
 }
 
 // Write replaces the ID3v2 tag of path with fields and cover.
-func Write(path string, fields map[string]string, cover *Cover, opts Options) error {
+func Write(path string, fields map[string]string, covers map[string]*Cover, opts Options) error {
 	version := opts.Version
 	if version != 2 && version != 4 {
 		version = 3
@@ -52,7 +52,7 @@ func Write(path string, fields map[string]string, cover *Cover, opts Options) er
 		existing, tagLen, hasTag = nil, 0, false
 	}
 
-	frames := buildFrames(version, fields, cover)
+	frames := buildFrames(version, fields, covers)
 	if !opts.Replace && hasTag && oldVersion == version {
 		overwrite := frameIDs(frames)
 		for _, frame := range existing {
@@ -79,7 +79,7 @@ func Write(path string, fields map[string]string, cover *Cover, opts Options) er
 	return os.WriteFile(path, out, info.Mode().Perm())
 }
 
-func buildFrames(version int, fields map[string]string, cover *Cover) []rawFrame {
+func buildFrames(version int, fields map[string]string, covers map[string]*Cover) []rawFrame {
 	ids := frameIDsFor(version)
 	var frames []rawFrame
 	var unknown []string
@@ -104,10 +104,28 @@ func buildFrames(version int, fields map[string]string, cover *Cover) []rawFrame
 	for _, field := range unknown {
 		frames = append(frames, rawFrame{id: txxxID(version), payload: txxxPayload(field, fields[field], encodingFor(version))})
 	}
-	if cover != nil && len(cover.Data) > 0 {
-		frames = append(frames, rawFrame{id: apicID(version), payload: apicPayload(cover, encodingFor(version), version)})
+	for _, art := range artworkTypes {
+		cover := covers[art.kind]
+		if cover == nil || len(cover.Data) == 0 {
+			continue
+		}
+		frames = append(frames, rawFrame{
+			id:      apicID(version),
+			payload: apicPayload(cover, encodingFor(version), version, art.pictureType),
+		})
 	}
 	return frames
+}
+
+var artworkTypes = []struct {
+	kind        string
+	pictureType byte
+}{
+	{"front", 3},
+	{"back", 4},
+	{"artist", 8},
+	{"disc", 6},
+	{"icon", 1},
 }
 
 func encodingFor(version int) byte {
@@ -223,7 +241,7 @@ func txxxPayload(description, value string, encoding byte) []byte {
 	return append(out, encodedText(value, encoding)...)
 }
 
-func apicPayload(cover *Cover, encoding byte, version int) []byte {
+func apicPayload(cover *Cover, encoding byte, version int, pictureType byte) []byte {
 	out := []byte{encoding}
 	if version == 2 {
 		format := "JPG"
@@ -235,7 +253,7 @@ func apicPayload(cover *Cover, encoding byte, version int) []byte {
 		out = append(out, cover.MIME...)
 		out = append(out, 0)
 	}
-	out = append(out, 3) // front cover
+	out = append(out, pictureType)
 	out = append(out, emptyText(encoding)...)
 	return append(out, cover.Data...)
 }

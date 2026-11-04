@@ -97,11 +97,11 @@ func ImportMP3(path string, tf *TagFile, opts Options) error {
 			return err
 		}
 	}
-	var cover *id3.Cover
-	if tf.Cover != nil {
-		cover = &id3.Cover{Filename: tf.Cover.Filename, MIME: tf.Cover.MIME, Data: tf.Cover.Data}
+	covers := make(map[string]*id3.Cover, len(tf.Covers))
+	for kind, cover := range tf.Covers {
+		covers[kind] = &id3.Cover{Filename: cover.Filename, MIME: cover.MIME, Data: cover.Data}
 	}
-	return id3.Write(path, tf.Fields, cover, id3.Options{
+	return id3.Write(path, tf.Fields, covers, id3.Options{
 		Version: opts.Version,
 		V1:      opts.V1,
 		Replace: opts.Replace,

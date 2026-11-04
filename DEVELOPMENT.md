@@ -164,8 +164,8 @@ make compat            # сравнить с bin/examples (локальные п
 ## ID3 и импорт
 
 `internal/id3` — собственный writer, без внешних зависимостей: ID3v1 и
-ID3v2.2/2.3/2.4, обложка, TXXX, сохранение существующих кадров при
-`--replace=false`. `internal/importer` читает `.tag` (APEv2) и вызывает
+ID3v2.2/2.3/2.4, пять APIC-типов (front/back/artist/disc/icon), TXXX,
+сохранение существующих кадров при `--replace=false`. `internal/importer` читает `.tag` (APEv2) и вызывает
 writer. При добавлении полей не забудь тесты на все версии.
 
 ## Релизы
