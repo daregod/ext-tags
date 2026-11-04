@@ -22,7 +22,7 @@ func (a *app) importCmd() *cobra.Command {
 	opts := &importOptions{}
 	cmd := &cobra.Command{
 		Use:   "import <audio files...>",
-		Short: "Write .tag fields back into audio files (MP3, FLAC)",
+		Short: "Write .tag fields back into audio files (MP3, FLAC, Ogg)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return a.runImport(args, opts)
@@ -64,10 +64,10 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".mp3", ".mp2", ".mp1", ".flac":
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".opus", ".spx":
 	default:
 		res.Status = "unsupported"
-		res.Reason = "import is implemented for MP3/MP2/MP1 and FLAC only"
+		res.Reason = "import is implemented for MP3, FLAC and Ogg Vorbis/Opus/Speex"
 		a.report(res)
 		return
 	}
@@ -115,8 +115,14 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 	a.report(res)
 }
 func importTags(path string, tf *importer.TagFile, opts *importOptions) error {
-	if strings.EqualFold(filepath.Ext(path), ".flac") {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".flac":
 		return importer.ImportFLAC(path, tf, importer.Options{
+			Replace: opts.replace,
+			Backup:  opts.backup,
+		})
+	case ".ogg", ".opus", ".spx":
+		return importer.ImportOgg(path, tf, importer.Options{
 			Replace: opts.replace,
 			Backup:  opts.backup,
 		})

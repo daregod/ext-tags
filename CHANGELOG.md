@@ -8,6 +8,9 @@
 
 ### Добавлено
 
+- Обратный импорт для Ogg Vorbis/Opus/Speex: Vorbis comments и
+  `METADATA_BLOCK_PICTURE`, с перепаковкой Ogg-страниц и CRC; аудио не
+  перекодируется.
 - Обратный импорт для FLAC: Vorbis comments + PICTURE-блоки (пять artwork-
   слотов), аудиокадры не меняются.
 - Обратный импорт переносит все пять artwork-слотов в ID3 APIC (front/back/
