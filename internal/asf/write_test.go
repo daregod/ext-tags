@@ -45,13 +45,22 @@ func TestWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	pictures := 0
+	var hasDate, hasYear bool
 	for _, d := range md.Descriptors {
-		if d.Name == "WM/Picture" {
+		switch d.Name {
+		case "WM/Picture":
 			pictures++
+		case "date":
+			hasDate = true
+		case "WM/Year":
+			hasYear = true
 		}
 	}
 	if pictures != 5 {
 		t.Fatalf("pictures = %d", pictures)
+	}
+	if !hasDate || !hasYear {
+		t.Fatalf("date descriptors: date=%v WM/Year=%v", hasDate, hasYear)
 	}
 	res, err := extractor.Extract(path)
 	if err != nil {

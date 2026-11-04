@@ -184,8 +184,14 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 		if fields[field] == "" {
 			continue
 		}
-		replaced[strings.ToLower(name)] = true
-		descriptors = append(descriptors, extDescriptor{name: name, typ: 0, value: utf16Z(fields[field])})
+		names := []string{name}
+		if field == "Year" {
+			names = []string{"date", "WM/Year"}
+		}
+		for _, n := range names {
+			replaced[strings.ToLower(n)] = true
+			descriptors = append(descriptors, extDescriptor{name: n, typ: 0, value: utf16Z(fields[field])})
+		}
 	}
 	added := make(map[byte]bool)
 	for kind, pictureType := range pictureTypes {
