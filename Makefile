@@ -87,7 +87,7 @@ ifeq ($(strip $(BUILD_DATE)),)
 endif
 
 BUILD_FLAGS := -trimpath -buildvcs=false
-LDFLAGS     := -s -w -X external-tags/internal/version.Version=$(VERSION) -X external-tags/internal/version.Commit=$(COMMIT) -X external-tags/internal/version.Date=$(BUILD_DATE)
+LDFLAGS     := -s -w -X github.com/daregod/ext-tags/internal/version.Version=$(VERSION) -X github.com/daregod/ext-tags/internal/version.Commit=$(COMMIT) -X github.com/daregod/ext-tags/internal/version.Date=$(BUILD_DATE)
 
 .DEFAULT_GOAL := help
 
@@ -234,6 +234,9 @@ clean:
 	@$(call RMFILE,$(BINARY))
 	@$(call RMFILE,$(COMPAT_BIN))
 	@$(call RMDIR,$(DIST_DIR))
+	@$(call RMFILE,devtool$(EXE))
+	@$(call RMFILE,genfixtures$(EXE))
+	@$(call RMFILE,builddate$(EXE))
 	@$(call RMFILE,coverage.out)
 	@$(call RMFILE,coverage.html)
 	@$(call RMGLOB,testdata/formats/*.tag)

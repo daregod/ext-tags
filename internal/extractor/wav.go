@@ -7,7 +7,7 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"external-tags/internal/riff"
+	"github.com/daregod/ext-tags/internal/riff"
 )
 
 var (

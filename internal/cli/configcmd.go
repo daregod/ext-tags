@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"external-tags/internal/config"
-	"external-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/rules"
 )
 
 func (a *app) configCmd() *cobra.Command {

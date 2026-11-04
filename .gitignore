@@ -11,3 +11,8 @@
 /.vscode
 /.local
 *.exe
+/ext-tags
+/compat
+/devtool
+/genfixtures
+/builddate

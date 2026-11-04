@@ -3,7 +3,7 @@ package extractor
 import (
 	"fmt"
 
-	"external-tags/internal/riff"
+	"github.com/daregod/ext-tags/internal/riff"
 )
 
 // extractWave64 reads Wave64 metadata: an ID3v2 chunk (and LIST/INFO when

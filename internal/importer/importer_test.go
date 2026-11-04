@@ -8,8 +8,8 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"external-tags/internal/ape"
-	"external-tags/internal/importer"
+	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/importer"
 )
 
 func copyFile(t *testing.T, src, dst string) {

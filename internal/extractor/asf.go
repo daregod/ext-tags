@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"external-tags/internal/asf"
+	"github.com/daregod/ext-tags/internal/asf"
 )
 
 var asfMagic = []byte{0x30, 0x26, 0xB2, 0x75}

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"external-tags/internal/config"
-	"external-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/extractor"
 )
 
 func TestExpandPathsRecursive(t *testing.T) {

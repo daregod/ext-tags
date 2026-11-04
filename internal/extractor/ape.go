@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"external-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/ape"
 )
 
 var apeMagic = []byte("MAC ")

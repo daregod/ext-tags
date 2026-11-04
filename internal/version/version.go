@@ -5,7 +5,7 @@ import "fmt"
 
 // These variables are overridden by the build:
 //
-//	go build -ldflags "-X external-tags/internal/version.Version=v1.2.3 ..."
+//	go build -ldflags "-X github.com/daregod/ext-tags/internal/version.Version=v1.2.3 ..."
 var (
 	Version = "0.0.0-dev"
 	Commit  = "none"

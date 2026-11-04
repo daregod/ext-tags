@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"external-tags/internal/importer"
+	"github.com/daregod/ext-tags/internal/importer"
 )
 
 type importOptions struct {

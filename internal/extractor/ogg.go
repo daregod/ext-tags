@@ -1,7 +1,7 @@
 package extractor
 
 import (
-	"external-tags/internal/ogg"
+	"github.com/daregod/ext-tags/internal/ogg"
 )
 
 var oggMagic = []byte("OggS")

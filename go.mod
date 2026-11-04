@@ -1,4 +1,4 @@
-module external-tags
+module github.com/daregod/ext-tags
 
 go 1.26.0
 

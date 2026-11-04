@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"external-tags/internal/matroska"
+	"github.com/daregod/ext-tags/internal/matroska"
 )
 
 var ebmlMagic = []byte{0x1A, 0x45, 0xDF, 0xA3}

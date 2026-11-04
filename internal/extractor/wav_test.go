@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"external-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/ape"
 )
 
 func wavChunk(id string, data []byte) []byte {

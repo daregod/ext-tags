@@ -10,6 +10,9 @@
 
 - README переписан под пользователей; архитектура, тесты, фикстуры и релизы
   вынесены в DEVELOPMENT.md.
+- Модуль переименован в `github.com/daregod/ext-tags`, добавлен GitHub Actions
+  workflow релиза: по тегу `v*` собираются zip/tar.gz для Windows/Linux/macOS
+  и `SHA256SUMS`.
 
 ### Исправлено
 

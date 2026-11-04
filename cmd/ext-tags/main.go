@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"external-tags/internal/cli"
+	"github.com/daregod/ext-tags/internal/cli"
 )
 
 func main() {

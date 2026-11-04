@@ -13,12 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"external-tags/internal/artwork"
-	"external-tags/internal/config"
-	"external-tags/internal/extractor"
-	"external-tags/internal/rules"
-	"external-tags/internal/tagfile"
-	"external-tags/internal/version"
+	"github.com/daregod/ext-tags/internal/artwork"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/tagfile"
+	"github.com/daregod/ext-tags/internal/version"
 )
 
 type options struct {

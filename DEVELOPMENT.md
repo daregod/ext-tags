@@ -181,7 +181,10 @@ make tag TAG=vX.Y.Z
 
 5. Отправить: `git push && git push --tags`.
 
-`make version` и `-ldflags` берут версию из `git describe`.
+После пуша тега `v*` workflow `.github/workflows/release.yml` собирает
+`make dist`, упаковывает бинарники в zip/tar.gz, считает `SHA256SUMS` и
+создаёт GitHub Release. `make version` и `-ldflags` берут версию из
+`git describe`.
 
 ## Кроссплатформенность
 

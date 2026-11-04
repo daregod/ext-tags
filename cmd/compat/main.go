@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"external-tags/internal/ape"
-	"external-tags/internal/config"
-	"external-tags/internal/extractor"
-	"external-tags/internal/rules"
-	"external-tags/internal/tagfile"
+	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/tagfile"
 )
 
 func main() {

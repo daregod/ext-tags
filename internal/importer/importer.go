@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"external-tags/internal/ape"
-	"external-tags/internal/id3"
+	"github.com/daregod/ext-tags/internal/ape"
+	"github.com/daregod/ext-tags/internal/id3"
 )
 
 // Cover is an embedded picture read from a .tag file.

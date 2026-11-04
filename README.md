@@ -1,5 +1,8 @@
 # ext-tags
 
+[![CI](https://github.com/daregod/ext-tags/actions/workflows/ci.yml/badge.svg)](https://github.com/daregod/ext-tags/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/daregod/ext-tags?display_name=tag)](https://github.com/daregod/ext-tags/releases/latest)
+
 `ext-tags` — консольная утилита для Windows, Linux и macOS, которая складывает
 теги аудиофайлов в отдельные `.tag`-файлы, совместимые с компонентом
 **foo_external_tags** для foobar2000.
@@ -77,9 +80,10 @@ ext-tags import --backup --id3v2-version 3 track.mp3
 
 ### Готовые сборки
 
-Возьми готовый бинарник для своей ОС из релизов проекта (если он опубликован)
-или собери сам — см. «Из исходников». Это один файл: `ext-tags.exe` для
-Windows или `ext-tags` для Linux/macOS.
+Скачай бинарник для своей ОС из [последнего релиза](https://github.com/daregod/ext-tags/releases/latest)
+или собери сам — см. «Из исходников». В релизе лежат архивы для Windows,
+Linux и macOS (amd64/arm64), плюс `SHA256SUMS`. Внутри — один файл:
+`ext-tags.exe` для Windows или `ext-tags` для Linux/macOS.
 
 ### Windows
 
@@ -128,7 +132,7 @@ xattr -d com.apple.quarantine /usr/local/bin/ext-tags
 Нужен Go 1.26+ (и GNU Make 4.x — по желанию):
 
 ```bash
-git clone <repo-url> external-tags
+git clone https://github.com/daregod/ext-tags.git
 cd external-tags
 
 make build          # bin/ext-tags.exe или bin/ext-tags
@@ -139,7 +143,7 @@ go build -trimpath -o bin/ext-tags ./cmd/ext-tags
 Для установки в `GOBIN`:
 
 ```bash
-go install ./cmd/ext-tags
+go install github.com/daregod/ext-tags/cmd/ext-tags@latest
 ```
 
 ## Быстрый старт

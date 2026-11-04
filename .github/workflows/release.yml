@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        run: make dist
+
+      - name: Package release assets
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p release
+          for f in dist/ext-tags_*; do
+            base="${f#dist/ext-tags_}"
+            case "$f" in
+              *.exe)
+                out="release/ext-tags_${version}_${base%.exe}.zip"
+                zip -q -j "$out" "$f"
+                ;;
+              *)
+                out="release/ext-tags_${version}_${base}.tar.gz"
+                tar -czf "$out" -C dist "$(basename "$f")"
+                ;;
+            esac
+          done
+          cd release
+          sha256sum ./* > SHA256SUMS
+          ls -l
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

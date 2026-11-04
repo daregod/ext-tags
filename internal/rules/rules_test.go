@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"external-tags/internal/config"
-	"external-tags/internal/extractor"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/extractor"
 )
 
 func build(t *testing.T, cfg *config.Config, fields map[string]string, vars map[string]string) map[string]string {
