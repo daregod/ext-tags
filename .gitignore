@@ -16,3 +16,6 @@
 /devtool
 /genfixtures
 /builddate
+
+*.out
+*.cov
