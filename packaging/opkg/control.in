@@ -1,0 +1,8 @@
+Package: ext-tags
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: Roman Dymchenko <daregod@users.noreply.github.com>
+Section: utils
+Priority: optional
+Description: Write and import foobar2000 external .tag files
+License: MIT

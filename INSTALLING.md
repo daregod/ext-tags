@@ -81,6 +81,40 @@ yay -S ext-tags-bin
 paru -S ext-tags-bin
 ```
 
+## Entware / QNAP (opkg)
+
+Проверь архитектуру:
+
+```sh
+opkg print-architecture
+```
+
+Для x86_64 QNAP ожидается `x86-64`. Добавь feed:
+
+```sh
+echo 'src/gz ext-tags https://daregod.github.io/opkg-feed/x86-64' >> /opt/etc/opkg.conf
+opkg update
+opkg install ext-tags
+```
+
+Обновление:
+
+```sh
+opkg update
+opkg upgrade ext-tags
+```
+
+Удаление:
+
+```sh
+opkg remove ext-tags
+```
+
+Пакет устанавливается в `/opt/bin/ext-tags`.
+
+Сейчас feed собран для `x86-64`. Для ARM-устройств нужен отдельный feed
+с архитектурой Entware (`aarch64-3.10` и т.п.).
+
 ## Debian / Ubuntu
 
 Готовый `.deb` лежит в GitHub Release:
