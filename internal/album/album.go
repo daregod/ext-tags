@@ -12,6 +12,7 @@ import (
 
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/yamlutil"
 )
 
 var names = []string{"album.yaml", "album.yml", ".ext-tags.album.yaml"}
@@ -47,7 +48,7 @@ func Load(dir string) (*Config, error) {
 			return nil, err
 		}
 		cfg := &Config{dir: dir, path: path}
-		if err := yaml.Unmarshal(data, cfg); err != nil {
+		if err := yaml.Unmarshal(yamlutil.TrimBOM(data), cfg); err != nil {
 			return nil, fmt.Errorf("parse %s: %w", path, err)
 		}
 		return cfg, nil

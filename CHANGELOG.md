@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Исправлено
+
+- YAML-конфиги (`ext-tags.yaml`, `album.yaml`) принимают UTF-8 BOM и CRLF.
+
 ## [0.9.2] — 2026-11-05
 
 ### Исправлено

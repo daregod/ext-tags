@@ -65,3 +65,17 @@ func TestLoadMissingAndBad(t *testing.T) {
 		t.Fatal("bad yaml must fail")
 	}
 }
+func TestLoadBOMAndCRLF(t *testing.T) {
+	dir := t.TempDir()
+	data := "\xEF\xBB\xBFalbum:\r\n  Album: BOM Album\r\n"
+	if err := os.WriteFile(filepath.Join(dir, "album.yaml"), []byte(data), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg == nil || cfg.Album["Album"] != "BOM Album" {
+		t.Fatalf("album = %+v", cfg)
+	}
+}

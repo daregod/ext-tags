@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/daregod/ext-tags/internal/yamlutil"
 )
 
 // On-existing policies for the output .tag file.
@@ -353,6 +355,7 @@ func loadFile(cfg *Config, path string) error {
 // unless it sets fields.rules_mode: replace.
 func mergeInto(cfg *Config, data []byte, label string) error {
 	prevRules := append([]Rule(nil), cfg.Fields.Rules...)
+	data = yamlutil.TrimBOM(data)
 
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return fmt.Errorf("parse %s: %w", label, err)
@@ -401,6 +404,7 @@ func profileNode(path, name string) (yaml.Node, bool, error) {
 	if err != nil {
 		return yaml.Node{}, false, fmt.Errorf("read config: %w", err)
 	}
+	data = yamlutil.TrimBOM(data)
 	var raw struct {
 		Profiles map[string]yaml.Node `yaml:"profiles"`
 	}

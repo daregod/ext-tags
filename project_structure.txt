@@ -16,6 +16,7 @@ ext-tags/
 │       └── main.go       <-- генерация testdata/formats (make fixtures)
 ├── internal/
 │   ├── album/            <-- per-album album.yaml overlay
+│   ├── yamlutil/         <-- UTF-8 BOM helper для YAML
 │   ├── artwork/          <-- поиск cover/folder/box/disc/media рядом с аудио
 │   ├── cli/              <-- команды cobra и вывод (text/json)
 │   ├── config/           <-- YAML-схема, дефолты, профили, валидация
