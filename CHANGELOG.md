@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.11.1] — 2026-11-05
+
+### Исправлено
+
+- Release workflow обновляет Scoop/Homebrew по хешам release-ассетов, а не `dist/`.
+
 ## [0.11.0] — 2026-11-05
 
 ### Добавлено
