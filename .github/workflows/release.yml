@@ -23,6 +23,14 @@ jobs:
       - name: Build binaries
         run: make dist
 
+      - name: Install nfpm
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Build Linux packages
+        run: bash packaging/build-packages.sh
+
       - name: Verify static Linux binaries
         run: |
           set -euo pipefail
@@ -40,6 +48,7 @@ jobs:
           for f in dist/ext-tags_*; do
             base="${f#dist/ext-tags_}"
             case "$f" in
+              *.deb|*.rpm|*.apk) continue ;;
               *.exe)
                 out="release/ext-tags_${version}_${base%.exe}.zip"
                 zip -q -j "$out" "$f"
@@ -50,6 +59,7 @@ jobs:
                 ;;
             esac
           done
+          cp dist/*.deb dist/*.rpm dist/*.apk release/
           cd release
           sha256sum ./* > SHA256SUMS
           ls -l

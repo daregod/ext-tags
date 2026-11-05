@@ -1,0 +1,21 @@
+name: ext-tags
+arch: @ARCH@
+platform: linux
+version: @VERSION@
+section: utils
+priority: optional
+maintainer: Roman Dymchenko <daregod@users.noreply.github.com>
+description: |
+  Read audio metadata and write foobar2000 external .tag files,
+  then import those tags back into audio files.
+homepage: https://github.com/daregod/ext-tags
+license: MIT
+contents:
+  - src: @BINARY@
+    dst: /usr/bin/ext-tags
+    file_info:
+      mode: 0755
+  - src: LICENSE
+    dst: /usr/share/doc/ext-tags/copyright
+  - src: README.md
+    dst: /usr/share/doc/ext-tags/README.md

@@ -4,6 +4,14 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.10.2] — 2026-11-05
+
+### Добавлено
+
+- Linux-пакеты `.deb`, `.rpm` и `.apk` в релизах.
+- Scoop bucket, Homebrew tap и AUR `PKGBUILD`.
+- `INSTALLING.md` с вариантами установки.
+
 ## [0.10.1] — 2026-11-05
 
 ### Исправлено

@@ -1,0 +1,24 @@
+# Maintainer: Roman Dymchenko <daregod@users.noreply.github.com>
+pkgname=ext-tags-bin
+pkgver=0.10.1
+pkgrel=1
+pkgdesc="Write and import foobar2000 external .tag files"
+arch=('x86_64' 'aarch64')
+url="https://github.com/daregod/ext-tags"
+license=('MIT')
+provides=('ext-tags')
+conflicts=('ext-tags')
+options=('!strip')
+
+source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v${pkgver}/ext-tags_${pkgver}_linux_amd64.tar.gz")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v${pkgver}/ext-tags_${pkgver}_linux_arm64.tar.gz")
+sha256sums_x86_64=('559d31b763832b43c37748ee843c89f4fbb72fa7d5c0b9ad4afb14617d77f5b8')
+sha256sums_aarch64=('b82c1200d14e5280eb8ac6af9a475a084e6abb8cca26674735206efa69b6893d')
+
+package() {
+  local binary="ext-tags_linux_amd64"
+  if [[ "$CARCH" == "aarch64" ]]; then
+    binary="ext-tags_linux_arm64"
+  fi
+  install -Dm755 "$srcdir/$binary" "$pkgdir/usr/bin/ext-tags"
+}

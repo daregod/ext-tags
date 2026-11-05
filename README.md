@@ -84,6 +84,9 @@ ext-tags import --backup --id3v2-version 3 track.mp3
 
 ## Установка
 
+Подробные варианты: [INSTALLING.md](INSTALLING.md) — Releases, `go install`,
+Scoop, Homebrew, AUR, `.deb`, `.rpm`, `.apk`.
+
 ### Готовые сборки
 
 Скачай бинарник для своей ОС из [последнего релиза](https://github.com/daregod/ext-tags/releases/latest)

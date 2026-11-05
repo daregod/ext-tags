@@ -1,0 +1,17 @@
+pkgbase = ext-tags-bin
+	pkgdesc = Write and import foobar2000 external .tag files
+	pkgver = 0.10.1
+	pkgrel = 1
+	url = https://github.com/daregod/ext-tags
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	provides = ext-tags
+	conflicts = ext-tags
+	options = !strip
+	source_x86_64 = ext-tags-bin-0.10.1-x86_64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.1/ext-tags_0.10.1_linux_amd64.tar.gz
+	sha256sums_x86_64 = 559d31b763832b43c37748ee843c89f4fbb72fa7d5c0b9ad4afb14617d77f5b8
+	source_aarch64 = ext-tags-bin-0.10.1-aarch64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.1/ext-tags_0.10.1_linux_arm64.tar.gz
+	sha256sums_aarch64 = b82c1200d14e5280eb8ac6af9a475a084e6abb8cca26674735206efa69b6893d
+
+pkgname = ext-tags-bin
