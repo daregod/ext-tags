@@ -1,0 +1,36 @@
+class ExtTags < Formula
+  desc "Write and import foobar2000 external .tag files"
+  homepage "https://github.com/daregod/ext-tags"
+  version "__VERSION__"
+  license "MIT"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/daregod/ext-tags/releases/download/v__VERSION__/ext-tags___VERSION___darwin_arm64.tar.gz"
+      sha256 "__DARWIN_ARM64__"
+    else
+      url "https://github.com/daregod/ext-tags/releases/download/v__VERSION__/ext-tags___VERSION___darwin_amd64.tar.gz"
+      sha256 "__DARWIN_AMD64__"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.arm?
+      url "https://github.com/daregod/ext-tags/releases/download/v__VERSION__/ext-tags___VERSION___linux_arm64.tar.gz"
+      sha256 "__LINUX_ARM64__"
+    else
+      url "https://github.com/daregod/ext-tags/releases/download/v__VERSION__/ext-tags___VERSION___linux_amd64.tar.gz"
+      sha256 "__LINUX_AMD64__"
+    end
+  end
+
+  def install
+    binary = Dir["ext-tags_*"].first
+    odie "ext-tags binary not found" if binary.nil?
+    bin.install binary => "ext-tags"
+  end
+
+  test do
+    assert_match "ext-tags", shell_output("#{bin}/ext-tags version")
+  end
+end

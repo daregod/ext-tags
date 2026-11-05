@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Изменено
+
+- Release workflow обновляет Scoop bucket и Homebrew tap вместе с opkg-feed.
+
 ## [0.10.3] — 2026-11-05
 
 ### Добавлено
