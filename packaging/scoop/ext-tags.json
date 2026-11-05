@@ -1,17 +1,17 @@
 {
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Extract audio metadata into foobar2000 external .tag files and import them back.",
   "homepage": "https://github.com/daregod/ext-tags",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/daregod/ext-tags/releases/download/v0.10.1/ext-tags_0.10.1_windows_amd64.zip",
-      "hash": "1c054f2fb5199d3bdd981185489bbf101135ebddcbc3b325ea3b81849f343b74",
+      "url": "https://github.com/daregod/ext-tags/releases/download/v0.10.2/ext-tags_0.10.2_windows_amd64.zip",
+      "hash": "106e3836a6eb070a0acf2389237df24f6c90af1ef932c78c72e7f3654ba15157",
       "bin": [["ext-tags_windows_amd64.exe", "ext-tags"]]
     },
     "arm64": {
-      "url": "https://github.com/daregod/ext-tags/releases/download/v0.10.1/ext-tags_0.10.1_windows_arm64.zip",
-      "hash": "2a708b9092f251c6dab017479d8c0c24c63c539fc7845ebab05497c89226a7f1",
+      "url": "https://github.com/daregod/ext-tags/releases/download/v0.10.2/ext-tags_0.10.2_windows_arm64.zip",
+      "hash": "c9a6b4bb9bc958cf085d35afa6c816d854cae4081394ddeaa539df150a168bb7",
       "bin": [["ext-tags_windows_arm64.exe", "ext-tags"]]
     }
   },
