@@ -1,6 +1,6 @@
 pkgbase = ext-tags-bin
 	pkgdesc = Write and import foobar2000 external .tag files
-	pkgver = 0.10.2
+	pkgver = 0.10.3
 	pkgrel = 1
 	url = https://github.com/daregod/ext-tags
 	arch = x86_64
@@ -9,9 +9,9 @@ pkgbase = ext-tags-bin
 	provides = ext-tags
 	conflicts = ext-tags
 	options = !strip
-	source_x86_64 = ext-tags-bin-0.10.2-x86_64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.2/ext-tags_0.10.2_linux_amd64.tar.gz
-	sha256sums_x86_64 = 80770081a6206accf3ad786b587eacae2b88bdcef5f6c41a1a67cb969b8e6f42
-	source_aarch64 = ext-tags-bin-0.10.2-aarch64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.2/ext-tags_0.10.2_linux_arm64.tar.gz
-	sha256sums_aarch64 = d7cc94ba28ac34400f08490c71590e45ffaa9e68b4b7ef3e9c72aa2cac8c81ed
+	source_x86_64 = ext-tags-bin-0.10.3-x86_64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.3/ext-tags_0.10.3_linux_amd64.tar.gz
+	sha256sums_x86_64 = b5ae335d24134e023e78887c7e26169f617850ce3f8eac8baddee2e1518bc44b
+	source_aarch64 = ext-tags-bin-0.10.3-aarch64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v0.10.3/ext-tags_0.10.3_linux_arm64.tar.gz
+	sha256sums_aarch64 = d8f92ac65994e99b9e7b4ccdabcf48f5d76e86f7b9825955d5c4ce174500fb9c
 
 pkgname = ext-tags-bin
