@@ -36,6 +36,22 @@ go install github.com/daregod/ext-tags/cmd/ext-tags@latest
 
 Убедись, что `$(go env GOPATH)/bin` есть в `PATH`.
 
+## Самообновление (standalone)
+
+Если бинарник установлен вручную, его можно обновлять без пакетного
+менеджера:
+
+```bash
+ext-tags self-update --check
+ext-tags self-update --dry-run
+ext-tags self-update
+```
+
+Обновление скачивает архив с GitHub Release, сверяет `SHA256SUMS` и атомарно
+заменяет бинарник. Для установок через `opkg`, `apt`, Homebrew и Scoop команда
+откажется обновлять файл и покажет правильную команду; `--force` обходит
+защиту, но пакетный менеджер может перезаписать обновление.
+
 ## Scoop
 
 ```powershell

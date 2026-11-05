@@ -184,8 +184,10 @@ ext-tags --json extract track.flac
 |---|---|
 | `ext-tags extract <пути...>` | создать `.tag` (по умолчанию) |
 | `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2, Matroska |
-| `ext-tags album init <папка>` | создать `album.yaml` из тегов треков |\n| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
+| `ext-tags album init <папка>` | создать `album.yaml` из тегов треков |
+| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
 | `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
+| `ext-tags self-update` | обновить standalone-бинарник из GitHub Release |
 | `ext-tags version` | версия и дата сборки |
 
 Глобальные флаги:
@@ -224,6 +226,22 @@ ext-tags fixext -r ~/Music --apply
 
 По умолчанию ничего не меняется. Если целевое имя уже существует, файл
 пропускается.
+
+## Самообновление
+
+Standalone-бинарник можно обновлять из GitHub Release:
+
+```bash
+ext-tags self-update --check     # только проверить версию
+ext-tags self-update --dry-run   # показать, что будет скачано
+ext-tags self-update             # скачать, проверить SHA256 и заменить
+ext-tags self-update --force     # переустановить/обновить принудительно
+```
+
+Обновление проверяет `SHA256SUMS` из релиза и заменяет файл атомарно.
+Для установок через `opkg`, `apt`, Homebrew и Scoop команда откажется
+обновлять файл и покажет правильную команду пакетного менеджера. `--force`
+обходит эту защиту, но пакетный менеджер может перезаписать обновление.
 
 ## Конфигурация
 

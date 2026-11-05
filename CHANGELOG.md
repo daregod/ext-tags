@@ -4,7 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.11.0] — 2026-11-05
+
+### Добавлено
+
+- `ext-tags self-update` для standalone-бинарников: `--check`, `--dry-run`, `--force`; проверка SHA256 и атомарная замена.
+- Для установок через opkg/apt/Homebrew/Scoop self-update подсказывает правильную команду пакетного менеджера.
 
 ### Изменено
 
