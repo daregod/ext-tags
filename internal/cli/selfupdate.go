@@ -35,10 +35,11 @@ func (a *app) selfUpdateCmd() *cobra.Command {
 }
 
 func (a *app) runSelfUpdate(opts *selfUpdateOptions) error {
-	exe, err := os.Executable()
+	rawExe, err := os.Executable()
 	if err != nil {
 		return err
 	}
+	exe := rawExe
 	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = resolved
 	}
@@ -46,7 +47,10 @@ func (a *app) runSelfUpdate(opts *selfUpdateOptions) error {
 		_ = os.Remove(exe + ".old")
 	}
 
-	manager, help := update.Managed(exe)
+	manager, help := update.Managed(rawExe)
+	if manager == "" {
+		manager, help = update.Managed(exe)
+	}
 	if manager != "" {
 		if !opts.force && opts.check {
 			fmt.Fprintf(os.Stderr, "warning: ext-tags is managed by %s; update with `%s`\n", manager, help)

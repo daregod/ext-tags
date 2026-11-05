@@ -303,7 +303,8 @@ func IsNewer(latest, current string) bool {
 func Managed(executable string) (string, string) {
 	p := strings.ToLower(filepath.ToSlash(executable))
 	switch {
-	case strings.HasPrefix(p, "/opt/bin/"):
+	case strings.Contains(p, "/opt/bin/") || strings.Contains(p, "/opt/sbin/") ||
+		strings.Contains(p, "/entware/bin/") || strings.Contains(p, "/entware/sbin/"):
 		return "opkg", "opkg update && opkg upgrade ext-tags"
 	case strings.Contains(p, "/cellar/") || strings.Contains(p, "/homebrew/"):
 		return "Homebrew", "brew update && brew upgrade ext-tags"

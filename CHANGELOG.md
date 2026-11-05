@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.11.2] — 2026-11-05
+
+### Исправлено
+
+- `self-update` распознаёт Entware/opkg, даже если `/opt/bin` разрешается в реальный путь вида `/share/.../Entware/bin`.
+
 ## [0.11.1] — 2026-11-05
 
 ### Исправлено
