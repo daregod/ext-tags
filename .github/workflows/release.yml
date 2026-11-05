@@ -124,12 +124,12 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          win_amd64="$(sha256sum dist/ext-tags_${version}_windows_amd64.zip | cut -d' ' -f1)"
-          win_arm64="$(sha256sum dist/ext-tags_${version}_windows_arm64.zip | cut -d' ' -f1)"
-          darwin_amd64="$(sha256sum dist/ext-tags_${version}_darwin_amd64.tar.gz | cut -d' ' -f1)"
-          darwin_arm64="$(sha256sum dist/ext-tags_${version}_darwin_arm64.tar.gz | cut -d' ' -f1)"
-          linux_amd64="$(sha256sum dist/ext-tags_${version}_linux_amd64.tar.gz | cut -d' ' -f1)"
-          linux_arm64="$(sha256sum dist/ext-tags_${version}_linux_arm64.tar.gz | cut -d' ' -f1)"
+          win_amd64="$(sha256sum release/ext-tags_${version}_windows_amd64.zip | cut -d' ' -f1)"
+          win_arm64="$(sha256sum release/ext-tags_${version}_windows_arm64.zip | cut -d' ' -f1)"
+          darwin_amd64="$(sha256sum release/ext-tags_${version}_darwin_amd64.tar.gz | cut -d' ' -f1)"
+          darwin_arm64="$(sha256sum release/ext-tags_${version}_darwin_arm64.tar.gz | cut -d' ' -f1)"
+          linux_amd64="$(sha256sum release/ext-tags_${version}_linux_amd64.tar.gz | cut -d' ' -f1)"
+          linux_arm64="$(sha256sum release/ext-tags_${version}_linux_arm64.tar.gz | cut -d' ' -f1)"
           work="$(mktemp -d)"
           sed \
             -e "s|__VERSION__|${version}|g" \
