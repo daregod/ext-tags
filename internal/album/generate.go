@@ -31,6 +31,9 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 	if len(inputs) == 0 {
 		return cfg
 	}
+	for i := range inputs {
+		ensureTrack(inputs[i].Fields, len(inputs), i+1)
+	}
 
 	common := make(map[string]string)
 	for key, value := range inputs[0].Fields {
@@ -149,4 +152,24 @@ func generatedTrackKey(input Input) string {
 	}
 	base := filepath.Base(input.AudioPath)
 	return strings.TrimSuffix(base, filepath.Ext(base))
+}
+func ensureTrack(fields map[string]string, total, index int) {
+	if fields == nil {
+		return
+	}
+	for key, value := range fields {
+		if !strings.EqualFold(key, "Track") {
+			continue
+		}
+		number := strings.TrimSpace(value)
+		if i := strings.IndexByte(number, '/'); i >= 0 {
+			number = number[:i]
+		}
+		if number == "" {
+			number = strconv.Itoa(index)
+		}
+		fields[key] = fmt.Sprintf("%s/%d", number, total)
+		return
+	}
+	fields["Track"] = fmt.Sprintf("%d/%d", index, total)
 }

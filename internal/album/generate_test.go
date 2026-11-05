@@ -60,3 +60,16 @@ func TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestGenerateFillsTotals(t *testing.T) {
+	cfg := Generate([]Input{
+		{AudioPath: "/music/a.flac", Fields: map[string]string{"Title": "A", "Track": "1"}},
+		{AudioPath: "/music/b.flac", Fields: map[string]string{"Title": "B", "Track": "2"}},
+	}, nil)
+	if cfg.Tracks["1"]["Track"] != "1/2" || cfg.Tracks["2"]["Track"] != "2/2" {
+		t.Fatalf("tracks = %v", cfg.Tracks)
+	}
+	cfg = Generate([]Input{{AudioPath: "/music/a.flac", Fields: map[string]string{"Title": "A"}}}, nil)
+	if cfg.Album["Track"] != "1/1" {
+		t.Fatalf("single = %v", cfg.Album)
+	}
+}

@@ -74,7 +74,11 @@ func Build(fields map[string]string, covers map[string]*metadata.Cover, existing
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		tag.AddText(key, merged[key])
+		value := merged[key]
+		if strings.EqualFold(key, "Www") {
+			value = normalizeWww(value)
+		}
+		tag.AddText(key, value)
 	}
 
 	if cfg.Cover.Enabled {
@@ -177,4 +181,8 @@ func Write(audioPath string, fields map[string]string, covers map[string]*metada
 	}
 	res.Written = true
 	return res, nil
+}
+func normalizeWww(value string) string {
+	lines := strings.FieldsFunc(value, func(r rune) bool { return r == '\r' || r == '\n' })
+	return strings.Join(lines, "\r\n")
 }

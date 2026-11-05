@@ -271,3 +271,17 @@ func TestBuildAllArtwork(t *testing.T) {
 		}
 	}
 }
+func TestWwwUsesCRLF(t *testing.T) {
+	audio := newAudio(t, t.TempDir())
+	if _, err := Write(audio, map[string]string{"Www": "https://a\n\r\nhttps://b"}, nil, newConfig(config.OnExistingOverwrite), false); err != nil {
+		t.Fatal(err)
+	}
+	tag := readTag(t, audio+".tag")
+	item, ok := tag.Get("Www")
+	if !ok {
+		t.Fatal("Www missing")
+	}
+	if got := string(item.Value); got != "https://a\r\nhttps://b" {
+		t.Fatalf("Www = %q", got)
+	}
+}
