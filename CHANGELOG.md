@@ -4,11 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.10.3] — 2026-11-05
 
 ### Добавлено
 
-- Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.\n- Release workflow собирает `.ipk` и автоматически обновляет `opkg-feed`.
+- Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.
+- Release workflow собирает `.ipk` и автоматически обновляет `opkg-feed`.
 
 ## [0.10.2] — 2026-11-05
 
