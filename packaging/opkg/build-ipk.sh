@@ -12,10 +12,10 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-mkdir -p "$tmp/control" "$tmp/data/opt/share/ext-tags"
+mkdir -p "$tmp/control" "$tmp/data/opt/bin"
 sed -e "s|@VERSION@|${version}|g" -e "s|@ARCH@|${arch}|g" \
   "$root/packaging/opkg/control.in" > "$tmp/control/control"
-gzip -c "$binary" > "$tmp/data/opt/share/ext-tags/ext-tags.bin.gz"
+gzip -c "$binary" > "$tmp/data/opt/bin/ext-tags.bin.gz"
 cp "$root/packaging/opkg/postinst" "$root/packaging/opkg/prerm" "$tmp/control/"
 chmod 755 "$tmp/control/postinst" "$tmp/control/prerm"
 
