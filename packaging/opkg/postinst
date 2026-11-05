@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+mkdir -p /opt/bin
+gzip -dc /opt/share/ext-tags/ext-tags.bin.gz > /opt/bin/ext-tags.tmp
+chmod 755 /opt/bin/ext-tags.tmp
+mv /opt/bin/ext-tags.tmp /opt/bin/ext-tags
