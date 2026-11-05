@@ -31,6 +31,15 @@ jobs:
       - name: Build Linux packages
         run: bash packaging/build-packages.sh
 
+      - name: Build Entware package
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          VERSION="$version" \
+          BINARY="dist/ext-tags_linux_amd64" \
+          OUT="dist/ext-tags_${version}_x86-64.ipk" \
+          bash packaging/opkg/build-ipk.sh
+
       - name: Verify static Linux binaries
         run: |
           set -euo pipefail
@@ -48,7 +57,7 @@ jobs:
           for f in dist/ext-tags_*; do
             base="${f#dist/ext-tags_}"
             case "$f" in
-              *.deb|*.rpm|*.apk) continue ;;
+              *.deb|*.rpm|*.apk|*.ipk) continue ;;
               *.exe)
                 out="release/ext-tags_${version}_${base%.exe}.zip"
                 zip -q -j "$out" "$f"
@@ -59,7 +68,7 @@ jobs:
                 ;;
             esac
           done
-          cp dist/*.deb dist/*.rpm dist/*.apk release/
+          cp dist/*.deb dist/*.rpm dist/*.apk dist/*.ipk release/
           cd release
           sha256sum ./* > SHA256SUMS
           ls -l
@@ -69,3 +78,42 @@ jobs:
         with:
           files: release/*
           generate_release_notes: true
+
+      - name: Update Entware feed
+        env:
+          FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          ipk="ext-tags_${version}_x86-64.ipk"
+          feed_dir="$(mktemp -d)"
+          git clone https://github.com/daregod/opkg-feed.git "$feed_dir"
+          git -C "$feed_dir" remote set-url origin "https://x-access-token:${FEED_TOKEN}@github.com/daregod/opkg-feed.git"
+          cd "$feed_dir"
+          rm -f x86-64/ext-tags_*.ipk
+          cp "$GITHUB_WORKSPACE/dist/$ipk" "x86-64/$ipk"
+          size="$(stat -c%s "x86-64/$ipk")"
+          sum="$(sha256sum "x86-64/$ipk" | cut -d' ' -f1)"
+          cat > x86-64/Packages <<EOF
+          Package: ext-tags
+          Version: ${version}
+          Architecture: x86-64
+          Filename: ${ipk}
+          Size: ${size}
+          SHA256sum: ${sum}
+          Description: Write and import foobar2000 external .tag files
+          Section: utils
+          Priority: optional
+          Maintainer: Roman Dymchenko <daregod@users.noreply.github.com>
+          License: MIT
+          EOF
+          gzip -kf x86-64/Packages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "opkg feed unchanged"
+          else
+            git commit -m "Update ext-tags to ${version}"
+            git push origin main
+          fi

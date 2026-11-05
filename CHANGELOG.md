@@ -8,7 +8,7 @@
 
 ### Добавлено
 
-- Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.
+- Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.\n- Release workflow собирает `.ipk` и автоматически обновляет `opkg-feed`.
 
 ## [0.10.2] — 2026-11-05
 

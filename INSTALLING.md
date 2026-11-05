@@ -92,7 +92,7 @@ opkg print-architecture
 Для x86_64 QNAP ожидается `x86-64`. Добавь feed:
 
 ```sh
-echo 'src/gz ext-tags https://daregod.github.io/opkg-feed/x86-64' >> /opt/etc/opkg.conf
+echo 'src/gz ext-tags https://raw.githubusercontent.com/daregod/opkg-feed/main/x86-64' >> /opt/etc/opkg.conf
 opkg update
 opkg install ext-tags
 ```
