@@ -23,6 +23,15 @@ jobs:
       - name: Build binaries
         run: make dist
 
+      - name: Verify static Linux binaries
+        run: |
+          set -euo pipefail
+          file dist/ext-tags_linux_amd64
+          if readelf -d dist/ext-tags_linux_amd64 | grep -q NEEDED; then
+            echo "linux binary is dynamically linked" >&2
+            exit 1
+          fi
+
       - name: Package release assets
         run: |
           set -euo pipefail

@@ -26,11 +26,11 @@ ifeq ($(OS),Windows_NT)
   .SHELLFLAGS := /c
   EXE         := .exe
   NULL        := NUL
-  ENV          = set "GOOS=$(1)" && set "GOARCH=$(2)" &&
+  ENV          = set "GOOS=$(1)" && set "GOARCH=$(2)" && set "CGO_ENABLED=0" &&
 else
   EXE         :=
   NULL        := /dev/null
-  ENV          = GOOS=$(1) GOARCH=$(2)
+  ENV          = GOOS=$(1) GOARCH=$(2) CGO_ENABLED=0
 endif
 
 # Filesystem helpers are Go code (cmd/devtool) so recipes work in cmd.exe and sh.
