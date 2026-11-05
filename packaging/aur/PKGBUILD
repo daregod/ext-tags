@@ -1,6 +1,6 @@
 # Maintainer: Roman Dymchenko <daregod@users.noreply.github.com>
 pkgname=ext-tags-bin
-pkgver=0.11.0
+pkgver=0.11.1
 pkgrel=1
 pkgdesc="Write and import foobar2000 external .tag files"
 arch=('x86_64' 'aarch64')
@@ -12,8 +12,8 @@ options=('!strip')
 
 source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v${pkgver}/ext-tags_${pkgver}_linux_amd64.tar.gz")
 source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/daregod/ext-tags/releases/download/v${pkgver}/ext-tags_${pkgver}_linux_arm64.tar.gz")
-sha256sums_x86_64=('d7869cec134c6f5ba4a0606544f32acc7811a74bbe25c44fc7c951b5595e9312')
-sha256sums_aarch64=('301f8f5e48ec767b999e11449c3d6d9d39e3c21ef6abcf6f142b4ccd20e0abf1')
+sha256sums_x86_64=('edb985a0fb5e8548662e5af5f66c43c244cf2bf35beeca6c0ef19e79e82507fe')
+sha256sums_aarch64=('72fbc7985fa8945c9ef2cb8d8b9093bc0ed62caadcf10162af5dca35add41e55')
 
 package() {
   local binary="ext-tags_linux_amd64"
