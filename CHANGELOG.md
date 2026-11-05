@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.11.3] — 2026-11-05
+
+### Исправлено
+
+- `self-update` дополнительно определяет opkg по базе `/opt/lib/opkg/info/ext-tags.list` и по путям Entware любого варианта.
+
 ## [0.11.2] — 2026-11-05
 
 ### Исправлено

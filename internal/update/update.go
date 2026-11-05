@@ -302,9 +302,20 @@ func IsNewer(latest, current string) bool {
 // appears to be owned by one.
 func Managed(executable string) (string, string) {
 	p := strings.ToLower(filepath.ToSlash(executable))
+	for _, list := range []string{
+		"/opt/lib/opkg/info/ext-tags.list",
+		"/opt/var/lib/opkg/info/ext-tags.list",
+		"/usr/lib/opkg/info/ext-tags.list",
+		"/var/lib/opkg/info/ext-tags.list",
+	} {
+		if _, err := os.Stat(list); err == nil {
+			return "opkg", "opkg update && opkg upgrade ext-tags"
+		}
+	}
 	switch {
 	case strings.Contains(p, "/opt/bin/") || strings.Contains(p, "/opt/sbin/") ||
-		strings.Contains(p, "/entware/bin/") || strings.Contains(p, "/entware/sbin/"):
+		(strings.Contains(p, "/entware") && (strings.Contains(p, "/bin/") || strings.Contains(p, "/sbin/"))) ||
+		strings.Contains(p, "/optware/bin/") || strings.Contains(p, "/optware/sbin/"):
 		return "opkg", "opkg update && opkg upgrade ext-tags"
 	case strings.Contains(p, "/cellar/") || strings.Contains(p, "/homebrew/"):
 		return "Homebrew", "brew update && brew upgrade ext-tags"
