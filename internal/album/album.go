@@ -19,9 +19,9 @@ var names = []string{"album.yaml", "album.yml", ".ext-tags.album.yaml"}
 
 // Config is an optional album.yaml overlay stored next to the audio files.
 type Config struct {
-	Album   map[string]string            `yaml:"album"`
-	Tracks  map[string]map[string]string `yaml:"tracks"`
-	Artwork map[string]string            `yaml:"artwork"`
+	Album   map[string]string            `yaml:"album,omitempty"`
+	Tracks  map[string]map[string]string `yaml:"tracks,omitempty"`
+	Artwork map[string]string            `yaml:"artwork,omitempty"`
 
 	dir  string
 	path string

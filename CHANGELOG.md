@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Добавлено
+
+- `ext-tags album init`: генерация `album.yaml` из тегов треков.
+
 ## [0.9.3] — 2026-11-05
 
 ### Исправлено

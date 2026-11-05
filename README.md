@@ -181,7 +181,7 @@ ext-tags --json extract track.flac
 |---|---|
 | `ext-tags extract <пути...>` | создать `.tag` (по умолчанию) |
 | `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2, Matroska |
-| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
+| `ext-tags album init <папка>` | создать `album.yaml` из тегов треков |\n| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
 | `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
 | `ext-tags version` | версия и дата сборки |
 
@@ -329,6 +329,17 @@ tracks:
   "4":
     Title: Signature of The Soul
 ```
+
+Скелет `album.yaml` можно создать командой:
+
+```bash
+ext-tags album init /path/to/album
+ext-tags album init --dry-run /path/to/album
+ext-tags album init --force /path/to/album
+```
+
+Она читает теги всех треков в папке, выносит общие поля в `album:`,
+различия — в `tracks:`, а найденные sidecar-обложки — в `artwork:`.
 
 Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
 расширения. Поля `Album`, `Album artist`, `Label`, `Catalognumber` и т.п.
