@@ -59,6 +59,10 @@ type CoverConfig struct {
 	Artist    []string `yaml:"artist"`
 	Disc      []string `yaml:"disc"`
 	Icon      []string `yaml:"icon"`
+	// MaxBytes is the preferred per-image budget; 0 disables it.
+	MaxBytes int64 `yaml:"max_bytes,omitempty"`
+	// HardMaxBytes is the absolute per-image ceiling; 0 disables it.
+	HardMaxBytes int64 `yaml:"hard_max_bytes,omitempty"`
 }
 
 // FieldsConfig controls how container fields become tag fields.
@@ -202,16 +206,18 @@ func Default() *Config {
 		},
 		TagFile: TagFileConfig{Suffix: ".tag"},
 		Cover: CoverConfig{
-			Enabled:   true,
-			Prefer:    "embedded",
-			Field:     "Cover Art (Front)",
-			Filename:  "cover",
-			Names:     []string{"cover", "folder", "front", "album", "poster", "box"},
-			Directory: true,
-			Back:      []string{"back"},
-			Artist:    []string{"artist"},
-			Disc:      []string{"disc", "media"},
-			Icon:      []string{"icon"},
+			Enabled:      true,
+			Prefer:       "embedded",
+			Field:        "Cover Art (Front)",
+			Filename:     "cover",
+			Names:        []string{"cover", "folder", "front", "album", "poster", "box"},
+			Directory:    true,
+			Back:         []string{"back"},
+			Artist:       []string{"artist"},
+			Disc:         []string{"disc", "media"},
+			Icon:         []string{"icon"},
+			MaxBytes:     0,
+			HardMaxBytes: 8 << 20,
 		},
 		Fields: FieldsConfig{
 			Aliases: aliases,
@@ -470,6 +476,15 @@ func (c *Config) Validate() error {
 	default:
 		return fmt.Errorf("cover.prefer: unknown value %q (want embedded, sidecar or existing)", c.Cover.Prefer)
 	}
+	if c.Cover.MaxBytes < 0 {
+		return fmt.Errorf("cover.max_bytes must be >= 0")
+	}
+	if c.Cover.HardMaxBytes < 0 {
+		return fmt.Errorf("cover.hard_max_bytes must be >= 0")
+	}
+	if c.Cover.HardMaxBytes > 0 && c.Cover.MaxBytes > c.Cover.HardMaxBytes {
+		return fmt.Errorf("cover.max_bytes (%d) must not exceed cover.hard_max_bytes (%d)", c.Cover.MaxBytes, c.Cover.HardMaxBytes)
+	}
 	if c.Cover.Enabled && c.Cover.Field == "" {
 		return fmt.Errorf("cover.field is empty")
 	}
@@ -571,6 +586,10 @@ cover:
   enabled: true
   # look for front/back/artist/disc/icon images next to the audio file
   directory: true
+  # preferred per-image budget; 0 = no preference
+  max_bytes: 0
+  # absolute per-image ceiling; 0 = no ceiling
+  hard_max_bytes: 8388608
   names: [cover, folder, front, album, poster, box]  # front
   back: [back]
   artist: [artist]

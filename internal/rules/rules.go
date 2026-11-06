@@ -104,6 +104,12 @@ func New(cfg *config.Config) (*Engine, error) {
 
 // Build applies aliases and rules to raw metadata and returns final fields.
 func (e *Engine) Build(res *metadata.Document, meta Meta) (map[string]string, error) {
+	return e.BuildWithExisting(res, nil, meta)
+}
+
+// BuildWithExisting is Build with fields from an existing .tag merged before
+// rules. Existing values never override fields read from the container.
+func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]string, meta Meta) (map[string]string, error) {
 	fields := make(map[string]string, len(res.Fields))
 	index := make(map[string]string, len(res.Fields))
 
@@ -151,6 +157,11 @@ func (e *Engine) Build(res *metadata.Document, meta Meta) (map[string]string, er
 			target = key
 		}
 		set(target, res.Fields[key])
+	}
+	for key, value := range existing {
+		if _, ok := index[strings.ToLower(strings.TrimSpace(key))]; !ok {
+			set(key, value)
+		}
 	}
 
 	for i, c := range e.rules {

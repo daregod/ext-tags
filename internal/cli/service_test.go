@@ -125,7 +125,7 @@ func TestImportFileUsesInjectedWriter(t *testing.T) {
 	doc := metadata.New()
 	doc.Fields["Title"] = "Imported"
 	a := &app{opts: &options{quiet: true}, registry: tagformat.New([]tagformat.Reader{&serviceReader{doc: doc}}, []tagformat.Writer{writer})}
-	a.importFile(path, ".tag", &importOptions{replace: true, backup: true, version: 4, v1: true})
+	a.importFile(path, ".tag", nil, &importOptions{replace: true, backup: true, version: 4, v1: true})
 
 	if !writer.called {
 		t.Fatal("writer was not called")
@@ -149,7 +149,7 @@ func TestImportFileUnknownWriter(t *testing.T) {
 	}
 	writeTestTag(t, path+".tag", "Imported")
 	a := &app{opts: &options{quiet: true}, registry: tagformat.New(nil, nil)}
-	a.importFile(path, ".tag", &importOptions{})
+	a.importFile(path, ".tag", nil, &importOptions{})
 	if a.failed {
 		t.Fatal("unknown writer must not mark failure")
 	}

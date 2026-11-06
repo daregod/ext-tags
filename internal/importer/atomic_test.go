@@ -92,3 +92,28 @@ func TestWriteAtomicSuccessReplacesOriginal(t *testing.T) {
 		t.Fatalf("data = %q", data)
 	}
 }
+
+func TestWriteAtomicWarnAndOff(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.wav")
+	if err := os.WriteFile(path, []byte("original"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Title"] = "x"
+
+	warnings, err := importer.WriteAtomicResult(path, &atomicWriter{}, &atomicReader{doc: metadata.New()}, doc, tagformat.WriteOptions{Verify: importer.VerifyWarn})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) == 0 {
+		t.Fatal("expected verification warning")
+	}
+
+	if err := os.WriteFile(path, []byte("original"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importer.WriteAtomicResult(path, &atomicWriter{}, &atomicReader{err: errors.New("no reader")}, doc, tagformat.WriteOptions{Verify: importer.VerifyOff}); err != nil {
+		t.Fatalf("verify=off must ignore reader: %v", err)
+	}
+}

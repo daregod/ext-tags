@@ -19,6 +19,8 @@ type WriteOptions struct {
 	Backup     bool
 	ID3Version int
 	ID3V1      bool
+	// Verify controls post-write verification: ""/"error", "warn" or "off".
+	Verify string
 }
 
 // Reader reads a container into a metadata document.

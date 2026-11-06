@@ -75,7 +75,7 @@ func TestImportFileOggInFlacWarning(t *testing.T) {
 		[]tagformat.Reader{&serviceReader{doc: doc}},
 		[]tagformat.Writer{&serviceWriter{}},
 	)}
-	a.importFile(path, ".tag", &importOptions{version: 3})
+	a.importFile(path, ".tag", nil, &importOptions{version: 3})
 	if a.failed {
 		t.Fatal("import failed")
 	}

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/registry"
 	"github.com/daregod/ext-tags/internal/tagformat"
@@ -128,4 +129,80 @@ func captureStdout(t *testing.T, fn func()) string {
 		t.Fatal(err)
 	}
 	return string(data)
+}
+
+func TestExtractOutputAndSourceTag(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	out := filepath.Join(t.TempDir(), "out.tag")
+
+	tag := ape.NewTag()
+	tag.AddText("Rating", "5")
+	tag.AddText("Www", "https://example.test")
+	raw, err := tag.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(audio+".tag", raw, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	cmd := a.extractCmd()
+	a.opts.output = out
+	if err := a.runExtract(cmd, []string{audio}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Fatalf("output missing: %v", err)
+	}
+	parsed, err := ape.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item, ok := parsed.Get("Rating"); !ok || string(item.Value) != "5" {
+		t.Fatalf("source .tag Rating not merged: %v %v", item.Value, ok)
+	}
+	if item, ok := parsed.Get("Www"); !ok || string(item.Value) != "https://example.test" {
+		t.Fatalf("source .tag Www not merged: %v %v", item.Value, ok)
+	}
+}
+
+func TestExtractOutputConflict(t *testing.T) {
+	a := &app{opts: &options{output: "x", stdout: true}}
+	if err := a.validateExtractOutput(); err == nil {
+		t.Fatal("output+stdout must conflict")
+	}
+	a = &app{opts: &options{stdout: true, json: true}}
+	if err := a.validateExtractOutput(); err == nil {
+		t.Fatal("stdout+json must conflict")
+	}
+}
+
+func TestExtractStdout(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	cmd := a.extractCmd()
+	a.opts.stdout = true
+	out := captureStdout(t, func() {
+		if err := a.runExtract(cmd, []string{audio}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.HasPrefix(out, "TAGFILE") {
+		t.Fatalf("stdout does not start with TAGFILE: %q", out[:minInt(16, len(out))])
+	}
+	if _, err := os.Stat(audio + ".tag"); !os.IsNotExist(err) {
+		t.Fatal("stdout mode must not create a .tag")
+	}
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

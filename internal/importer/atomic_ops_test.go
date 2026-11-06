@@ -109,7 +109,7 @@ func TestWriteAtomicFileOps(t *testing.T) {
 			if r == nil {
 				r = reader
 			}
-			err := writeAtomic("/tmp/track.wav", w, r, doc, tt.opts, tt.ops)
+			_, err := writeAtomic("/tmp/track.wav", w, r, doc, tt.opts, tt.ops)
 			if tt.name == "success" || tt.name == "rename fallback success" {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)

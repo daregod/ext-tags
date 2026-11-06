@@ -285,3 +285,47 @@ func TestWwwUsesCRLF(t *testing.T) {
 		t.Fatalf("Www = %q", got)
 	}
 }
+
+func TestCoverFilters(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.Enabled = true
+	cfg.Fields.Include = []string{"Title", "Cover Art (Front)"}
+	covers := map[string]*metadata.Cover{
+		"front": {Filename: "cover.jpg", Data: []byte{1}},
+		"back":  {Filename: "back.jpg", Data: []byte{2}},
+	}
+	data, items, _, err := BuildFinal(map[string]string{"Title": "Song"}, covers, nil, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items != 2 {
+		t.Fatalf("items = %d, want 2", items)
+	}
+	parsed, err := ape.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := parsed.Get("Cover Art (Back)"); ok {
+		t.Fatal("back cover must be filtered out")
+	}
+	if _, ok := parsed.Get("Cover Art (Front)"); !ok {
+		t.Fatal("front cover missing")
+	}
+
+	cfg.Fields.Include = nil
+	cfg.Fields.Exclude = []string{"Cover Art (Back)"}
+	data, items, _, err = BuildFinal(map[string]string{"Title": "Song"}, covers, nil, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err = ape.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items != 2 {
+		t.Fatalf("items = %d, want 2", items)
+	}
+	if _, ok := parsed.Get("Cover Art (Back)"); ok {
+		t.Fatal("excluded back cover survived")
+	}
+}

@@ -290,3 +290,50 @@ func TestWarningsMergeWithSkip(t *testing.T) {
 		t.Fatalf("unexpected warnings: %v", cfg.Warnings())
 	}
 }
+
+func TestProfileFromProjectWithoutExplicitConfig(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "ext-tags.yaml"), []byte(`version: 1
+profiles:
+  phone:
+    fields:
+      include: [Artist, Title]
+    cover:
+      enabled: false
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(old) }()
+	cfg, _, err := LoadLayers("phone", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Fields.Include) != 2 || cfg.Fields.Include[0] != "Artist" || cfg.Fields.Include[1] != "Title" {
+		t.Fatalf("profile include = %#v", cfg.Fields.Include)
+	}
+	if cfg.Cover.Enabled {
+		t.Fatal("profile cover.enabled was not applied")
+	}
+}
+
+func TestCoverBudgetDefaultsAndValidation(t *testing.T) {
+	cfg := Default()
+	if cfg.Cover.HardMaxBytes != 8<<20 || cfg.Cover.MaxBytes != 0 {
+		t.Fatalf("defaults = %d/%d", cfg.Cover.MaxBytes, cfg.Cover.HardMaxBytes)
+	}
+	cfg.Cover.MaxBytes = 9 << 20
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("max_bytes above hard_max_bytes must fail")
+	}
+	cfg.Cover.MaxBytes = 2 << 20
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

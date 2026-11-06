@@ -121,7 +121,7 @@ func TestImportFileEdgeCases(t *testing.T) {
 	}
 
 	a := &app{opts: &options{quiet: true}}
-	a.importFile(audio, ".tag", &importOptions{})
+	a.importFile(audio, ".tag", nil, &importOptions{})
 	if a.failed {
 		t.Fatal("missing .tag must be a skip")
 	}
@@ -130,14 +130,14 @@ func TestImportFileEdgeCases(t *testing.T) {
 		t.Fatal(err)
 	}
 	a = &app{opts: &options{quiet: true}}
-	a.importFile(audio, ".tag", &importOptions{})
+	a.importFile(audio, ".tag", nil, &importOptions{})
 	if !a.failed {
 		t.Fatal("invalid .tag must fail")
 	}
 
 	writeTestTag(t, audio+".tag", "Song")
 	a = &app{opts: &options{quiet: true, dryRun: true}}
-	a.importFile(audio, ".tag", &importOptions{})
+	a.importFile(audio, ".tag", nil, &importOptions{})
 	if a.failed {
 		t.Fatal("dry-run must not fail")
 	}
@@ -145,7 +145,7 @@ func TestImportFileEdgeCases(t *testing.T) {
 	writeTestTag(t, audio+".tag", "Song")
 	writer := &serviceWriter{}
 	a = &app{opts: &options{quiet: true}, registry: tagformat.New(nil, []tagformat.Writer{writer})}
-	a.importFile(audio, ".tag", &importOptions{})
+	a.importFile(audio, ".tag", nil, &importOptions{})
 	if a.failed {
 		t.Fatal("missing reader must be unsupported, not error")
 	}
@@ -155,7 +155,7 @@ func TestImportFileEdgeCases(t *testing.T) {
 		t.Fatal(err)
 	}
 	a = &app{opts: &options{quiet: true}}
-	a.importFile(unsupported, ".tag", &importOptions{})
+	a.importFile(unsupported, ".tag", nil, &importOptions{})
 }
 func TestProcessFileSkipExisting(t *testing.T) {
 	dir := t.TempDir()

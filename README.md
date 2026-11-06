@@ -14,6 +14,21 @@
 Главное: **аудиофайлы не изменяются**. Рядом с треком появляется
 `track.flac.tag`, а сам `track.flac` остаётся байт-в-байт прежним.
 
+## Термины
+
+- **Встроенный тег** — метаданные внутри аудиоконтейнера (ID3, Vorbis, MP4 и
+  т.п.). В коде и конфиге — `embedded`.
+- **Внешний тег** или **`.tag`** — отдельный файл `track.flac.tag` рядом с
+  аудиофайлом.
+- **Существующий `.tag`** — внешний тег, который уже лежит рядом с исходным
+  аудиофайлом; его поля подмешиваются при `merge_existing`.
+- **Исходный аудиофайл** — входной `track.flac`/`track.mp3`; слово
+  «исходный» относится к аудио, а не к `.tag`.
+- **Выходной `.tag`** — файл, который создаёт `extract`; может лежать в другом
+  месте при `--output`.
+- **Sidecar** — файл изображения рядом с аудиофайлом: `cover.jpg`,
+  `folder.png` и т.п. Это значение `cover.prefer: sidecar`.
+
 ## Зачем это нужно
 
 - **Иногда файлы менять нельзя.** Тогда теги можно держать рядом.
@@ -31,7 +46,7 @@
 
 ## Сценарии
 
-### Скачал альбом, файлы портить нельзя
+### Скачал альбом, у всех файлов есть checksumm, смена тегов его нарушит
 
 ```bash
 cd ~/Music/Artist/Album
@@ -208,13 +223,46 @@ ext-tags --json extract track.flac
 При `backup` (по умолчанию) старый `track.flac.tag` сохраняется как
 `track.flac.tag.bak`.
 
+### extract: куда писать
+
+По умолчанию `.tag` создаётся рядом с аудиофайлом. Для пайплайнов можно
+записать результат в явный путь:
+
+```bash
+ext-tags extract --output /sandbox/track.mp3.tag /library/track.mp3
+ext-tags extract --output - track.mp3
+ext-tags extract --stdout track.mp3
+```
+
+`--output PATH` не создаёт файл рядом с исходником. Существующий `.tag`
+читается рядом с исходником, а `--on-existing` применяется к `PATH`.
+`--stdout` пишет байты `.tag` в stdout; `--json` с ним несовместим, а
+`--dry-run` запрещён. `--output`/`--stdout` требуют ровно один входной файл.
+
+`--output` можно использовать с расширением, отличным от `.tag`, — это
+ответственность вызывающего кода.
+
+### import: проверка после записи
+
+По умолчанию импорт проверяет, что ключевые поля читаются после записи, и при
+расхождении завершается ошибкой. Режим можно изменить:
+
+```bash
+ext-tags import --verify=error track.mp3  # по умолчанию
+ext-tags import --verify=warn  track.mp3  # предупреждение, импорт продолжается
+ext-tags import --verify=off   track.mp3  # не проверять
+```
+
+В режиме `warn` в отчёте будет `SKIP field ...`, но импорт продолжится.
+Запись идёт через temp-файл с заменой только после проверки, поэтому при
+ошибке исходный файл остаётся целым.
+
 ### fixext
 
 Некоторые стриминговые сервисы отдают Ogg/Opus с расширением `.flac`.
 foobar2000 выбирает artwork-ридер по расширению и не показывает обложки у таких
 файлов. `fixext` определяет контейнер по магии и переименовывает файл в
-правильное расширение (`.opus`, `.ogg`, `.oga`, `.spx`), вместе с sidecar
-`.tag`:
+правильное расширение (`.opus`, `.ogg`, `.oga`, `.spx`), вместе с `.tag`:
 
 ```bash
 # dry-run: только показать, что будет переименовано
@@ -289,7 +337,146 @@ fields:
 продвинутая настройка; полный список ключей и примеры даёт
 `ext-tags config init --full`.
 
-### Глобальные правила стиля
+### Профили
+
+Профиль — именованный набор переопределений в обычном конфиге:
+
+```yaml
+profiles:
+  phone:
+    fields:
+      include: [Artist, Title, Album, "Album artist", Track, Genre, Year, Releasetime, Rating, "Cover Art (Front)"]
+      exclude: ["Cover Art (Back)", "Artist Picture", "Cover Art (Disc)", "Cover Art (Icon)"]
+    cover:
+      enabled: true
+```
+
+```bash
+ext-tags --profile phone extract --output /sandbox/track.mp3.tag track.mp3
+```
+
+`--profile` без `--config` ищет профиль в пользовательском и проектном слоях
+конфига; отдельный файл не нужен.
+
+### include/exclude
+
+`fields.include` и `fields.exclude` применяются к итоговому набору — после
+aliases, merge существующего `.tag` и правил.
+
+```yaml
+fields:
+  include: [Artist, Title, Album, "Album artist", Track, Genre, Year, Releasetime, Rating, "Cover Art (Front)"]
+  exclude: [Www, Encoder]
+```
+
+Обложки тоже имеют имена для фильтров. Можно оставить только front:
+
+```yaml
+fields:
+  exclude:
+    - "Cover Art (Back)"
+    - "Artist Picture"
+    - "Cover Art (Disc)"
+    - "Cover Art (Icon)"
+```
+
+Имена слотов:
+
+| Слот | Имя для include/exclude |
+|---|---|
+| front | `cover.field` из конфига, по умолчанию `Cover Art (Front)` |
+| back | `Cover Art (Back)` |
+| artist | `Artist Picture` |
+| disc | `Cover Art (Disc)` |
+| icon | `Cover Art (Icon)` |
+
+Если `include` непустой, обложки, которых нет в списке, **не попадут** в
+результат. Если `include` не задан, обложки остаются по `cover.enabled`, а
+`exclude` убирает перечисленные слоты.
+
+Список полей не является закрытым. Незнакомое поле из контейнера сохраняется
+под своим именем, если его не убирает `fields.ignore`; его можно использовать
+в `include`/`exclude`, правилах и `album.yaml`. Своё имя задаётся через
+`fields.aliases`:
+
+```yaml
+fields:
+  aliases:
+    CUSTOM_TAG: My field
+  include: [Artist, Title, "My field"]
+```
+
+Без алиаса поле остаётся как есть:
+
+```yaml
+fields:
+  include: [Artist, Title, CUSTOM_TAG]
+```
+
+Значение можно добавить только для альбома:
+
+```yaml
+album:
+  My field: значение из буклета
+```
+
+### Нумерация треков
+
+Есть два разных механизма, и они не взаимозаменяемы:
+
+- встроенное правило собирает `Track` из отдельных переменных
+  `.tracknumber` и `.totaltracks`;
+- функция `formatTrack` форматирует **уже готовое** значение вида `X/Y`,
+  которое лежит в поле `.track`.
+
+Встроенное правило:
+
+```yaml
+- set: Track
+  template: '{{ .tracknumber }}{{ if .totaltracks }}/{{ .totaltracks }}{{ end }}'
+```
+
+оставляет номер как есть: `2/10`, `1/8`, `7`. Оно не добавляет ведущие нули.
+
+`formatTrack` работает с готовым `X/Y` и выравнивает номер по ширине общего
+количества:
+
+```yaml
+- set: Track
+  template: '{{ formatTrack .track }}'
+```
+
+| Значение `.track` | Результат `formatTrack` |
+|---|---|
+| `1/12` | `01/12` |
+| `7/12` | `07/12` |
+| `1/8` | `1/8` |
+| `7` | `7` |
+
+Если встроенное правило уже отработало, оно сначала записывает `Track`, поэтому
+`formatTrack .track` получает готовое значение:
+
+| `.tracknumber` | `.totaltracks` | Встроенный `Track` | `formatTrack .track` после него |
+|---|---|---|---|
+| `2` | `10` | `2/10` | `02/10` |
+| `1` | `8` | `1/8` | `1/8` |
+| `7` | — | `7` | `7` |
+
+Поэтому `formatTrack .track` имеет смысл только если поле `Track` уже
+заполнено. При `fields.rules_mode: replace` встроенное правило не выполняется,
+и `.track` может быть пустым — тогда используйте `.tracknumber`/
+`.totaltracks`. Если нужно одновременно собрать `X/Y` из переменных и
+добавить ведущие нули:
+
+```yaml
+- set: Track
+  when: '{{ .totaltracks }}'
+  template: '{{ formatTrack (printf "%s/%s" .tracknumber .totaltracks) }}'
+```
+
+Для `Disc` действует та же логика: `.discnumber`, `.disctotal`, поле `Disc`.
+
+### Пример правил
 
 Шаблоны умеют `year` (выделить год) и `formatTrack` (отформатировать `X/Y`
 по количеству треков). Пример правил, которые можно положить в
@@ -306,8 +493,6 @@ fields:
       template: '{{ .year }}'
     - set: Year
       template: '{{ year .releasetime }}'
-    - set: Track
-      template: '{{ formatTrack .track }}'
     - default: {field: "Comment catalog number", from: Catalognumber}
     - default: {field: "Catalog #", from: Catalognumber}
     - default: {field: Publisher, from: Label}
@@ -316,7 +501,8 @@ fields:
 ```
 
 Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
-`.releasetime`, `.catalognumber`.
+`.releasetime`, `.catalognumber`. Встроенное правило `Track` уже применяется
+по умолчанию; не добавляйте своё `set: Track`, если не хотите его заменить.
 
 ### Конфиг альбома
 
@@ -394,15 +580,13 @@ foobar2000 знает пять типов artwork; каждый хранится
 | Disc | `Cover Art (Disc)` | `disc`, `media` |
 | Icon | `Cover Art (Icon)` | `icon` |
 
-1. При `cover.prefer: embedded` (по умолчанию) сначала берётся встроенная
-   картинка; sidecar заполняет только пустые слоты.
-2. При `cover.prefer: sidecar` картинка из папки имеет приоритет над
-   встроенной.
-3. При `cover.prefer: existing` сохраняется обложка из уже существующего
-   `.tag`, если она есть.
-4. Остальные слоты ищутся в папке по именам из таблицы; расширения —
+1. `cover.prefer` задаёт порядок кандидатов: `embedded`, `sidecar` или
+   `existing`.
+2. Остальные слоты ищутся в папке по именам из таблицы; расширения —
    `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` (регистр не важен).
-5. Найденные картинки попадают в `.tag` под соответствующими ключами.
+3. Найденные картинки попадают в `.tag` под соответствующими ключами.
+4. Размер кандидатов ограничивается `cover.max_bytes`/`hard_max_bytes`
+   (см. ниже).
 
 Отключить всё: `--cover=false` или `cover.enabled: false`. Поиск в папке
 отключается через `cover.directory: false`. Списки имён настраиваются:
@@ -416,7 +600,55 @@ cover:
   artist: [artist]
   disc: [disc, media]
   icon: [icon]
+  max_bytes: 0             # 0 = без мягкого бюджета
+  hard_max_bytes: 8388608  # 8 MiB; 0 = без жёсткого потолка
 ```
+
+### Бюджет обложек
+
+Размер ограничивается без декодирования картинок — только по длине файла:
+
+- `max_bytes` — предпочтительный бюджет. Если кандидат в него не влезает,
+  выбирается следующий по `prefer`;
+- `hard_max_bytes` — абсолютный потолок. Кандидаты больше него не
+  рассматриваются;
+- если ни один кандидат не влез в `max_bytes`, но есть кандидат под
+  `hard_max_bytes`, берётся самый маленький из подходящих;
+- если все кандидаты больше `hard_max_bytes` — обложка не вставляется.
+
+Кандидаты перебираются в порядке `cover.prefer`:
+
+```text
+embedded, sidecar, existing  (prefer: embedded)
+sidecar, embedded, existing  (prefer: sidecar)
+existing, sidecar, embedded  (prefer: existing)
+```
+
+Явная обложка из `album.yaml` (`artwork:`) рассматривается первой.
+
+Пример для телефона:
+
+```yaml
+cover:
+  prefer: sidecar
+  max_bytes: 2097152
+  hard_max_bytes: 8388608
+```
+
+Так sidecar 1.5 МБ будет выбран сразу, sidecar 3 МБ уступит встроенной
+1.2 МБ, а при отсутствии подходящих вариантов останется обложка до 8 МБ.
+Лимиты применяются и к `extract`, и к `import`.
+
+Важно: бюджет **не влияет на порядок выбора sidecar-файла**. `cover.names`
+(а также `cover.back`, `cover.artist`, …) — это порядок поиска: берётся первый
+существующий файл, и только потом проверяется его размер. Если в папке лежат
+`cover.jpg` (10 МБ) и `front.jpg` (1 МБ), при списке
+`names: [cover, folder, front, box]` будет найден `cover.jpg`; `front.jpg`
+**не будет** рассмотрен как альтернатива. Если `cover.jpg` больше
+`hard_max_bytes`, sidecar-кандидат отбрасывается целиком; если он больше
+только `max_bytes`, он может остаться fallback-кандидатом, но `front.jpg`
+всё равно не проверяется. В этом случае можно изменить порядок `cover.names`,
+убрать большое имя из списка или подготовить подходящий файл.
 
 ## Поддерживаемые форматы
 
@@ -452,6 +684,7 @@ foobar2000).
 
 ## Документация
 
+- [TAGS.md](TAGS.md) — справочник полей, алиасов и artwork-имён.
 - [DEVELOPMENT.md](DEVELOPMENT.md) — архитектура, тесты, фикстуры, релизы.
 - [TODO.md](TODO.md) — форматы и планы.
 - [CHANGELOG.md](CHANGELOG.md) — история версий.

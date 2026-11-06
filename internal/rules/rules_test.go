@@ -201,3 +201,26 @@ func TestYearAndFormatTrack(t *testing.T) {
 		t.Fatalf("yearOf = %q", got)
 	}
 }
+
+func TestBuildWithExistingBeforeRulesAndFilter(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.Include = []string{"Artist", "Title"}
+	engine, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := metadata.New()
+	res.Fields["Title"] = "New"
+	res.Fields["Artist"] = "Container"
+	fields, err := engine.BuildWithExisting(res, map[string]string{
+		"Www":    "https://example.test",
+		"Label":  "Existing label",
+		"Rating": "3",
+	}, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fields) != 2 || fields["Artist"] != "Container" || fields["Title"] != "New" {
+		t.Fatalf("fields = %#v", fields)
+	}
+}

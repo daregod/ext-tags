@@ -16,6 +16,7 @@ import (
 	"github.com/daregod/ext-tags/internal/album"
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
@@ -38,6 +39,9 @@ type options struct {
 	cover      bool
 	merge      bool
 	noMerge    bool
+
+	output string
+	stdout bool
 }
 
 type app struct {
@@ -95,7 +99,7 @@ func (a *app) rootCmd() *cobra.Command {
 }
 
 func (a *app) extractCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "extract <path...>",
 		Short: "Write <file>.<ext>.tag files from audio metadata",
 		Args:  cobra.MinimumNArgs(1),
@@ -103,6 +107,9 @@ func (a *app) extractCmd() *cobra.Command {
 			return a.runExtract(cmd, args)
 		},
 	}
+	cmd.Flags().StringVar(&a.opts.output, "output", "", "write the .tag to this path instead of next to the audio file (- = stdout)")
+	cmd.Flags().BoolVar(&a.opts.stdout, "stdout", false, "write the .tag bytes to stdout")
+	return cmd
 }
 func (a *app) versionCmd() *cobra.Command {
 	return &cobra.Command{
@@ -126,6 +133,9 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
+	if err := a.validateExtractOutput(); err != nil {
+		return err
+	}
 	for _, warning := range cfg.Warnings() {
 		if a.opts.verbose {
 			fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
@@ -143,11 +153,31 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 	if err != nil {
 		return err
 	}
+	if (a.opts.stdout || a.opts.output != "") && len(files) != 1 {
+		return fmt.Errorf("--output/--stdout require exactly one input file, got %d", len(files))
+	}
 	for _, file := range files {
 		if a.isOwnOutput(file, cfg) {
 			continue
 		}
 		a.processFile(file, cfg, engine)
+	}
+	return nil
+}
+
+func (a *app) validateExtractOutput() error {
+	if a.opts.output == "-" {
+		a.opts.stdout = true
+		a.opts.output = ""
+	}
+	if a.opts.output != "" && a.opts.stdout {
+		return fmt.Errorf("--output and --stdout are mutually exclusive")
+	}
+	if a.opts.stdout && a.opts.json {
+		return fmt.Errorf("--stdout cannot be combined with --json: stdout is reserved for tag bytes")
+	}
+	if a.opts.stdout && a.opts.dryRun {
+		return fmt.Errorf("--stdout cannot be combined with --dry-run")
 	}
 	return nil
 }
@@ -307,9 +337,10 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	if albumCfg != nil {
 		albumCfg.Apply(md, path)
 	}
-	a.applySidecarArtwork(md, path, cfg)
-	if albumCfg != nil {
-		covers, err := albumCfg.ArtworkCovers()
+	embedded := copyCovers(md.Artwork)
+	var existing *ape.ParsedTag
+	if cfg.Files.MergeExisting {
+		existing, err = tagfile.ReadExisting(path, cfg.TagFile.Suffix)
 		if err != nil {
 			res.Status = "error"
 			res.Error = err.Error()
@@ -317,15 +348,22 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 			a.report(res)
 			return
 		}
-		for kind, cover := range covers {
-			md.Artwork[kind] = cover
-			if kind == "front" {
-				md.Cover = cover
-			}
+	}
+	var albumCovers map[string]*metadata.Cover
+	if albumCfg != nil {
+		albumCovers, err = albumCfg.ArtworkCovers()
+		if err != nil {
+			res.Status = "error"
+			res.Error = err.Error()
+			a.failed = true
+			a.report(res)
+			return
 		}
 	}
-
-	fields, err := engine.Build(md, meta)
+	md.Artwork = selectArtwork(embedded, a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg)
+	md.Cover = md.Artwork["front"]
+	existingFields := tagfile.ExistingFields(existing)
+	fields, err := engine.BuildWithExisting(md, existingFields, meta)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
@@ -334,7 +372,35 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		return
 	}
 
-	written, err := tagfile.Write(path, fields, md.Artwork, cfg, a.opts.dryRun)
+	if a.opts.stdout {
+		data, items, _, err := tagfile.BuildFinal(fields, md.Artwork, nil, cfg)
+		if err != nil {
+			res.Status = "error"
+			res.Error = err.Error()
+			a.failed = true
+			a.report(res)
+			return
+		}
+		if items == 0 {
+			if !a.opts.quiet {
+				fmt.Fprintf(os.Stderr, "SKIP    %s (no tags)\n", path)
+			}
+			return
+		}
+		if _, err := os.Stdout.Write(data); err != nil {
+			res.Status = "error"
+			res.Error = err.Error()
+			a.failed = true
+			a.report(res)
+		}
+		return
+	}
+
+	target := path + cfg.TagFile.Suffix
+	if a.opts.output != "" {
+		target = a.opts.output
+	}
+	written, err := tagfile.WriteTo(path, target, fields, md.Artwork, nil, cfg, a.opts.dryRun)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()

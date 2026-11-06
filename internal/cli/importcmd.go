@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/importer"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/tagformat"
@@ -18,6 +19,7 @@ type importOptions struct {
 	version int
 	v1      bool
 	backup  bool
+	verify  string
 }
 
 func (a *app) importCmd() *cobra.Command {
@@ -34,6 +36,7 @@ func (a *app) importCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opts.version, "id3v2-version", 3, "ID3v2 version to write: 2, 3 or 4")
 	cmd.Flags().BoolVar(&opts.v1, "id3v1", false, "also write an ID3v1 tag")
 	cmd.Flags().BoolVar(&opts.backup, "backup", false, "keep a copy of the audio file as <name>.bak")
+	cmd.Flags().StringVar(&opts.verify, "verify", "error", "post-write verification: error, warn or off")
 	return cmd
 }
 
@@ -48,6 +51,14 @@ func (a *app) runImport(paths []string, opts *importOptions) error {
 	if opts.version != 2 && opts.version != 3 && opts.version != 4 {
 		return fmt.Errorf("--id3v2-version must be 2, 3 or 4")
 	}
+	if opts.verify == "" {
+		opts.verify = "error"
+	}
+	switch opts.verify {
+	case "error", "warn", "off":
+	default:
+		return fmt.Errorf("--verify must be error, warn or off")
+	}
 	if a.opts.verbose && !a.opts.json {
 		fmt.Fprintf(os.Stderr, "config: %s\n", label)
 	}
@@ -57,12 +68,15 @@ func (a *app) runImport(paths []string, opts *importOptions) error {
 		return err
 	}
 	for _, file := range files {
-		a.importFile(file, cfg.TagFile.Suffix, opts)
+		a.importFile(file, cfg.TagFile.Suffix, cfg, opts)
 	}
 	return nil
 }
 
-func (a *app) importFile(path, suffix string, opts *importOptions) {
+func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOptions) {
+	if cfg == nil {
+		cfg = config.Default()
+	}
 	res := fileResult{File: path}
 
 	switch strings.ToLower(filepath.Ext(path)) {
@@ -117,12 +131,22 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		a.report(res)
 		return
 	}
-	if err := importer.WriteAtomic(path, writer, reader, documentFromTagFile(tf), tagformat.WriteOptions{
+	doc := documentFromTagFile(tf)
+	doc.Artwork = applyCoverBudget(tf.Covers, cfg)
+	doc.Cover = doc.Artwork["front"]
+	if doc.Cover != nil {
+		res.Cover = &coverInfo{Filename: doc.Cover.Filename, Bytes: len(doc.Cover.Data)}
+	} else {
+		res.Cover = nil
+	}
+	warnings, err := importer.WriteAtomicResult(path, writer, reader, doc, tagformat.WriteOptions{
 		Replace:    opts.replace,
 		Backup:     opts.backup,
 		ID3Version: opts.version,
 		ID3V1:      opts.v1,
-	}); err != nil {
+		Verify:     opts.verify,
+	})
+	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
 		a.failed = true
@@ -133,9 +157,12 @@ func (a *app) importFile(path, suffix string, opts *importOptions) {
 		res.Backup = path + ".bak"
 	}
 	res.Status = "imported"
+	var notes []string
+	notes = append(notes, warnings...)
 	if strings.EqualFold(filepath.Ext(path), ".flac") && sniffContainer(path) == "ogg" {
-		res.Warning = "Ogg/Opus in a .flac file: foobar2000 picks the artwork reader by extension; rename to .opus to see embedded art"
+		notes = append(notes, "Ogg/Opus in a .flac file: foobar2000 picks the artwork reader by extension; rename to .opus to see embedded art")
 	}
+	res.Warning = strings.Join(notes, "; ")
 	a.report(res)
 }
 func sniffContainer(path string) string {

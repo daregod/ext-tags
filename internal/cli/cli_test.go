@@ -148,6 +148,9 @@ func TestConfigInitMinimalAndFull(t *testing.T) {
 	if !strings.Contains(string(full), "aliases:") {
 		t.Fatal("full config must contain aliases")
 	}
+	if !strings.Contains(string(full), "Canonical field names") || !strings.Contains(string(full), "Cover Art (Front)") {
+		t.Fatal("full config must contain the tag reference comment")
+	}
 }
 
 func TestIsOwnOutput(t *testing.T) {
