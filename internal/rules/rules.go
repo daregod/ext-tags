@@ -64,6 +64,10 @@ var funcs = template.FuncMap{
 	},
 	"year":        yearOf,
 	"formatTrack": formatTrack,
+	"atoi": func(s string) int {
+		n, _ := strconv.Atoi(strings.TrimSpace(s))
+		return n
+	},
 }
 
 // New compiles the configured rules.
@@ -163,6 +167,7 @@ func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]s
 			set(key, value)
 		}
 	}
+	mergeNumberVars(res.Vars, get)
 
 	for i, c := range e.rules {
 		data := e.templateData(fields, res.Vars, meta)
@@ -222,6 +227,30 @@ func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]s
 	}
 
 	return fields, nil
+}
+
+func mergeNumberVars(vars map[string]string, get func(string) string) {
+	if vars == nil {
+		return
+	}
+	for _, spec := range []struct {
+		field, number, total string
+	}{
+		{"Track", "tracknumber", "totaltracks"},
+		{"Disc", "discnumber", "disctotal"},
+	} {
+		value := strings.TrimSpace(get(spec.field))
+		if value == "" {
+			continue
+		}
+		num, total, hasTotal := strings.Cut(value, "/")
+		if vars[spec.number] == "" && strings.TrimSpace(num) != "" {
+			vars[spec.number] = strings.TrimSpace(num)
+		}
+		if hasTotal && vars[spec.total] == "" && strings.TrimSpace(total) != "" {
+			vars[spec.total] = strings.TrimSpace(total)
+		}
+	}
 }
 
 func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[string]string {

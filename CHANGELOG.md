@@ -4,6 +4,16 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.12.1] — 2026-11-06
+
+### Исправлено
+
+- Правила видят поля из существующего `.tag`: `Track`/`Disc` восстанавливают `.tracknumber`/`.totaltracks`/`.discnumber`/`.disctotal`, а `Releasetime` из сайдкара больше не перезаписывается годом.
+
+### Добавлено
+
+- Шаблонный helper `atoi` для числовых условий, например `gt (atoi .disctotal) 1`.
+
 ## [0.12.0] — 2026-11-06
 
 ### Добавлено

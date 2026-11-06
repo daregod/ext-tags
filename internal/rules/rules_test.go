@@ -224,3 +224,48 @@ func TestBuildWithExistingBeforeRulesAndFilter(t *testing.T) {
 		t.Fatalf("fields = %#v", fields)
 	}
 }
+
+func TestDiscRemovedWhenTotalIsOne(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.RulesMode = "replace"
+	cfg.Fields.Rules = []config.Rule{
+		{Set: "Disc", Template: `{{ if and .discnumber (gt (atoi .disctotal) 1) }}{{ formatTrack (printf "%s/%s" .discnumber .disctotal) }}{{ end }}`},
+		{Remove: []string{"Disc"}, When: `{{ or (not .discnumber) (le (atoi .disctotal) 1) }}`},
+	}
+	fields := build(t, cfg, map[string]string{"DISC": "1/1"}, map[string]string{"discnumber": "1", "disctotal": "1"})
+	if fields["Disc"] != "" {
+		t.Fatalf("Disc = %q, want empty", fields["Disc"])
+	}
+	fields = build(t, cfg, nil, map[string]string{"discnumber": "1", "disctotal": "2"})
+	if fields["Disc"] != "1/2" {
+		t.Fatalf("Disc = %q, want 1/2", fields["Disc"])
+	}
+}
+
+func TestExistingTagNumbersFeedRules(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.Rules = append(cfg.Fields.Rules, config.Rule{
+		Set: "Releasetime", When: `{{ eq .releasetime "" }}`, Template: `{{ .year }}`,
+	})
+	engine, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := &metadata.Document{
+		Fields: map[string]string{"TRACKNUMBER": "1", "YEAR": "2019"},
+		Vars:   map[string]string{"tracknumber": "1"},
+	}
+	fields, err := engine.BuildWithExisting(res, map[string]string{
+		"Track":       "1/16",
+		"Releasetime": "2019-06-14",
+	}, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["Track"] != "1/16" {
+		t.Fatalf("Track = %q, want 1/16", fields["Track"])
+	}
+	if fields["Releasetime"] != "2019-06-14" {
+		t.Fatalf("Releasetime = %q", fields["Releasetime"])
+	}
+}
