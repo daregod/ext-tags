@@ -550,12 +550,21 @@ tracks:
 ```bash
 ext-tags album init /path/to/album
 ext-tags album init --dry-run /path/to/album
+ext-tags album init --no-merge /path/to/album
+ext-tags album init --merge-album /path/to/album
 ext-tags album init --force /path/to/album
 ```
 
-Она читает теги всех треков в папке, выносит общие поля в `album:`,
-различия — в `tracks:`, а найденные sidecar-обложки — в `artwork:`.
-Количество треков при этом подставляется в `Track` как `1/1`, `1/8` и т.п.
+`--no-merge` не читает существующие `.tag` (по умолчанию они подмешиваются
+при `files.merge_existing: true`). `--merge-album` дополняет существующий
+`album.yaml`, сохраняя уже заданные значения; `--merge-album` и `--force`
+несовместимы.
+
+Она читает теги всех треков в папке, подмешивает поля из существующих
+`.tag` (как `extract` при `files.merge_existing`), выносит общие поля в
+`album:`, различия — в `tracks:`, а найденные sidecar-обложки — в
+`artwork:`. Количество треков подставляется в `Track` как `1/1`, `1/8`.
+Флаг `--no-merge` отключает чтение существующих `.tag`.
 
 Ключи `tracks` — номер трека (`"1"`, `"01"`), имя файла или имя без
 расширения. Поля `Album`, `Album artist`, `Label`, `Catalognumber` и т.п.

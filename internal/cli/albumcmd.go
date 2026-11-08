@@ -11,15 +11,18 @@ import (
 	"github.com/daregod/ext-tags/internal/album"
 	"github.com/daregod/ext-tags/internal/artwork"
 	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/tagfile"
 	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
 type albumInitOptions struct {
-	force  bool
-	dryRun bool
+	force      bool
+	dryRun     bool
+	mergeAlbum bool
 }
 
 func (a *app) albumCmd() *cobra.Command {
@@ -37,15 +40,22 @@ func (a *app) albumCmd() *cobra.Command {
 		},
 	}
 	initCmd.Flags().BoolVar(&opts.force, "force", false, "overwrite an existing album.yaml")
+	initCmd.Flags().BoolVar(&opts.mergeAlbum, "merge-album", false, "supplement an existing album.yaml without overwriting its values")
 	initCmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "print album.yaml without writing")
 	cmd.AddCommand(initCmd)
 	return cmd
 }
 
 func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
+	if opts.mergeAlbum && opts.force {
+		return fmt.Errorf("--merge-album and --force are mutually exclusive")
+	}
 	cfg, _, err := a.effectiveConfig()
 	if err != nil {
 		return err
+	}
+	if a.opts.noMerge {
+		cfg.Files.MergeExisting = false
 	}
 	if err := cfg.Validate(); err != nil {
 		return err
@@ -65,7 +75,14 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 			if err != nil {
 				return fmt.Errorf("%s: %w", file, err)
 			}
-			fields, err := engine.Build(doc, rules.Meta{
+			var existing *ape.ParsedTag
+			if cfg.Files.MergeExisting {
+				existing, err = tagfile.ReadExisting(file, cfg.TagFile.Suffix)
+				if err != nil {
+					return fmt.Errorf("%s: %w", file, err)
+				}
+			}
+			fields, err := engine.BuildWithExisting(doc, tagfile.ExistingFields(existing), rules.Meta{
 				Path: file, Filename: baseName(file), Dir: dir, Ext: filepath.Ext(file),
 			})
 			if err != nil {
@@ -75,6 +92,13 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 		}
 		art := albumArtwork(dir, cfg)
 		generated := album.Generate(inputs, art)
+		if opts.mergeAlbum {
+			existing, err := album.Load(dir)
+			if err != nil {
+				return err
+			}
+			generated = album.Merge(existing, generated)
+		}
 		data, err := generated.Marshal()
 		if err != nil {
 			return err
@@ -83,7 +107,7 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 			fmt.Printf("# %s\n%s", filepath.Join(dir, "album.yaml"), data)
 			continue
 		}
-		target, err := generated.Save(dir, opts.force)
+		target, err := generated.Save(dir, opts.force || opts.mergeAlbum)
 		if err != nil {
 			return err
 		}
