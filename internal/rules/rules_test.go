@@ -269,3 +269,19 @@ func TestExistingTagNumbersFeedRules(t *testing.T) {
 		t.Fatalf("Releasetime = %q", fields["Releasetime"])
 	}
 }
+
+func TestOverridesWinOverRawAliases(t *testing.T) {
+	cfg := config.Default()
+	engine, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := &metadata.Document{Fields: map[string]string{"ALBUMARTIST": "Speedwagon, Sikey"}, Vars: map[string]string{}}
+	fields, err := engine.BuildWithOverrides(res, nil, map[string]string{"Album artist": "Sikey & Speedwagon"}, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["Album artist"] != "Sikey & Speedwagon" {
+		t.Fatalf("Album artist = %q", fields["Album artist"])
+	}
+}

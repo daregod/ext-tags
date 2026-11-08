@@ -334,8 +334,9 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		a.report(res)
 		return
 	}
+	var albumOverrides map[string]string
 	if albumCfg != nil {
-		albumCfg.Apply(md, path)
+		albumOverrides = albumCfg.Apply(md, path)
 	}
 	embedded := copyCovers(md.Artwork)
 	var existing *ape.ParsedTag
@@ -363,7 +364,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	md.Artwork = selectArtwork(embedded, a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg)
 	md.Cover = md.Artwork["front"]
 	existingFields := tagfile.ExistingFields(existing)
-	fields, err := engine.BuildWithExisting(md, existingFields, meta)
+	fields, err := engine.BuildWithOverrides(md, existingFields, albumOverrides, meta)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()

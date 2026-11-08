@@ -57,30 +57,36 @@ func Load(dir string) (*Config, error) {
 }
 
 // Apply overlays album-level fields and the matching track override onto doc.
-func (c *Config) Apply(doc *metadata.Document, audioPath string) {
+func (c *Config) Apply(doc *metadata.Document, audioPath string) map[string]string {
 	if c == nil || doc == nil {
-		return
+		return nil
 	}
-	for key, value := range c.Album {
+	overrides := c.fieldsFor(doc, audioPath)
+	for key, value := range overrides {
 		if value == "" {
 			deleteField(doc, key)
 			continue
 		}
 		setField(doc.Fields, key, value)
 	}
+	updateTrackVars(doc)
+	return overrides
+}
+
+func (c *Config) fieldsFor(doc *metadata.Document, audioPath string) map[string]string {
+	out := make(map[string]string, len(c.Album))
+	for key, value := range c.Album {
+		out[key] = value
+	}
 	for _, key := range c.trackKeys(doc, audioPath) {
 		if fields, ok := c.Tracks[key]; ok {
 			for field, value := range fields {
-				if value == "" {
-					deleteField(doc, field)
-					continue
-				}
-				setField(doc.Fields, field, value)
+				out[field] = value
 			}
 			break
 		}
 	}
-	updateTrackVars(doc)
+	return out
 }
 
 // ArtworkCovers loads files referenced by the artwork map.

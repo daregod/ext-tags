@@ -114,6 +114,12 @@ func (e *Engine) Build(res *metadata.Document, meta Meta) (map[string]string, er
 // BuildWithExisting is Build with fields from an existing .tag merged before
 // rules. Existing values never override fields read from the container.
 func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]string, meta Meta) (map[string]string, error) {
+	return e.BuildWithOverrides(res, existing, nil, meta)
+}
+
+// BuildWithOverrides is BuildWithExisting with album-level overrides applied
+// after raw/existing fields but before rules.
+func (e *Engine) BuildWithOverrides(res *metadata.Document, existing, overrides map[string]string, meta Meta) (map[string]string, error) {
 	fields := make(map[string]string, len(res.Fields))
 	index := make(map[string]string, len(res.Fields))
 
@@ -166,6 +172,14 @@ func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]s
 		if _, ok := index[strings.ToLower(strings.TrimSpace(key))]; !ok {
 			set(key, value)
 		}
+	}
+	for key, value := range overrides {
+		if value == "" {
+			del(key)
+			clearNumberVars(res.Vars, key)
+			continue
+		}
+		set(key, value)
 	}
 	mergeNumberVars(res.Vars, get)
 
@@ -227,6 +241,17 @@ func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]s
 	}
 
 	return fields, nil
+}
+
+func clearNumberVars(vars map[string]string, field string) {
+	switch strings.ToLower(strings.TrimSpace(field)) {
+	case "track":
+		delete(vars, "tracknumber")
+		delete(vars, "totaltracks")
+	case "disc":
+		delete(vars, "discnumber")
+		delete(vars, "disctotal")
+	}
 }
 
 func mergeNumberVars(vars map[string]string, get func(string) string) {
