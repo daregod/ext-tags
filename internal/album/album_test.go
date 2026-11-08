@@ -79,3 +79,37 @@ func TestLoadBOMAndCRLF(t *testing.T) {
 		t.Fatalf("album = %+v", cfg)
 	}
 }
+
+func TestApplyEmptyValuesDeleteFields(t *testing.T) {
+	dir := t.TempDir()
+	config := `album:
+  Genre: ""
+tracks:
+  "1":
+    Comment: ""
+`
+	if err := os.WriteFile(filepath.Join(dir, "album.yaml"), []byte(config), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Genre"] = "Rock"
+	doc.Fields["Comment"] = "https://example.test/track"
+	doc.Fields["Title"] = "Keep"
+	doc.Fields["Track"] = "1/8"
+	doc.Vars["tracknumber"] = "1"
+	doc.Vars["totaltracks"] = "8"
+	cfg.Apply(doc, filepath.Join(dir, "1.flac"))
+	if _, ok := doc.Fields["Genre"]; ok {
+		t.Fatal("empty album field must delete Genre")
+	}
+	if _, ok := doc.Fields["Comment"]; ok {
+		t.Fatal("empty track field must delete Comment")
+	}
+	if doc.Fields["Title"] != "Keep" {
+		t.Fatal("other fields must stay")
+	}
+}

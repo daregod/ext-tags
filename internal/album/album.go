@@ -62,16 +62,20 @@ func (c *Config) Apply(doc *metadata.Document, audioPath string) {
 		return
 	}
 	for key, value := range c.Album {
-		if value != "" {
-			setField(doc.Fields, key, value)
+		if value == "" {
+			deleteField(doc, key)
+			continue
 		}
+		setField(doc.Fields, key, value)
 	}
 	for _, key := range c.trackKeys(doc, audioPath) {
 		if fields, ok := c.Tracks[key]; ok {
 			for field, value := range fields {
-				if value != "" {
-					setField(doc.Fields, field, value)
+				if value == "" {
+					deleteField(doc, field)
+					continue
 				}
+				setField(doc.Fields, field, value)
 			}
 			break
 		}
@@ -157,6 +161,22 @@ func trimNumber(value string) string {
 	}
 	return strings.TrimLeft(value, "0")
 }
+func deleteField(doc *metadata.Document, name string) {
+	for key := range doc.Fields {
+		if strings.EqualFold(key, name) {
+			delete(doc.Fields, key)
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "track":
+		delete(doc.Vars, "tracknumber")
+		delete(doc.Vars, "totaltracks")
+	case "disc":
+		delete(doc.Vars, "discnumber")
+		delete(doc.Vars, "disctotal")
+	}
+}
+
 func setField(fields map[string]string, name, value string) {
 	found := false
 	for key := range fields {
