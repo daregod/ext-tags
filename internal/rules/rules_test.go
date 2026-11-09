@@ -285,3 +285,19 @@ func TestOverridesWinOverRawAliases(t *testing.T) {
 		t.Fatalf("Album artist = %q", fields["Album artist"])
 	}
 }
+
+func TestSanitize(t *testing.T) {
+	cases := map[string]string{
+		"AC/DC: Live?": "AC_DC_ Live_",
+		"a\\b* c":      "a_b_ c",
+		"CON":          "_CON",
+		"..":           "_",
+		"  name.  ":    "name",
+		"Привет: мир":  "Привет_ мир",
+	}
+	for in, want := range cases {
+		if got := sanitize(in); got != want {
+			t.Errorf("sanitize(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

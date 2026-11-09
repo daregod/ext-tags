@@ -202,6 +202,7 @@ ext-tags --json extract track.flac
 | `ext-tags album init <папка>` | создать `album.yaml` из тегов треков |
 | `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
 | `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
+| `ext-tags render <пути...>` | вывести поля по шаблону, ничего не записывая |
 | `ext-tags self-update` | обновить standalone-бинарник из GitHub Release |
 | `ext-tags version` | версия и дата сборки |
 
@@ -274,6 +275,35 @@ ext-tags fixext -r ~/Music --apply
 
 По умолчанию ничего не меняется. Если целевое имя уже существует, файл
 пропускается.
+
+### render
+
+`render` выводит поля по Go-шаблону и **ничего не пишет на диск**. Он использует
+тот же pipeline, что `extract`: встроенные теги, существующий `.tag`,
+`album.yaml`, правила и `include`/`exclude`.
+
+```bash
+ext-tags render --template '{{ .artist }} - {{ .title }}' album/*.flac
+ext-tags render --json --template '{{ .tracknumber }} - {{ .title }}' track.flac
+ext-tags render --null --template '{{ .path }}' album/*.flac
+```
+
+`--json` печатает NDJSON:
+
+```json
+{"file":".../track.flac","value":"01 - Title"}
+```
+
+`--null` заменяет разделитель записей на NUL — удобно для `xargs -0`.
+Для безопасных имён файлов есть функция `sanitize`:
+
+```bash
+ext-tags render --template '{{ sanitize .artist }} - {{ sanitize .title }}' album/*.flac
+```
+
+`sanitize` заменяет `\ / : * ? " < > |`, управляющие символы и опасные
+крайние пробелы/точки, а также защищает от зарезервированных имён Windows.
+Unicode-символы, включая `։`, `⁄`, `˃`, `˂`, `✶`, он не переписывает.
 
 ## Самообновление
 
@@ -486,7 +516,8 @@ album:
 ### Пример правил
 
 Шаблоны умеют `year` (выделить год), `formatTrack` (отформатировать `X/Y`
-по количеству треков) и `atoi` (преобразовать строку в число). Пример правил, которые можно положить в
+по количеству треков), `atoi` (преобразовать строку в число) и `sanitize`
+(сделать безопасное имя файла). Пример правил, которые можно положить в
 `ext-tags.yaml`:
 
 ```yaml

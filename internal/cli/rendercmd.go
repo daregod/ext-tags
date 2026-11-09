@@ -1,0 +1,152 @@
+package cli
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/spf13/cobra"
+
+	"github.com/daregod/ext-tags/internal/album"
+	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/metadata"
+	"github.com/daregod/ext-tags/internal/read"
+	"github.com/daregod/ext-tags/internal/rules"
+	"github.com/daregod/ext-tags/internal/tagfile"
+	"github.com/daregod/ext-tags/internal/tagformat"
+)
+
+type renderOptions struct {
+	template string
+	null     bool
+}
+
+type renderResult struct {
+	File  string `json:"file"`
+	Value string `json:"value"`
+}
+
+func (a *app) renderCmd() *cobra.Command {
+	opts := &renderOptions{}
+	cmd := &cobra.Command{
+		Use:   "render <path...>",
+		Short: "Render a template from the final tag fields",
+		Long:  "Render a Go template from the same fields and album.yaml overrides used by extract. Nothing is written to disk.",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return a.runRender(args, opts)
+		},
+	}
+	cmd.Flags().StringVarP(&opts.template, "template", "t", "", "Go template, for example '{{ .artist }} - {{ .title }}'")
+	cmd.Flags().BoolVar(&opts.null, "null", false, "terminate records with NUL instead of newline")
+	return cmd
+}
+
+func (a *app) runRender(paths []string, opts *renderOptions) error {
+	if strings.TrimSpace(opts.template) == "" {
+		return fmt.Errorf("--template is required")
+	}
+	cfg, label, err := a.effectiveConfig()
+	if err != nil {
+		return err
+	}
+	if a.opts.noMerge {
+		cfg.Files.MergeExisting = false
+	}
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+	engine, err := rules.New(cfg)
+	if err != nil {
+		return err
+	}
+	if a.opts.verbose && !a.opts.json {
+		fmt.Fprintf(os.Stderr, "config: %s\n", label)
+	}
+	if _, err := engine.Render(opts.template, nil, nil, rules.Meta{}); err != nil {
+		return fmt.Errorf("template: %w", err)
+	}
+	files, err := expandPaths(paths, cfg.Files.Recursive, cfg.Files.Extensions)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if a.isOwnOutput(file, cfg) {
+			continue
+		}
+		a.renderFile(file, cfg, engine, opts)
+	}
+	return nil
+}
+
+func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, opts *renderOptions) {
+	reader, ok := a.getRegistry().ReaderFor(path)
+	if !ok {
+		a.renderError(path, fmt.Errorf("unsupported format %s", strings.ToLower(filepath.Ext(path))))
+		return
+	}
+	doc, err := reader.Read(path, tagformat.ReadOptions{})
+	if errors.Is(err, read.ErrNoTags) {
+		doc = metadata.New()
+	} else if err != nil {
+		a.renderError(path, err)
+		return
+	}
+	var overrides map[string]string
+	if albumCfg, err := album.Load(filepath.Dir(path)); err != nil {
+		a.renderError(path, err)
+		return
+	} else if albumCfg != nil {
+		overrides = albumCfg.Apply(doc, path)
+	}
+	var existing *ape.ParsedTag
+	if cfg.Files.MergeExisting {
+		existing, err = tagfile.ReadExisting(path, cfg.TagFile.Suffix)
+		if err != nil {
+			a.renderError(path, err)
+			return
+		}
+	}
+	meta := rules.Meta{
+		Path: path, Filename: baseName(path), Dir: filepath.Dir(path),
+		Ext: filepath.Ext(path), Now: time.Now(),
+	}
+	fields, err := engine.BuildWithOverrides(doc, tagfile.ExistingFields(existing), overrides, meta)
+	if err != nil {
+		a.renderError(path, err)
+		return
+	}
+	value, err := engine.Render(opts.template, fields, doc.Vars, meta)
+	if err != nil {
+		a.renderError(path, err)
+		return
+	}
+	if a.opts.json {
+		data, err := json.Marshal(renderResult{File: path, Value: value})
+		if err != nil {
+			a.renderError(path, err)
+			return
+		}
+		_, _ = os.Stdout.Write(append(data, renderSeparator(opts.null)...))
+		return
+	}
+	fmt.Print(value)
+	fmt.Print(string(renderSeparator(opts.null)))
+}
+
+func renderSeparator(null bool) []byte {
+	if null {
+		return []byte{0}
+	}
+	return []byte{'\n'}
+}
+
+func (a *app) renderError(path string, err error) {
+	a.failed = true
+	fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
+}

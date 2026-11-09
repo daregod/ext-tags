@@ -68,6 +68,7 @@ var funcs = template.FuncMap{
 		n, _ := strconv.Atoi(strings.TrimSpace(s))
 		return n
 	},
+	"sanitize": sanitize,
 }
 
 // New compiles the configured rules.
@@ -276,6 +277,45 @@ func mergeNumberVars(vars map[string]string, get func(string) string) {
 			vars[spec.total] = strings.TrimSpace(total)
 		}
 	}
+}
+
+// Render executes a template against final fields and metadata.
+func (e *Engine) Render(format string, fields, vars map[string]string, meta Meta) (string, error) {
+	tmpl, err := template.New("render").Funcs(funcs).Option("missingkey=zero").Parse(format)
+	if err != nil {
+		return "", err
+	}
+	return execute(tmpl, e.templateData(fields, vars, meta))
+}
+
+func sanitize(value string) string {
+	value = strings.TrimSpace(value)
+	var b strings.Builder
+	for _, r := range value {
+		switch {
+		case r == '/' || r == '\\' || r == ':' || r == '*' || r == '?':
+			b.WriteByte('_')
+		case r == '"' || r == '<' || r == '>' || r == '|':
+			b.WriteByte('_')
+		case r < 0x20 || r == 0x7f:
+			b.WriteByte('_')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	out := strings.TrimRight(b.String(), " .")
+	if out == "" || out == "." || out == ".." {
+		out = "_"
+	}
+	base := out
+	if i := strings.IndexByte(base, '.'); i >= 0 {
+		base = base[:i]
+	}
+	switch strings.ToUpper(base) {
+	case "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9":
+		out = "_" + out
+	}
+	return out
 }
 
 func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[string]string {

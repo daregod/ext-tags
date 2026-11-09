@@ -94,7 +94,7 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
 	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
 
-	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.albumCmd(), a.selfUpdateCmd(), a.configCmd(), a.versionCmd())
+	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.albumCmd(), a.selfUpdateCmd(), a.renderCmd(), a.configCmd(), a.versionCmd())
 	return root
 }
 
