@@ -125,8 +125,23 @@ func (c *Config) trackKeys(doc *metadata.Document, audioPath string) []string {
 		keys = append(keys, trimNumber(track))
 	}
 	base := filepath.Base(audioPath)
-	keys = append(keys, base, strings.TrimSuffix(base, filepath.Ext(base)))
+	stem := strings.TrimSuffix(base, filepath.Ext(base))
+	keys = append(keys, base, stem)
+	if number := leadingNumber(stem); number != "" {
+		keys = append(keys, number, trimNumber(number))
+	}
 	return keys
+}
+
+func leadingNumber(value string) string {
+	i := 0
+	for i < len(value) && value[i] >= '0' && value[i] <= '9' {
+		i++
+	}
+	if i == 0 {
+		return ""
+	}
+	return value[:i]
 }
 
 func updateTrackVars(doc *metadata.Document) {

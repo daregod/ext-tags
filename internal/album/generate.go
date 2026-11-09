@@ -146,13 +146,33 @@ func generatedTrackKey(input Input) string {
 		if i := strings.IndexByte(value, '/'); i >= 0 {
 			value = value[:i]
 		}
-		if n, err := strconv.Atoi(value); err == nil {
-			return strconv.Itoa(n)
+		if _, err := strconv.Atoi(value); err == nil {
+			return value
 		}
 	}
 	base := filepath.Base(input.AudioPath)
-	return strings.TrimSuffix(base, filepath.Ext(base))
+	stem := strings.TrimSuffix(base, filepath.Ext(base))
+	if number := leadingNumber(stem); number != "" {
+		return number
+	}
+	return stem
 }
+func formatTrackValue(number string, total int) string {
+	number = strings.TrimSpace(number)
+	if number == "" {
+		return ""
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil {
+		return fmt.Sprintf("%s/%d", number, total)
+	}
+	width := 1
+	if total >= 10 {
+		width = len(strconv.Itoa(total))
+	}
+	return fmt.Sprintf("%0*d/%d", width, n, total)
+}
+
 func ensureTrack(fields map[string]string, total, index int) {
 	if fields == nil {
 		return
@@ -168,8 +188,8 @@ func ensureTrack(fields map[string]string, total, index int) {
 		if number == "" {
 			number = strconv.Itoa(index)
 		}
-		fields[key] = fmt.Sprintf("%s/%d", number, total)
+		fields[key] = formatTrackValue(number, total)
 		return
 	}
-	fields["Track"] = fmt.Sprintf("%d/%d", index, total)
+	fields["Track"] = formatTrackValue(strconv.Itoa(index), total)
 }

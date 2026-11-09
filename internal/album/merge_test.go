@@ -27,3 +27,12 @@ func TestMergePreservesExistingValues(t *testing.T) {
 		t.Fatalf("artwork = %#v", got.Artwork)
 	}
 }
+
+func TestMergeMatchesNumericTrackKeys(t *testing.T) {
+	existing := &Config{Tracks: map[string]map[string]string{"01": {"Title": "Old"}}}
+	generated := &Config{Tracks: map[string]map[string]string{"1": {"Title": "New", "Track": "01/12"}}}
+	got := Merge(existing, generated)
+	if len(got.Tracks) != 1 || got.Tracks["01"]["Title"] != "Old" || got.Tracks["01"]["Track"] != "01/12" {
+		t.Fatalf("tracks = %#v", got.Tracks)
+	}
+}

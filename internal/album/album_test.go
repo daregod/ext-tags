@@ -113,3 +113,26 @@ tracks:
 		t.Fatal("other fields must stay")
 	}
 }
+
+func TestApplyTrackKeyFromFilenameNumber(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &Config{Tracks: map[string]map[string]string{
+		"01": {"Track": "1/12", "Title": "First"},
+	}}
+	doc := metadata.New()
+	cfg.Apply(doc, filepath.Join(dir, "01. Artist - Track.flac"))
+	if doc.Fields["Track"] != "1/12" || doc.Fields["Title"] != "First" {
+		t.Fatalf("fields = %#v", doc.Fields)
+	}
+}
+
+func TestEnsureTrackPadding(t *testing.T) {
+	fields := map[string]string{}
+	ensureTrack(fields, 12, 1)
+	if fields["Track"] != "01/12" {
+		t.Fatalf("Track = %q, want 01/12", fields["Track"])
+	}
+	if got := generatedTrackKey(Input{AudioPath: "/music/07. Artist - Track.flac", Fields: map[string]string{}}); got != "07" {
+		t.Fatalf("key = %q, want 07", got)
+	}
+}
