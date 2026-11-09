@@ -337,3 +337,19 @@ func TestCoverBudgetDefaultsAndValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAlbumInitConfigValidation(t *testing.T) {
+	cfg := Default()
+	cfg.AlbumInit = &AlbumInitConfig{AlbumOrder: []string{"Album", "album"}}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("duplicate album_order must fail")
+	}
+	cfg.AlbumInit = &AlbumInitConfig{TrackOrder: []string{""}}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("empty track_order must fail")
+	}
+	cfg.AlbumInit = &AlbumInitConfig{Ignore: []string{"encodedby"}, AlbumOrder: []string{"Album"}, TrackOrder: []string{"Track"}}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -4,7 +4,11 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.15.0] — 2026-11-09
+
+### Добавлено
+
+- Секция `album_init`: `ignore`, `album_order`, `track_order` для генерации `album.yaml`; числовая сортировка ключей треков.
 
 ### Изменено
 

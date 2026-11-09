@@ -27,11 +27,19 @@ const EnvConfig = "EXT_TAGS_CONFIG"
 
 // Config is the effective configuration of a single run.
 type Config struct {
-	Version int           `yaml:"version"`
-	Files   FilesConfig   `yaml:"files"`
-	TagFile TagFileConfig `yaml:"tagfile"`
-	Cover   CoverConfig   `yaml:"cover"`
-	Fields  FieldsConfig  `yaml:"fields"`
+	Version   int              `yaml:"version"`
+	Files     FilesConfig      `yaml:"files"`
+	TagFile   TagFileConfig    `yaml:"tagfile"`
+	Cover     CoverConfig      `yaml:"cover"`
+	Fields    FieldsConfig     `yaml:"fields"`
+	AlbumInit *AlbumInitConfig `yaml:"album_init,omitempty"`
+}
+
+// AlbumInitConfig controls the generated album.yaml skeleton.
+type AlbumInitConfig struct {
+	Ignore     []string `yaml:"ignore,omitempty"`
+	AlbumOrder []string `yaml:"album_order,omitempty"`
+	TrackOrder []string `yaml:"track_order,omitempty"`
 }
 
 // FilesConfig controls input discovery and overwrite behaviour.
@@ -219,6 +227,7 @@ func Default() *Config {
 			MaxBytes:     0,
 			HardMaxBytes: 8 << 20,
 		},
+		AlbumInit: &AlbumInitConfig{},
 		Fields: FieldsConfig{
 			Aliases: aliases,
 			Ignore:  append([]string(nil), defaultIgnore...),
@@ -476,6 +485,26 @@ func (c *Config) Validate() error {
 	default:
 		return fmt.Errorf("cover.prefer: unknown value %q (want embedded, sidecar or existing)", c.Cover.Prefer)
 	}
+	if c.AlbumInit != nil {
+		for listName, values := range map[string][]string{
+			"album_init.ignore":      c.AlbumInit.Ignore,
+			"album_init.album_order": c.AlbumInit.AlbumOrder,
+			"album_init.track_order": c.AlbumInit.TrackOrder,
+		} {
+			seen := map[string]bool{}
+			for _, value := range values {
+				name := strings.TrimSpace(value)
+				if name == "" {
+					return fmt.Errorf("%s contains an empty name", listName)
+				}
+				lower := strings.ToLower(name)
+				if seen[lower] {
+					return fmt.Errorf("%s contains duplicate %q", listName, name)
+				}
+				seen[lower] = true
+			}
+		}
+	}
 	if c.Cover.MaxBytes < 0 {
 		return fmt.Errorf("cover.max_bytes must be >= 0")
 	}
@@ -596,6 +625,11 @@ cover:
   disc: [disc, media]
   icon: [icon]
 
+# album_init:
+#   ignore: [encodedby, filetype, label_url, release_id, release_url, track_id]
+#   album_order: [Album artist, Album, Genre, Year, Releasetime, Publisher, Catalognumber, Www]
+#   track_order: [Track, Artist, Title, Isrc, Track_url]
+#
 # fields:
 #   aliases:                    # container key -> foobar2000 field
 #     ORGANIZATION: Publisher

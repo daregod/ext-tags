@@ -27,8 +27,19 @@ var generatedIgnored = map[string]bool{
 }
 
 // Generate builds an album skeleton from already normalised track fields.
+// GenerateOptions controls the generated album.yaml skeleton.
+type GenerateOptions struct {
+	Ignore     []string
+	AlbumOrder []string
+	TrackOrder []string
+}
+
 func Generate(inputs []Input, artwork map[string]string) *Config {
-	cfg := &Config{}
+	return GenerateWithOptions(inputs, artwork, GenerateOptions{})
+}
+
+func GenerateWithOptions(inputs []Input, artwork map[string]string, opts GenerateOptions) *Config {
+	cfg := &Config{albumOrder: opts.AlbumOrder, trackOrder: opts.TrackOrder}
 	if len(inputs) == 0 {
 		return cfg
 	}
@@ -36,9 +47,16 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 		ensureTrack(inputs[i].Fields, len(inputs), i+1)
 	}
 
+	ignored := make(map[string]bool, len(generatedIgnored)+len(opts.Ignore))
+	for key, value := range generatedIgnored {
+		ignored[key] = value
+	}
+	for _, key := range opts.Ignore {
+		ignored[strings.ToLower(strings.TrimSpace(key))] = true
+	}
 	common := make(map[string]string)
 	for key, value := range inputs[0].Fields {
-		if generatedIgnored[strings.ToLower(key)] || value == "" {
+		if ignored[strings.ToLower(key)] || value == "" {
 			continue
 		}
 		same := true
@@ -66,7 +84,7 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 
 		fields := make(map[string]string)
 		for field, value := range input.Fields {
-			if generatedIgnored[strings.ToLower(field)] || value == "" {
+			if ignored[strings.ToLower(field)] || value == "" {
 				continue
 			}
 			if _, ok := common[field]; ok {
@@ -91,26 +109,26 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 func (c *Config) Marshal() ([]byte, error) {
 	root := &yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
 	body := root.Content[0]
-	appendMap := func(name string, values map[string]string) {
+	appendMap := func(name string, values map[string]string, order []string) {
 		if len(values) == 0 {
 			return
 		}
-		body.Content = append(body.Content, scalarNode(name), mappingNode(values))
+		body.Content = append(body.Content, scalarNode(name), mappingNode(values, order))
 	}
-	appendMap("album", c.Album)
+	appendMap("album", c.Album, c.albumOrder)
 	if len(c.Tracks) > 0 {
 		tracks := &yaml.Node{Kind: yaml.MappingNode}
-		for _, key := range sortedKeys(c.Tracks) {
+		for _, key := range sortedTrackKeys(c.Tracks) {
 			if len(c.Tracks[key]) == 0 {
 				continue
 			}
-			tracks.Content = append(tracks.Content, scalarNode(key), mappingNode(c.Tracks[key]))
+			tracks.Content = append(tracks.Content, scalarNode(key), mappingNode(c.Tracks[key], c.trackOrder))
 		}
 		if len(tracks.Content) > 0 {
 			body.Content = append(body.Content, scalarNode("tracks"), tracks)
 		}
 	}
-	appendMap("artwork", c.Artwork)
+	appendMap("artwork", c.Artwork, nil)
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
@@ -123,12 +141,63 @@ func (c *Config) Marshal() ([]byte, error) {
 	return yamlutil.TrimBOM(buf.Bytes()), nil
 }
 
-func mappingNode(values map[string]string) *yaml.Node {
+func mappingNode(values map[string]string, order []string) *yaml.Node {
 	node := &yaml.Node{Kind: yaml.MappingNode}
-	for _, key := range sortedKeys(values) {
+	for _, key := range sortedFieldKeys(values, order) {
 		node.Content = append(node.Content, scalarNode(key), scalarNode(values[key]))
 	}
 	return node
+}
+
+func sortedFieldKeys(values map[string]string, order []string) []string {
+	priority := make(map[string]int, len(order))
+	for i, name := range order {
+		priority[strings.ToLower(strings.TrimSpace(name))] = i
+	}
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		pi, iok := priority[strings.ToLower(keys[i])]
+		pj, jok := priority[strings.ToLower(keys[j])]
+		switch {
+		case iok && jok:
+			if pi != pj {
+				return pi < pj
+			}
+		case iok:
+			return true
+		case jok:
+			return false
+		}
+		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
+	})
+	return keys
+}
+
+func sortedTrackKeys(values map[string]map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		ni, iok := numericKey(keys[i])
+		nj, jok := numericKey(keys[j])
+		if iok && jok && ni != nj {
+			return ni < nj
+		}
+		if iok != jok {
+			return iok
+		}
+		return keys[i] < keys[j]
+	})
+	return keys
+}
+
+func numericKey(value string) (int, bool) {
+	n, err := strconv.Atoi(strings.TrimSpace(value))
+	return n, err == nil
 }
 
 func scalarNode(value string) *yaml.Node {
@@ -146,15 +215,6 @@ func scalarNode(value string) *yaml.Node {
 		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.LiteralStyle, Value: value}
 	}
 	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
-}
-
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // Save writes album.yaml atomically. It refuses to overwrite unless force.

@@ -12,11 +12,13 @@ func Merge(existing, generated *Config) *Config {
 		return existing
 	}
 	out := &Config{
-		Album:   cloneFields(existing.Album),
-		Tracks:  cloneTracks(existing.Tracks),
-		Artwork: cloneFields(existing.Artwork),
-		dir:     existing.dir,
-		path:    existing.path,
+		Album:      cloneFields(existing.Album),
+		Tracks:     cloneTracks(existing.Tracks),
+		Artwork:    cloneFields(existing.Artwork),
+		dir:        existing.dir,
+		path:       existing.path,
+		albumOrder: generated.albumOrder,
+		trackOrder: generated.trackOrder,
 	}
 	if out.Album == nil {
 		out.Album = map[string]string{}

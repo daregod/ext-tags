@@ -94,3 +94,37 @@ func TestMarshalUsesBlockScalarsForMultiline(t *testing.T) {
 		t.Fatalf("Www block =\n%s", text)
 	}
 }
+
+func TestGenerateOptionsIgnoreAndOrder(t *testing.T) {
+	inputs := []Input{
+		{AudioPath: "/music/1.flac", Fields: map[string]string{"Album": "A", "Artist": "AA", "Www": "https://a\nhttps://b", "encodedby": "x", "Rating": "3", "Title": "One", "Track": "1/10"}},
+		{AudioPath: "/music/2.flac", Fields: map[string]string{"Album": "A", "Artist": "AA", "Www": "https://a\nhttps://b", "encodedby": "x", "Rating": "3", "Title": "Two", "Track": "2/10"}},
+		{AudioPath: "/music/10.flac", Fields: map[string]string{"Album": "A", "Artist": "AA", "Www": "https://a\nhttps://b", "encodedby": "x", "Rating": "3", "Title": "Ten", "Track": "10/10"}},
+	}
+	cfg := GenerateWithOptions(inputs, nil, GenerateOptions{
+		Ignore:     []string{"encodedby", "rating"},
+		AlbumOrder: []string{"Album", "Artist", "Www"},
+		TrackOrder: []string{"Track", "Title"},
+	})
+	data, err := cfg.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if strings.Contains(text, "encodedby") || strings.Contains(text, "Rating") {
+		t.Fatalf("ignored fields present:\n%s", text)
+	}
+	ai := strings.Index(text, "Album: A")
+	if ai < 0 || strings.Index(text, "Artist: AA") < ai {
+		t.Fatalf("album order not applied:\n%s", text)
+	}
+	one := strings.Index(text, `"1":`)
+	two := strings.Index(text, `"2":`)
+	ten := strings.Index(text, `"10":`)
+	if one >= two || two >= ten {
+		t.Fatalf("track keys not numeric sorted: %d %d %d\n%s", one, two, ten, text)
+	}
+	if strings.Index(text, "Track: 01/10") > strings.Index(text, "Title: One") {
+		t.Fatalf("track field order not applied:\n%s", text)
+	}
+}

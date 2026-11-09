@@ -91,7 +91,13 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 			inputs = append(inputs, album.Input{AudioPath: file, Fields: fields})
 		}
 		art := albumArtwork(dir, cfg)
-		generated := album.Generate(inputs, art)
+		genOpts := album.GenerateOptions{}
+		if cfg.AlbumInit != nil {
+			genOpts.Ignore = cfg.AlbumInit.Ignore
+			genOpts.AlbumOrder = cfg.AlbumInit.AlbumOrder
+			genOpts.TrackOrder = cfg.AlbumInit.TrackOrder
+		}
+		generated := album.GenerateWithOptions(inputs, art, genOpts)
 		if opts.mergeAlbum {
 			existing, err := album.Load(dir)
 			if err != nil {

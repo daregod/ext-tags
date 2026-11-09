@@ -611,6 +611,43 @@ ext-tags album init --force /path/to/album
 `album.yaml`, сохраняя уже заданные значения; `--merge-album` и `--force`
 несовместимы.
 
+Порядок и отбор полей для генерации задаётся в `album_init`:
+
+```yaml
+album_init:
+  ignore:
+    - encodedby
+    - filetype
+    - label_url
+    - release_id
+    - release_url
+    - track_id
+    - Rating
+  album_order:
+    - Album artist
+    - Album
+    - Genre
+    - Year
+    - Releasetime
+    - Publisher
+    - Catalognumber
+    - Www
+  track_order:
+    - Track
+    - Artist
+    - Title
+    - Isrc
+    - Track_url
+```
+
+- `ignore` — case-insensitive; дополняет встроенный список
+  (`encoder`, `language`, `vendor`).
+- `album_order`/`track_order` — сначала перечисленные поля, затем остальные
+  по алфавиту.
+- имена в списках можно писать в любом регистре; вывод остаётся
+  каноническим (`Album artist`, `Releasetime`, `Www`).
+- ключи треков сортируются числово: `1`, `2`, `10`.
+
 Она читает теги всех треков в папке, подмешивает поля из существующих
 `.tag` (как `extract` при `files.merge_existing`), выносит общие поля в
 `album:`, различия — в `tracks:`, а найденные sidecar-обложки — в

@@ -23,8 +23,10 @@ type Config struct {
 	Tracks  map[string]map[string]string `yaml:"tracks,omitempty"`
 	Artwork map[string]string            `yaml:"artwork,omitempty"`
 
-	dir  string
-	path string
+	dir        string
+	path       string
+	albumOrder []string
+	trackOrder []string
 }
 
 // Path returns the album.yaml path, if one was loaded.
