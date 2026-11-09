@@ -77,7 +77,7 @@ album:
 | `Title` | `TIT2`, `TITLE`, `©nam` | |
 | `Track` | `TRACK` | обычно генерируется правилом `Track` |
 | `Upc` | `UPC` | |
-| `Www` | `WWW` | строки нормализуются в `\r\n` |
+| `Www` | `WWW` | многострочные значения нормализуются в `\r\n` |
 | `Year` | `TDRC`, `TYER`, `DATE`, `YEAR`, `DATE_RELEASED`, `©day` | |
 
 ## Обложки

@@ -89,8 +89,8 @@ func build(merged map[string]string, covers map[string]*metadata.Cover, existing
 	sort.Strings(keys)
 	for _, key := range keys {
 		value := merged[key]
-		if strings.EqualFold(key, "Www") {
-			value = normalizeWww(value)
+		if strings.EqualFold(key, "Www") || strings.ContainsAny(value, "\r\n") {
+			value = normalizeMultiline(value)
 		}
 		tag.AddText(key, value)
 	}
@@ -259,7 +259,10 @@ func write(audioPath, target string, fields map[string]string, covers map[string
 	return res, nil
 }
 
-func normalizeWww(value string) string {
+func normalizeMultiline(value string) string {
 	lines := strings.FieldsFunc(value, func(r rune) bool { return r == '\r' || r == '\n' })
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " \t")
+	}
 	return strings.Join(lines, "\r\n")
 }

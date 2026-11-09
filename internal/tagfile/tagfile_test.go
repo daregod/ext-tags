@@ -329,3 +329,19 @@ func TestCoverFilters(t *testing.T) {
 		t.Fatal("excluded back cover survived")
 	}
 }
+
+func TestMultilineFieldsUseCRLFAndTrimTrailingSpaces(t *testing.T) {
+	audio := newAudio(t, t.TempDir())
+	fields := map[string]string{"track_url": "https://a   \nhttps://b\t\nhttps://c"}
+	if _, err := Write(audio, fields, nil, newConfig(config.OnExistingOverwrite), false); err != nil {
+		t.Fatal(err)
+	}
+	tag := readTag(t, audio+".tag")
+	item, ok := tag.Get("track_url")
+	if !ok {
+		t.Fatal("track_url missing")
+	}
+	if got := string(item.Value); got != "https://a\r\nhttps://b\r\nhttps://c" {
+		t.Fatalf("track_url = %q", got)
+	}
+}
