@@ -195,16 +195,17 @@ ext-tags --json extract track.flac
 
 ## Команды
 
-| Команда | Назначение |
-|---|---|
-| `ext-tags extract <пути...>` | создать `.tag` (по умолчанию) |
+| Команда | Назначение                                                     |
+|---|----------------------------------------------------------------|
+| `ext-tags extract <пути...>` | создать `.tag` (по умолчанию)                                  |
 | `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2, Matroska |
-| `ext-tags album init <папка>` | создать `album.yaml` из тегов треков |
-| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом |
-| `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run) |
-| `ext-tags render <пути...>` | вывести поля по шаблону, ничего не записывая |
-| `ext-tags self-update` | обновить standalone-бинарник из GitHub Release |
-| `ext-tags version` | версия и дата сборки |
+| `ext-tags album init <папка>` | создать `album.yaml` из тегов треков                           |
+| `ext-tags artwork list/extract` | посмотреть список обложек или вытащить конкретную              |
+| `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом                                              |
+| `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run)       |
+| `ext-tags render <пути...>` | вывести поля по шаблону, ничего не записывая                   |
+| `ext-tags self-update` | обновить standalone-бинарник из GitHub Release                 |
+| `ext-tags version` | версия и дата сборки                                           |
 
 Глобальные флаги:
 
@@ -275,6 +276,21 @@ ext-tags fixext -r ~/Music --apply
 
 По умолчанию ничего не меняется. Если целевое имя уже существует, файл
 пропускается.
+
+### artwork
+
+`artwork` работает с уже выбранной обложкой, но не меняет `.tag`:
+
+```bash
+ext-tags artwork list album/*.flac
+ext-tags artwork list --json track.flac
+ext-tags artwork extract --slot front --output cover.jpg track.flac
+ext-tags artwork extract --slot back --output back.png track.flac --force
+```
+
+`list` печатает выбранные слоты с учётом `cover.prefer`,
+`cover.max_bytes`/`hard_max_bytes`, `album.yaml` и существующего `.tag`.
+`extract` пишет байты одного слота в файл; по умолчанию слот `front`.
 
 ### render
 

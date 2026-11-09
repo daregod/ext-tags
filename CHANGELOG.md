@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.14.0] — 2026-11-09
+
+### Добавлено
+
+- Команда `ext-tags artwork list` и `ext-tags artwork extract` для просмотра и сохранения выбранной обложки.
+
 ## [0.13.0] — 2026-11-09
 
 ### Добавлено
