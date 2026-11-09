@@ -40,6 +40,10 @@ type AlbumInitConfig struct {
 	Ignore     []string `yaml:"ignore,omitempty"`
 	AlbumOrder []string `yaml:"album_order,omitempty"`
 	TrackOrder []string `yaml:"track_order,omitempty"`
+	// Multiline is "block" (default) or "quoted".
+	Multiline string `yaml:"multiline,omitempty"`
+	// Quote is "minimal" (default) or "all".
+	Quote string `yaml:"quote,omitempty"`
 }
 
 // FilesConfig controls input discovery and overwrite behaviour.
@@ -486,6 +490,16 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("cover.prefer: unknown value %q (want embedded, sidecar or existing)", c.Cover.Prefer)
 	}
 	if c.AlbumInit != nil {
+		switch c.AlbumInit.Multiline {
+		case "", "block", "quoted":
+		default:
+			return fmt.Errorf("album_init.multiline: unknown value %q (want block or quoted)", c.AlbumInit.Multiline)
+		}
+		switch c.AlbumInit.Quote {
+		case "", "minimal", "all":
+		default:
+			return fmt.Errorf("album_init.quote: unknown value %q (want minimal or all)", c.AlbumInit.Quote)
+		}
 		for listName, values := range map[string][]string{
 			"album_init.ignore":      c.AlbumInit.Ignore,
 			"album_init.album_order": c.AlbumInit.AlbumOrder,
@@ -629,6 +643,8 @@ cover:
 #   ignore: [encodedby, filetype, label_url, release_id, release_url, track_id]
 #   album_order: [Album artist, Album, Genre, Year, Releasetime, Publisher, Catalognumber, Www]
 #   track_order: [Track, Artist, Title, Isrc, Track_url]
+#   multiline: block          # block | quoted
+#   quote: minimal            # minimal | all
 #
 # fields:
 #   aliases:                    # container key -> foobar2000 field

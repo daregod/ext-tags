@@ -638,6 +638,8 @@ album_init:
     - Title
     - Isrc
     - Track_url
+  multiline: block   # block | quoted
+  quote: minimal     # minimal | all
 ```
 
 - `ignore` — case-insensitive; дополняет встроенный список
@@ -647,6 +649,12 @@ album_init:
 - имена в списках можно писать в любом регистре; вывод остаётся
   каноническим (`Album artist`, `Releasetime`, `Www`).
 - ключи треков сортируются числово: `1`, `2`, `10`.
+- `multiline: block` — читаемые YAML-блоки `|`; `multiline: quoted` — одна
+  строка с `\n`-escape, если редактор/подсветка не понимает block scalar.
+- `quote: all` — брать в двойные кавычки все ключи полей и строковые
+  значения. Помогает редакторам, которые путаются на пробелах в ключах или
+  апострофах в значениях. `multiline: block` при этом остаётся блоком; для
+  полного quoted-вывода используйте `multiline: quoted` + `quote: all`.
 
 Она читает теги всех треков в папке, подмешивает поля из существующих
 `.tag` (как `extract` при `files.merge_existing`), выносит общие поля в

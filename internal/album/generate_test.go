@@ -128,3 +128,34 @@ func TestGenerateOptionsIgnoreAndOrder(t *testing.T) {
 		t.Fatalf("track field order not applied:\n%s", text)
 	}
 }
+
+func TestGenerateQuotedMultiline(t *testing.T) {
+	cfg := GenerateWithOptions([]Input{{AudioPath: "/music/1.flac", Fields: map[string]string{
+		"Album": "A", "Www": "https://a\nhttps://b", "Track": "1/1",
+	}}}, nil, GenerateOptions{Multiline: "quoted"})
+	data, err := cfg.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if strings.Contains(text, "Www: |") || !strings.Contains(text, `Www: "https://a\nhttps://b"`) {
+		t.Fatalf("quoted multiline = \n%s", text)
+	}
+}
+
+func TestGenerateQuoteAll(t *testing.T) {
+	cfg := GenerateWithOptions([]Input{{AudioPath: "/music/1.flac", Fields: map[string]string{
+		"Album artist": "Pythius", "Title": "Wishin' On A Star (Remix)", "Track": "1/6",
+	}}}, nil, GenerateOptions{Quote: "all"})
+	data, err := cfg.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, `"Album artist": "Pythius"`) {
+		t.Fatalf("key/value not quoted:\n%s", text)
+	}
+	if !strings.Contains(text, `"Title": "Wishin' On A Star (Remix)"`) {
+		t.Fatalf("apostrophe value not quoted:\n%s", text)
+	}
+}

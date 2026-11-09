@@ -27,6 +27,8 @@ type Config struct {
 	path       string
 	albumOrder []string
 	trackOrder []string
+	multiline  string
+	quote      string
 }
 
 // Path returns the album.yaml path, if one was loaded.

@@ -352,4 +352,21 @@ func TestAlbumInitConfigValidation(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
+	cfg.AlbumInit.Multiline = "quoted"
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	cfg.AlbumInit.Multiline = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid multiline must fail")
+	}
+	cfg.AlbumInit.Multiline = ""
+	cfg.AlbumInit.Quote = "all"
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	cfg.AlbumInit.Quote = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid quote must fail")
+	}
 }

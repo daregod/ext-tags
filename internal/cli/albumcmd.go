@@ -96,6 +96,8 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 			genOpts.Ignore = cfg.AlbumInit.Ignore
 			genOpts.AlbumOrder = cfg.AlbumInit.AlbumOrder
 			genOpts.TrackOrder = cfg.AlbumInit.TrackOrder
+			genOpts.Multiline = cfg.AlbumInit.Multiline
+			genOpts.Quote = cfg.AlbumInit.Quote
 		}
 		generated := album.GenerateWithOptions(inputs, art, genOpts)
 		if opts.mergeAlbum {

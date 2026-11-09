@@ -32,6 +32,8 @@ type GenerateOptions struct {
 	Ignore     []string
 	AlbumOrder []string
 	TrackOrder []string
+	Multiline  string
+	Quote      string
 }
 
 func Generate(inputs []Input, artwork map[string]string) *Config {
@@ -39,7 +41,7 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 }
 
 func GenerateWithOptions(inputs []Input, artwork map[string]string, opts GenerateOptions) *Config {
-	cfg := &Config{albumOrder: opts.AlbumOrder, trackOrder: opts.TrackOrder}
+	cfg := &Config{albumOrder: opts.AlbumOrder, trackOrder: opts.TrackOrder, multiline: opts.Multiline, quote: opts.Quote}
 	if len(inputs) == 0 {
 		return cfg
 	}
@@ -113,7 +115,7 @@ func (c *Config) Marshal() ([]byte, error) {
 		if len(values) == 0 {
 			return
 		}
-		body.Content = append(body.Content, scalarNode(name), mappingNode(values, order))
+		body.Content = append(body.Content, scalarNode(name, "", ""), mappingNode(values, order, c.multiline, c.quote))
 	}
 	appendMap("album", c.Album, c.albumOrder)
 	if len(c.Tracks) > 0 {
@@ -122,10 +124,10 @@ func (c *Config) Marshal() ([]byte, error) {
 			if len(c.Tracks[key]) == 0 {
 				continue
 			}
-			tracks.Content = append(tracks.Content, scalarNode(key), mappingNode(c.Tracks[key], c.trackOrder))
+			tracks.Content = append(tracks.Content, scalarNode(key, "", c.quote), mappingNode(c.Tracks[key], c.trackOrder, c.multiline, c.quote))
 		}
 		if len(tracks.Content) > 0 {
-			body.Content = append(body.Content, scalarNode("tracks"), tracks)
+			body.Content = append(body.Content, scalarNode("tracks", "", ""), tracks)
 		}
 	}
 	appendMap("artwork", c.Artwork, nil)
@@ -141,10 +143,10 @@ func (c *Config) Marshal() ([]byte, error) {
 	return yamlutil.TrimBOM(buf.Bytes()), nil
 }
 
-func mappingNode(values map[string]string, order []string) *yaml.Node {
+func mappingNode(values map[string]string, order []string, multiline, quote string) *yaml.Node {
 	node := &yaml.Node{Kind: yaml.MappingNode}
 	for _, key := range sortedFieldKeys(values, order) {
-		node.Content = append(node.Content, scalarNode(key), scalarNode(values[key]))
+		node.Content = append(node.Content, scalarNode(key, "", quote), scalarNode(values[key], multiline, quote))
 	}
 	return node
 }
@@ -200,7 +202,7 @@ func numericKey(value string) (int, bool) {
 	return n, err == nil
 }
 
-func scalarNode(value string) *yaml.Node {
+func scalarNode(value, multiline, quote string) *yaml.Node {
 	if strings.ContainsAny(value, "\r\n") {
 		value = strings.ReplaceAll(value, "\r\n", "\n")
 		value = strings.ReplaceAll(value, "\r", "\n")
@@ -209,10 +211,16 @@ func scalarNode(value string) *yaml.Node {
 			lines[i] = strings.TrimRight(lines[i], " \t")
 		}
 		value = strings.Join(lines, "\n")
+		if multiline == "quoted" {
+			return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.DoubleQuotedStyle, Value: strings.TrimSuffix(value, "\n")}
+		}
 		if !strings.HasSuffix(value, "\n") {
 			value += "\n"
 		}
 		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.LiteralStyle, Value: value}
+	}
+	if quote == "all" {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.DoubleQuotedStyle, Value: value}
 	}
 	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
 }

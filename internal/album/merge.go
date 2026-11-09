@@ -19,6 +19,8 @@ func Merge(existing, generated *Config) *Config {
 		path:       existing.path,
 		albumOrder: generated.albumOrder,
 		trackOrder: generated.trackOrder,
+		multiline:  generated.multiline,
+		quote:      generated.quote,
 	}
 	if out.Album == nil {
 		out.Album = map[string]string{}
