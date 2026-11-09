@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -88,16 +89,72 @@ func Generate(inputs []Input, artwork map[string]string) *Config {
 
 // Marshal serialises the album skeleton as YAML without a BOM.
 func (c *Config) Marshal() ([]byte, error) {
+	root := &yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
+	body := root.Content[0]
+	appendMap := func(name string, values map[string]string) {
+		if len(values) == 0 {
+			return
+		}
+		body.Content = append(body.Content, scalarNode(name), mappingNode(values))
+	}
+	appendMap("album", c.Album)
+	if len(c.Tracks) > 0 {
+		tracks := &yaml.Node{Kind: yaml.MappingNode}
+		for _, key := range sortedKeys(c.Tracks) {
+			if len(c.Tracks[key]) == 0 {
+				continue
+			}
+			tracks.Content = append(tracks.Content, scalarNode(key), mappingNode(c.Tracks[key]))
+		}
+		if len(tracks.Content) > 0 {
+			body.Content = append(body.Content, scalarNode("tracks"), tracks)
+		}
+	}
+	appendMap("artwork", c.Artwork)
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
-	if err := enc.Encode(c); err != nil {
+	if err := enc.Encode(root); err != nil {
 		return nil, err
 	}
 	if err := enc.Close(); err != nil {
 		return nil, err
 	}
 	return yamlutil.TrimBOM(buf.Bytes()), nil
+}
+
+func mappingNode(values map[string]string) *yaml.Node {
+	node := &yaml.Node{Kind: yaml.MappingNode}
+	for _, key := range sortedKeys(values) {
+		node.Content = append(node.Content, scalarNode(key), scalarNode(values[key]))
+	}
+	return node
+}
+
+func scalarNode(value string) *yaml.Node {
+	if strings.ContainsAny(value, "\r\n") {
+		value = strings.ReplaceAll(value, "\r\n", "\n")
+		value = strings.ReplaceAll(value, "\r", "\n")
+		lines := strings.Split(value, "\n")
+		for i := range lines {
+			lines[i] = strings.TrimRight(lines[i], " \t")
+		}
+		value = strings.Join(lines, "\n")
+		if !strings.HasSuffix(value, "\n") {
+			value += "\n"
+		}
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.LiteralStyle, Value: value}
+	}
+	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // Save writes album.yaml atomically. It refuses to overwrite unless force.

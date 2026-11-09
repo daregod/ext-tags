@@ -73,3 +73,24 @@ func TestGenerateFillsTotals(t *testing.T) {
 		t.Fatalf("single = %v", cfg.Album)
 	}
 }
+
+func TestMarshalUsesBlockScalarsForMultiline(t *testing.T) {
+	cfg := &Config{
+		Album:  map[string]string{"Www": "https://a\r\nhttps://b  \r\n"},
+		Tracks: map[string]map[string]string{"01": {"track_url": "https://c\nhttps://d"}},
+	}
+	data, err := cfg.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "Www: |") || !strings.Contains(text, "track_url: |") {
+		t.Fatalf("block scalar missing:\n%s", text)
+	}
+	if strings.Contains(text, "\\r\\n") || strings.Contains(text, "https://b  ") {
+		t.Fatalf("multiline value was not normalized:\n%s", text)
+	}
+	if !strings.Contains(text, "    https://a\n    https://b\n") {
+		t.Fatalf("Www block =\n%s", text)
+	}
+}
