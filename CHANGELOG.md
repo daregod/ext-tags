@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Исправлено
+
+- `artwork`/`render` используют `Document.Cover` как fallback для слота `front`, если читатель не заполнил `Artwork`.
+
 ## [0.16.2] — 2026-11-10
 
 ### Исправлено

@@ -46,6 +46,16 @@ func (a *app) sidecarArtwork(path string, cfg *config.Config) map[string]*metada
 	return out
 }
 
+func documentArtwork(doc *metadata.Document) map[string]*metadata.Cover {
+	out := copyCovers(doc.Artwork)
+	if doc.Cover != nil {
+		if _, ok := out[metadata.Front]; !ok {
+			out[metadata.Front] = doc.Cover
+		}
+	}
+	return out
+}
+
 func copyCovers(in map[string]*metadata.Cover) map[string]*metadata.Cover {
 	out := make(map[string]*metadata.Cover, len(in))
 	for kind, c := range in {

@@ -172,7 +172,7 @@ func (a *app) loadArtwork(path string, cfg *config.Config) (map[string]*metadata
 			return nil, err
 		}
 	}
-	return selectArtwork(copyCovers(doc.Artwork), a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg), nil
+	return selectArtwork(documentArtwork(doc), a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg), nil
 }
 
 func validArtworkSlot(slot string) bool {

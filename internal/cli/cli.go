@@ -335,7 +335,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	if albumCfg != nil {
 		albumOverrides = albumCfg.Apply(md, path)
 	}
-	embedded := copyCovers(md.Artwork)
+	embedded := documentArtwork(md)
 	var existing *ape.ParsedTag
 	if cfg.Files.MergeExisting {
 		existing, err = tagfile.ReadExisting(path, cfg.TagFile.Suffix)

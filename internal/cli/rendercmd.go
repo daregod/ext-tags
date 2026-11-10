@@ -122,7 +122,7 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 			return
 		}
 		extra := artworkTemplateData(artwork)
-		for key, value := range artworkTemplateDataFor("container", doc.Artwork) {
+		for key, value := range artworkTemplateDataFor("container", documentArtwork(doc)) {
 			extra[key] = value
 		}
 		for key, value := range artworkTemplateDataFor("tag", tagfile.ExistingArtwork(existing)) {

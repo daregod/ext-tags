@@ -55,3 +55,12 @@ func TestApplyCoverBudgetImport(t *testing.T) {
 		t.Fatal("oversized cover survived import budget")
 	}
 }
+
+func TestDocumentArtworkUsesCoverFallback(t *testing.T) {
+	doc := metadata.New()
+	doc.Cover = &metadata.Cover{Filename: "cover.jpg", Data: []byte{1}}
+	got := documentArtwork(doc)
+	if got[metadata.Front] != doc.Cover {
+		t.Fatal("front fallback missing")
+	}
+}
