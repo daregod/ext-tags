@@ -64,13 +64,25 @@ func copyCovers(in map[string]*metadata.Cover) map[string]*metadata.Cover {
 	return out
 }
 
+type artworkSkip struct {
+	Slot  string
+	Cover *metadata.Cover
+	Hard  int64
+}
+
 // selectArtwork applies cover.prefer and the cover byte budgets. Album artwork
 // is an explicit override and stays first in the candidate list.
 func selectArtwork(embedded, sidecar, album, existing map[string]*metadata.Cover, cfg *config.Config) map[string]*metadata.Cover {
+	out, _ := selectArtworkWithOptions(embedded, sidecar, album, existing, cfg, false)
+	return out
+}
+
+func selectArtworkWithOptions(embedded, sidecar, album, existing map[string]*metadata.Cover, cfg *config.Config, ignoreHard bool) (map[string]*metadata.Cover, []artworkSkip) {
 	if !cfg.Cover.Enabled {
-		return map[string]*metadata.Cover{}
+		return map[string]*metadata.Cover{}, nil
 	}
 	out := make(map[string]*metadata.Cover)
+	var skipped []artworkSkip
 	for _, kind := range artworkKinds {
 		var candidates []coverpkg.Candidate
 		if c := album[kind]; c != nil {
@@ -85,11 +97,24 @@ func selectArtwork(embedded, sidecar, album, existing map[string]*metadata.Cover
 		if c := existing[kind]; c != nil {
 			candidates = append(candidates, coverpkg.Candidate{Source: "existing", Cover: c})
 		}
-		if c, ok := coverpkg.Select(candidates, cfg.Cover.Prefer, cfg.Cover.MaxBytes, cfg.Cover.HardMaxBytes); ok {
+		hard := cfg.Cover.HardMaxBytes
+		if ignoreHard {
+			hard = 0
+		}
+		if c, ok := coverpkg.Select(candidates, cfg.Cover.Prefer, cfg.Cover.MaxBytes, hard); ok {
 			out[kind] = c.Cover
+			continue
+		}
+		if !ignoreHard && hard > 0 {
+			for _, c := range candidates {
+				if c.Cover != nil && int64(len(c.Cover.Data)) > hard {
+					skipped = append(skipped, artworkSkip{Slot: kind, Cover: c.Cover, Hard: hard})
+					break
+				}
+			}
 		}
 	}
-	return out
+	return out, skipped
 }
 
 func artworkTemplateData(covers map[string]*metadata.Cover) map[string]string {

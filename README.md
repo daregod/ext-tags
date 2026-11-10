@@ -286,13 +286,19 @@ ext-tags fixext -r ~/Music --apply
 ```bash
 ext-tags artwork list album/*.flac
 ext-tags artwork list --json track.flac
+ext-tags artwork list --all track.flac
 ext-tags artwork extract --slot front --output cover.jpg track.flac
 ext-tags artwork extract --slot back --output back.png track.flac --force
+ext-tags artwork extract --ignore-limit --output cover.jpg track.flac
 ```
 
 `list` печатает выбранные слоты с учётом `cover.prefer`,
 `cover.max_bytes`/`hard_max_bytes`, `album.yaml` и существующего `.tag`.
 `extract` пишет байты одного слота в файл; по умолчанию слот `front`.
+
+Если кандидат больше `cover.hard_max_bytes`, `list` предупреждает и
+показывает пустой слот. Флаг `--all` показывает такой слот, `--ignore-limit`
+разрешает его извлечь.
 
 ### render
 

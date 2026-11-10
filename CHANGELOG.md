@@ -4,6 +4,13 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.16.4] — 2026-11-10
+
+### Добавлено
+
+- `artwork list --all` и `artwork extract --ignore-limit` для обложек больше `cover.hard_max_bytes`.
+- Предупреждение `artwork list` о кандидате, отброшенном по `hard_max_bytes`.
+
 ## [0.16.3] — 2026-11-10
 
 ### Исправлено

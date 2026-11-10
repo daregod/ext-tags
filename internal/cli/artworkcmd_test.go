@@ -15,7 +15,7 @@ func TestArtworkListAndExtract(t *testing.T) {
 	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
 	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
 	out := captureStdout(t, func() {
-		if err := a.runArtworkList([]string{audio}); err != nil {
+		if err := a.runArtworkList([]string{audio}, false); err != nil {
 			t.Fatal(err)
 		}
 	})

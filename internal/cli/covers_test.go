@@ -64,3 +64,17 @@ func TestDocumentArtworkUsesCoverFallback(t *testing.T) {
 		t.Fatal("front fallback missing")
 	}
 }
+
+func TestArtworkHardLimitWarning(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.HardMaxBytes = 1
+	embedded := map[string]*metadata.Cover{"front": {Filename: "cover.jpg", Data: []byte{1, 2}}}
+	covers, skips := selectArtworkWithOptions(embedded, nil, nil, nil, cfg, false)
+	if len(covers) != 0 || len(skips) != 1 || skips[0].Slot != "front" {
+		t.Fatalf("covers=%v skips=%v", covers, skips)
+	}
+	covers, skips = selectArtworkWithOptions(embedded, nil, nil, nil, cfg, true)
+	if covers["front"] == nil || len(skips) != 0 {
+		t.Fatalf("ignore limit: covers=%v skips=%v", covers, skips)
+	}
+}

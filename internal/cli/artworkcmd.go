@@ -20,9 +20,10 @@ import (
 )
 
 type artworkExtractOptions struct {
-	slot   string
-	output string
-	force  bool
+	slot        string
+	output      string
+	force       bool
+	ignoreLimit bool
 }
 
 type artworkResult struct {
@@ -39,14 +40,16 @@ func (a *app) artworkCmd() *cobra.Command {
 		Use:   "artwork",
 		Short: "Inspect and extract artwork",
 	}
+	listAll := false
 	listCmd := &cobra.Command{
 		Use:   "list <path...>",
 		Short: "List selected artwork slots",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return a.runArtworkList(args)
+			return a.runArtworkList(args, listAll)
 		},
 	}
+	listCmd.Flags().BoolVar(&listAll, "all", false, "include artwork above cover.hard_max_bytes")
 	opts := &artworkExtractOptions{}
 	extractCmd := &cobra.Command{
 		Use:   "extract <audio file>",
@@ -59,11 +62,12 @@ func (a *app) artworkCmd() *cobra.Command {
 	extractCmd.Flags().StringVar(&opts.slot, "slot", "front", "front|back|artist|disc|icon")
 	extractCmd.Flags().StringVar(&opts.output, "output", "", "output image path")
 	extractCmd.Flags().BoolVar(&opts.force, "force", false, "overwrite an existing output file")
+	extractCmd.Flags().BoolVar(&opts.ignoreLimit, "ignore-limit", false, "extract artwork above cover.hard_max_bytes")
 	cmd.AddCommand(listCmd, extractCmd)
 	return cmd
 }
 
-func (a *app) runArtworkList(paths []string) error {
+func (a *app) runArtworkList(paths []string, all bool) error {
 	cfg, _, err := a.effectiveConfig()
 	if err != nil {
 		return err
@@ -82,10 +86,13 @@ func (a *app) runArtworkList(paths []string) error {
 		if a.isOwnOutput(file, cfg) {
 			continue
 		}
-		covers, err := a.loadArtwork(file, cfg)
+		covers, skips, err := a.loadArtworkWithOptions(file, cfg, all)
 		if err != nil {
 			a.artworkError(file, err)
 			continue
+		}
+		if !all {
+			warnArtworkSkips(file, skips, true)
 		}
 		for _, slot := range artworkKinds {
 			cover := covers[slot]
@@ -125,12 +132,17 @@ func (a *app) runArtworkExtract(path string, opts *artworkExtractOptions) error 
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
-	covers, err := a.loadArtwork(path, cfg)
+	covers, skips, err := a.loadArtworkWithOptions(path, cfg, opts.ignoreLimit)
 	if err != nil {
 		return err
 	}
 	cover := covers[opts.slot]
 	if cover == nil || len(cover.Data) == 0 {
+		for _, skip := range skips {
+			if skip.Slot == opts.slot {
+				return fmt.Errorf("no %s artwork for %s: %s is %d bytes, exceeds cover.hard_max_bytes %d; use --ignore-limit", opts.slot, path, skip.Cover.Filename, len(skip.Cover.Data), skip.Hard)
+			}
+		}
 		return fmt.Errorf("no %s artwork for %s", opts.slot, path)
 	}
 	if err := os.WriteFile(opts.output, cover.Data, 0644); err != nil {
@@ -146,33 +158,39 @@ func (a *app) runArtworkExtract(path string, opts *artworkExtractOptions) error 
 }
 
 func (a *app) loadArtwork(path string, cfg *config.Config) (map[string]*metadata.Cover, error) {
+	covers, _, err := a.loadArtworkWithOptions(path, cfg, false)
+	return covers, err
+}
+
+func (a *app) loadArtworkWithOptions(path string, cfg *config.Config, ignoreLimit bool) (map[string]*metadata.Cover, []artworkSkip, error) {
 	reader, ok := a.getRegistry().ReaderFor(path)
 	if !ok {
-		return nil, fmt.Errorf("unsupported format %s", strings.ToLower(filepath.Ext(path)))
+		return nil, nil, fmt.Errorf("unsupported format %s", strings.ToLower(filepath.Ext(path)))
 	}
 	doc, err := reader.Read(path, tagformat.ReadOptions{})
 	if errors.Is(err, read.ErrNoTags) {
 		doc = metadata.New()
 	} else if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var albumCovers map[string]*metadata.Cover
 	if albumCfg, err := album.Load(filepath.Dir(path)); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else if albumCfg != nil {
 		albumCovers, err = albumCfg.ArtworkCovers()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	var existing *ape.ParsedTag
 	if cfg.Files.MergeExisting {
 		existing, err = tagfile.ReadExisting(path, cfg.TagFile.Suffix)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return selectArtwork(documentArtwork(doc), a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg), nil
+	covers, skips := selectArtworkWithOptions(documentArtwork(doc), a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg, ignoreLimit)
+	return covers, skips, nil
 }
 
 func validArtworkSlot(slot string) bool {
@@ -182,6 +200,16 @@ func validArtworkSlot(slot string) bool {
 		}
 	}
 	return false
+}
+
+func warnArtworkSkips(path string, skips []artworkSkip, list bool) {
+	for _, skip := range skips {
+		hint := "--ignore-limit"
+		if list {
+			hint = "--all"
+		}
+		fmt.Fprintf(os.Stderr, "warning: %s: %s artwork %q is %d bytes, exceeds cover.hard_max_bytes %d; use %s\n", path, skip.Slot, skip.Cover.Filename, len(skip.Cover.Data), skip.Hard, hint)
+	}
 }
 
 func (a *app) artworkError(path string, err error) {
