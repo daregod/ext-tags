@@ -10,6 +10,7 @@ import (
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/registry"
+	"github.com/daregod/ext-tags/internal/tagfile"
 	"github.com/daregod/ext-tags/internal/tagformat"
 )
 
@@ -205,4 +206,30 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func TestExtractAlbumSeedsEmptyTags(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.wav")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio-empty.wav"), audio)
+	if err := os.WriteFile(filepath.Join(dir, "album.yaml"), []byte("album:\n  Album: Seeded\n  Artist: Album Artist\n  Title: Album Title\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	if err := a.runExtract(a.extractCmd(), []string{audio}); err != nil {
+		t.Fatal(err)
+	}
+	if a.failed {
+		t.Fatal("extract failed")
+	}
+	tag, err := tagfile.ReadExisting(audio, ".tag")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tag == nil {
+		t.Fatal("tag was not created")
+	}
+	if item, ok := tag.Get("Album"); !ok || string(item.Value) != "Seeded" {
+		t.Fatalf("Album = %q, %v", item.Value, ok)
+	}
 }

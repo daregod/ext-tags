@@ -314,11 +314,8 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	}
 	md, err := reader.Read(path, tagformat.ReadOptions{CoverNames: cfg.Cover.Names})
 	if errors.Is(err, read.ErrNoTags) {
-		res.Status = "no-tags"
-		a.report(res)
-		return
-	}
-	if err != nil {
+		md = metadata.New()
+	} else if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
 		a.failed = true
