@@ -24,6 +24,7 @@ import (
 type renderOptions struct {
 	template string
 	null     bool
+	raw      bool
 }
 
 type renderResult struct {
@@ -44,6 +45,7 @@ func (a *app) renderCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&opts.template, "template", "t", "", "Go template, for example '{{ .artist }} - {{ .title }}'")
 	cmd.Flags().BoolVar(&opts.null, "null", false, "terminate records with NUL instead of newline")
+	cmd.Flags().BoolVar(&opts.raw, "raw", false, "use raw container/.tag fields without album.yaml or rules")
 	return cmd
 }
 
@@ -68,7 +70,11 @@ func (a *app) runRender(paths []string, opts *renderOptions) error {
 	if a.opts.verbose && !a.opts.json {
 		fmt.Fprintf(os.Stderr, "config: %s\n", label)
 	}
-	if _, err := engine.Render(opts.template, nil, nil, rules.Meta{}); err != nil {
+	if opts.raw {
+		if _, err := engine.RenderRaw(opts.template, nil, nil, nil, rules.Meta{}); err != nil {
+			return fmt.Errorf("template: %w", err)
+		}
+	} else if _, err := engine.Render(opts.template, nil, nil, rules.Meta{}); err != nil {
 		return fmt.Errorf("template: %w", err)
 	}
 	files, err := expandPaths(paths, cfg.Files.Recursive, cfg.Files.Extensions)
@@ -97,13 +103,6 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 		a.renderError(path, err)
 		return
 	}
-	var overrides map[string]string
-	if albumCfg, err := album.Load(filepath.Dir(path)); err != nil {
-		a.renderError(path, err)
-		return
-	} else if albumCfg != nil {
-		overrides = albumCfg.Apply(doc, path)
-	}
 	var existing *ape.ParsedTag
 	if cfg.Files.MergeExisting {
 		existing, err = tagfile.ReadExisting(path, cfg.TagFile.Suffix)
@@ -116,16 +115,41 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 		Path: path, Filename: baseName(path), Dir: filepath.Dir(path),
 		Ext: filepath.Ext(path), Now: time.Now(),
 	}
+	if opts.raw {
+		value, err := engine.RenderRaw(opts.template, doc.Fields, tagfile.ExistingFields(existing), doc.Vars, meta)
+		if err != nil {
+			a.renderError(path, err)
+			return
+		}
+		a.writeRenderValue(path, value, opts)
+		return
+	}
+	var overrides map[string]string
+	if albumCfg, err := album.Load(filepath.Dir(path)); err != nil {
+		a.renderError(path, err)
+		return
+	} else if albumCfg != nil {
+		overrides = albumCfg.Apply(doc, path)
+	}
 	fields, err := engine.BuildWithOverrides(doc, tagfile.ExistingFields(existing), overrides, meta)
 	if err != nil {
 		a.renderError(path, err)
 		return
 	}
-	value, err := engine.Render(opts.template, fields, doc.Vars, meta)
+	artwork, err := a.loadArtwork(path, cfg)
 	if err != nil {
 		a.renderError(path, err)
 		return
 	}
+	value, err := engine.RenderWithExtra(opts.template, fields, doc.Vars, artworkTemplateData(artwork), meta)
+	if err != nil {
+		a.renderError(path, err)
+		return
+	}
+	a.writeRenderValue(path, value, opts)
+}
+
+func (a *app) writeRenderValue(path, value string, opts *renderOptions) {
 	if a.opts.json {
 		data, err := json.Marshal(renderResult{File: path, Value: value})
 		if err != nil {

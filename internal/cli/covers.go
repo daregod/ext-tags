@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/daregod/ext-tags/internal/artwork"
@@ -77,6 +79,23 @@ func selectArtwork(embedded, sidecar, album, existing map[string]*metadata.Cover
 			out[kind] = c.Cover
 		}
 	}
+	return out
+}
+
+func artworkTemplateData(covers map[string]*metadata.Cover) map[string]string {
+	out := make(map[string]string)
+	var found []string
+	for _, kind := range artworkKinds {
+		cover := covers[kind]
+		if cover == nil {
+			continue
+		}
+		found = append(found, fmt.Sprintf("%s:%s(%d)", kind, cover.Filename, len(cover.Data)))
+		out["artwork"+kind] = cover.Filename
+		out["artwork"+kind+"bytes"] = strconv.Itoa(len(cover.Data))
+	}
+	out["artwork"] = strings.Join(found, "; ")
+	out["artworkcount"] = strconv.Itoa(len(found))
 	return out
 }
 

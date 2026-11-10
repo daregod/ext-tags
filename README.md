@@ -321,6 +321,41 @@ ext-tags render --template '{{ sanitize .artist }} - {{ sanitize .title }}' albu
 крайние пробелы/точки, а также защищает от зарезервированных имён Windows.
 Unicode-символы, включая `։`, `⁄`, `˃`, `˂`, `✶`, он не переписывает.
 
+В шаблоне всегда есть `.fields` — map финальных полей. В обычном режиме это
+результат после `album.yaml` и правил; в `--raw` — сырые поля.
+
+В шаблоне доступны выбранные обложки:
+
+- `.artwork` — компактный список `front:cover.jpg(448581); back:back.jpg(...)`;
+- `.artworkcount` — количество слотов;
+- `.artworkfront`, `.artworkfrontbytes` — имя и размер front;
+- `.artworkback`, `.artworkartist`, `.artworkdisc`, `.artworkicon` и их
+  `...bytes`.
+
+С `--raw` шаблон получает сырые поля без `album.yaml`, правил и
+`include`/`exclude`:
+
+```bash
+ext-tags render --raw --template '{{ range $k, $v := .raw }}{{ println $k $v }}{{ end }}' track.flac
+```
+
+Доступны:
+
+- `.fields` — объединённые поля контейнера и `.tag` (`.tag` имеет приоритет);
+- `.raw` — тот же map, оставлен как alias;
+- `.container` — только поля контейнера;
+- `.tag` — только поля внешнего `.tag`;
+- `.vars` — переменные вроде `.tracknumber`;
+- `.path`, `.filename`, `.dirname`, `.ext`, `.now`.
+
+Ключи в `.raw` сохраняют исходные имена и регистр.
+
+Например, полный дамп полей вместе с артами:
+
+```bash
+ext-tags render --template '{{ range $k, $v := . }}{{ println $k $v }}{{ end }}' track.flac
+```
+
 ## Самообновление
 
 Standalone-бинарник можно обновлять из GitHub Release:

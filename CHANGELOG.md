@@ -4,6 +4,17 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.16.0] — 2026-11-10
+
+### Добавлено
+
+- `render` отдаёт в шаблон данные об обложках: `.artwork`, `.artworkcount` и `.artwork<slot>`/`.artwork<slot>bytes`.
+- `render --raw` отдаёт сырые поля контейнера и `.tag` через `.fields`, `.raw` (alias), `.container`, `.tag` и `.vars` без album/rules.
+
+### Изменено
+
+- `render` всегда отдаёт `.fields`: финальные поля в обычном режиме и сырые merged-поля в `--raw`.
+
 ## [0.15.1] — 2026-11-09
 
 ### Добавлено

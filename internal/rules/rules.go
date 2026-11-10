@@ -281,11 +281,42 @@ func mergeNumberVars(vars map[string]string, get func(string) string) {
 
 // Render executes a template against final fields and metadata.
 func (e *Engine) Render(format string, fields, vars map[string]string, meta Meta) (string, error) {
+	return e.RenderWithExtra(format, fields, vars, nil, meta)
+}
+
+// RenderWithExtra is Render with additional template values, such as artwork.
+func (e *Engine) RenderWithExtra(format string, fields, vars, extra map[string]string, meta Meta) (string, error) {
 	tmpl, err := template.New("render").Funcs(funcs).Option("missingkey=zero").Parse(format)
 	if err != nil {
 		return "", err
 	}
-	return execute(tmpl, e.templateData(fields, vars, meta))
+	data := e.renderData(fields, vars, meta)
+	for key, value := range extra {
+		if id := ident(key); id != "" {
+			data[id] = value
+		}
+	}
+	return executeData(tmpl, data)
+}
+
+// RenderRaw renders raw container and .tag fields, without albums or rules.
+func (e *Engine) RenderRaw(format string, container, tag map[string]string, vars map[string]string, meta Meta) (string, error) {
+	tmpl, err := template.New("render-raw").Funcs(funcs).Option("missingkey=zero").Parse(format)
+	if err != nil {
+		return "", err
+	}
+	raw := make(map[string]string, len(container)+len(tag))
+	for key, value := range container {
+		raw[key] = value
+	}
+	for key, value := range tag {
+		raw[key] = value
+	}
+	data := e.renderData(raw, vars, meta)
+	data["raw"] = raw
+	data["container"] = container
+	data["tag"] = tag
+	return executeData(tmpl, data)
 }
 
 func sanitize(value string) string {
@@ -318,6 +349,16 @@ func sanitize(value string) string {
 	return out
 }
 
+func (e *Engine) renderData(fields, vars map[string]string, meta Meta) map[string]any {
+	data := make(map[string]any)
+	for key, value := range e.templateData(fields, vars, meta) {
+		data[key] = value
+	}
+	data["fields"] = fields
+	data["vars"] = vars
+	return data
+}
+
 func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[string]string {
 	data := make(map[string]string, len(fields)+len(vars)+5)
 
@@ -346,6 +387,10 @@ func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[str
 }
 
 func execute(t *template.Template, data map[string]string) (string, error) {
+	return executeData(t, data)
+}
+
+func executeData(t *template.Template, data any) (string, error) {
 	var buf strings.Builder
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err
