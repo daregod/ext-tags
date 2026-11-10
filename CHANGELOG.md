@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.16.5] — 2026-11-10
+
+### Исправлено
+
+- `Year`/`Releasetime`/`Date`/`Originaldate` с ISO-временем нормализуются до даты до применения правил.
+
 ## [0.16.4] — 2026-11-10
 
 ### Добавлено

@@ -301,3 +301,16 @@ func TestSanitize(t *testing.T) {
 		}
 	}
 }
+
+func TestDateFieldsNormalizeTime(t *testing.T) {
+	fields := build(t, config.Default(), map[string]string{
+		"Year":        "2011-08-02T21",
+		"Releasetime": "2011-08-02T21:30:00",
+	}, nil)
+	if fields["Year"] != "2011-08-02" {
+		t.Fatalf("Year = %q", fields["Year"])
+	}
+	if fields["Releasetime"] != "2011-08-02" {
+		t.Fatalf("Releasetime = %q", fields["Releasetime"])
+	}
+}

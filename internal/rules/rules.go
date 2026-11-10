@@ -183,6 +183,7 @@ func (e *Engine) BuildWithOverrides(res *metadata.Document, existing, overrides 
 		set(key, value)
 	}
 	mergeNumberVars(res.Vars, get)
+	normalizeDateFields(fields)
 
 	for i, c := range e.rules {
 		data := e.templateData(fields, res.Vars, meta)
@@ -366,6 +367,26 @@ func (e *Engine) renderData(fields, vars map[string]string, meta Meta) map[strin
 	data["fields"] = fields
 	data["vars"] = vars
 	return data
+}
+
+func normalizeDateFields(fields map[string]string) {
+	for name, value := range fields {
+		switch strings.ToLower(name) {
+		case "year", "releasetime", "date", "originaldate", "originalyear":
+			if date := datePart(value); date != "" {
+				fields[name] = date
+			}
+		}
+	}
+}
+
+var dateTimePattern = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})[T ].+$`)
+
+func datePart(value string) string {
+	if m := dateTimePattern.FindStringSubmatch(strings.TrimSpace(value)); m != nil {
+		return m[1]
+	}
+	return ""
 }
 
 func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[string]string {
