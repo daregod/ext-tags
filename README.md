@@ -346,6 +346,8 @@ ext-tags render --raw --template '{{ range $k, $v := .raw }}{{ println $k $v }}{
 - `.container` — только поля контейнера;
 - `.tag` — только поля внешнего `.tag`;
 - `.vars` — переменные вроде `.tracknumber`;
+- `.artwork`, `.artworkcount`, `.artwork<slot>`, `.artwork<slot>bytes` — выбранные обложки;
+- `.containerartwork*` и `.tagartwork*` — обложки отдельно из контейнера и `.tag`;
 - `.path`, `.filename`, `.dirname`, `.ext`, `.now`.
 
 Ключи в `.raw` сохраняют исходные имена и регистр.

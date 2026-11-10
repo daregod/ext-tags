@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.16.1] — 2026-11-10
+
+### Добавлено
+
+- `render --raw` отдаёт `.artwork`, `.containerartwork`, `.tagartwork`, их `...count` и `...<slot>`/`...<slot>bytes`.
+
 ## [0.16.0] — 2026-11-10
 
 ### Добавлено

@@ -116,7 +116,19 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 		Ext: filepath.Ext(path), Now: time.Now(),
 	}
 	if opts.raw {
-		value, err := engine.RenderRaw(opts.template, doc.Fields, tagfile.ExistingFields(existing), doc.Vars, meta)
+		artwork, err := a.loadArtwork(path, cfg)
+		if err != nil {
+			a.renderError(path, err)
+			return
+		}
+		extra := artworkTemplateData(artwork)
+		for key, value := range artworkTemplateDataFor("container", doc.Artwork) {
+			extra[key] = value
+		}
+		for key, value := range artworkTemplateDataFor("tag", tagfile.ExistingArtwork(existing)) {
+			extra[key] = value
+		}
+		value, err := engine.RenderRawWithExtra(opts.template, doc.Fields, tagfile.ExistingFields(existing), doc.Vars, extra, meta)
 		if err != nil {
 			a.renderError(path, err)
 			return

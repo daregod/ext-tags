@@ -77,13 +77,16 @@ func TestRenderRaw(t *testing.T) {
 	out := captureStdout(t, func() {
 		if err := a.runRender([]string{path}, &renderOptions{
 			raw:      true,
-			template: `{{ range $k, $v := .raw }}{{ println $k $v }}{{ end }}`,
+			template: `{{ range $k, $v := .raw }}{{ println $k $v }}{{ end }}artworkcount={{ .artworkcount }} container={{ .containerartworkcount }}`,
 		}); err != nil {
 			t.Fatal(err)
 		}
 	})
 	if !strings.Contains(out, "Custom Tag raw value") || !strings.Contains(out, "Title Tag title") {
 		t.Fatalf("raw = %q", out)
+	}
+	if !strings.Contains(out, "artworkcount=1") || !strings.Contains(out, "container=1") {
+		t.Fatalf("raw artwork = %q", out)
 	}
 }
 

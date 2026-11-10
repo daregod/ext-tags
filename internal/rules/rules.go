@@ -301,6 +301,10 @@ func (e *Engine) RenderWithExtra(format string, fields, vars, extra map[string]s
 
 // RenderRaw renders raw container and .tag fields, without albums or rules.
 func (e *Engine) RenderRaw(format string, container, tag map[string]string, vars map[string]string, meta Meta) (string, error) {
+	return e.RenderRawWithExtra(format, container, tag, vars, nil, meta)
+}
+
+func (e *Engine) RenderRawWithExtra(format string, container, tag, vars, extra map[string]string, meta Meta) (string, error) {
 	tmpl, err := template.New("render-raw").Funcs(funcs).Option("missingkey=zero").Parse(format)
 	if err != nil {
 		return "", err
@@ -316,6 +320,11 @@ func (e *Engine) RenderRaw(format string, container, tag map[string]string, vars
 	data["raw"] = raw
 	data["container"] = container
 	data["tag"] = tag
+	for key, value := range extra {
+		if id := ident(key); id != "" {
+			data[id] = value
+		}
+	}
 	return executeData(tmpl, data)
 }
 
