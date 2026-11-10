@@ -4,7 +4,7 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.16.3] — 2026-11-10
 
 ### Исправлено
 
