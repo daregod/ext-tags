@@ -96,11 +96,11 @@ func TestRenderFieldsMap(t *testing.T) {
 	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), path)
 	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
 	out := captureStdout(t, func() {
-		if err := a.runRender([]string{path}, &renderOptions{template: `{{ index .fields "Title" }}|{{ .vars }}`}); err != nil {
+		if err := a.runRender([]string{path}, &renderOptions{template: `{{ sanitize .title }}|{{ index .fields "Title" }}|{{ .vars }}`}); err != nil {
 			t.Fatal(err)
 		}
 	})
-	if !strings.HasPrefix(out, "Fixture Title|") {
+	if !strings.HasPrefix(out, "Fixture Title|Fixture Title|") {
 		t.Fatalf("fields = %q", out)
 	}
 }

@@ -42,33 +42,43 @@ type compiled struct {
 }
 
 var funcs = template.FuncMap{
-	"lower": strings.ToLower,
-	"upper": strings.ToUpper,
-	"title": title,
-	"trim":  strings.TrimSpace,
-	"default": func(def, val string) string {
-		if strings.TrimSpace(val) == "" {
-			return def
+	"lower": func(v any) string { return strings.ToLower(argString(v)) },
+	"upper": func(v any) string { return strings.ToUpper(argString(v)) },
+	"title": func(v any) string { return title(argString(v)) },
+	"trim":  func(v any) string { return strings.TrimSpace(argString(v)) },
+	"default": func(def, val any) string {
+		if strings.TrimSpace(argString(val)) == "" {
+			return argString(def)
 		}
-		return val
+		return argString(val)
 	},
-	"replace": func(old, new, s string) string {
-		return strings.ReplaceAll(s, old, new)
+	"replace": func(old, new, s any) string {
+		return strings.ReplaceAll(argString(s), argString(old), argString(new))
 	},
-	"regexReplace": func(expr, repl, s string) (string, error) {
-		re, err := regexp.Compile(expr)
+	"regexReplace": func(expr, repl, s any) (string, error) {
+		re, err := regexp.Compile(argString(expr))
 		if err != nil {
 			return "", fmt.Errorf("regexReplace: %w", err)
 		}
-		return re.ReplaceAllString(s, repl), nil
+		return re.ReplaceAllString(argString(s), argString(repl)), nil
 	},
-	"year":        yearOf,
-	"formatTrack": formatTrack,
-	"atoi": func(s string) int {
-		n, _ := strconv.Atoi(strings.TrimSpace(s))
+	"year":        func(v any) string { return yearOf(argString(v)) },
+	"formatTrack": func(v any) string { return formatTrack(argString(v)) },
+	"atoi": func(v any) int {
+		n, _ := strconv.Atoi(strings.TrimSpace(argString(v)))
 		return n
 	},
-	"sanitize": sanitize,
+	"sanitize": func(v any) string { return sanitize(argString(v)) },
+}
+
+func argString(value any) string {
+	if value == nil {
+		return ""
+	}
+	if s, ok := value.(string); ok {
+		return s
+	}
+	return fmt.Sprint(value)
 }
 
 // New compiles the configured rules.

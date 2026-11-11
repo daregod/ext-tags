@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.16.6] — 2026-11-11
+
+### Исправлено
+
+- Шаблонные функции (`sanitize`, `replace`, `regexReplace`, `year`, `formatTrack`, `atoi`, `lower`, `upper`, `trim`, `default`) снова принимают значения из `.fields`/`render --raw`; устранена ошибка `expected string; got interface {}`.
+
 ## [0.16.5] — 2026-11-10
 
 ### Исправлено
