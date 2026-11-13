@@ -43,6 +43,7 @@ type options struct {
 	output      string
 	stdout      bool
 	ignoreLimit bool
+	diff        bool
 }
 
 type app struct {
@@ -111,6 +112,7 @@ func (a *app) extractCmd() *cobra.Command {
 	cmd.Flags().StringVar(&a.opts.output, "output", "", "write the .tag to this path instead of next to the audio file (- = stdout)")
 	cmd.Flags().BoolVar(&a.opts.stdout, "stdout", false, "write the .tag bytes to stdout")
 	cmd.Flags().BoolVar(&a.opts.ignoreLimit, "ignore-limit", false, "include artwork above cover.hard_max_bytes")
+	cmd.Flags().BoolVar(&a.opts.diff, "diff", false, "show changes against the existing .tag (implies --dry-run)")
 	return cmd
 }
 func (a *app) versionCmd() *cobra.Command {
@@ -134,6 +136,9 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 	}
 	if err := cfg.Validate(); err != nil {
 		return err
+	}
+	if a.opts.diff {
+		a.opts.dryRun = true
 	}
 	if err := a.validateExtractOutput(); err != nil {
 		return err
@@ -285,6 +290,7 @@ type fileResult struct {
 	Target  string            `json:"target,omitempty"`
 	Reason  string            `json:"reason,omitempty"`
 	Warning string            `json:"warning,omitempty"`
+	Diff    *diffResult       `json:"diff,omitempty"`
 	Error   string            `json:"error,omitempty"`
 }
 
@@ -367,6 +373,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	}
 	md.Cover = md.Artwork["front"]
 	existingFields := tagfile.ExistingFields(existing)
+	existingArt := tagfile.ExistingArtwork(existing)
 	fields, err := engine.BuildWithOverridesPrefer(md, existingFields, albumOverrides, meta, preferExisting(cfg, path))
 	if err != nil {
 		res.Status = "error"
@@ -425,7 +432,12 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		res.Cover = &coverInfo{Filename: md.Cover.Filename, Bytes: len(md.Cover.Data)}
 	}
 
+	if a.opts.diff {
+		res.Diff = buildDiff(existingFields, fields, existingArt, md.Artwork, cfg)
+	}
 	switch {
+	case a.opts.diff:
+		res.Status = "diff"
 	case written.Skipped:
 		res.Status = "skipped"
 		res.Reason = written.Reason
@@ -460,6 +472,23 @@ func (a *app) report(r fileResult) {
 		}
 	case "dry-run":
 		fmt.Printf("DRY-RUN %s → %s (%d items, %d bytes)\n", r.File, r.TagFile, r.Items, r.Bytes)
+	case "diff":
+		fmt.Printf("DIFF    %s\n", r.File)
+		if r.Diff != nil {
+			for _, change := range r.Diff.Fields {
+				switch change.Change {
+				case "added":
+					fmt.Printf("        + %s: %q\n", change.Field, change.To)
+				case "removed":
+					fmt.Printf("        - %s: %q\n", change.Field, change.From)
+				default:
+					fmt.Printf("        ~ %s: %q -> %q\n", change.Field, change.From, change.To)
+				}
+			}
+			for _, change := range r.Diff.Artwork {
+				fmt.Printf("        cover %s: %s -> %s\n", change.Slot, formatCover(change.From), formatCover(change.To))
+			}
+		}
 	case "rename-dry":
 		fmt.Printf("DRY-RUN %s → %s\n", r.File, r.Target)
 	case "renamed":

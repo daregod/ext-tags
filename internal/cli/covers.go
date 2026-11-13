@@ -1,7 +1,13 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -115,6 +121,28 @@ func selectArtworkWithOptions(embedded, sidecar, album, existing map[string]*met
 		}
 	}
 	return out, skipped
+}
+
+type artworkInfo struct {
+	Filename string `json:"filename,omitempty"`
+	MIME     string `json:"mime,omitempty"`
+	Bytes    int    `json:"bytes,omitempty"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+}
+
+func makeArtworkInfo(cover *metadata.Cover) *artworkInfo {
+	if cover == nil || len(cover.Data) == 0 {
+		return nil
+	}
+	info := &artworkInfo{Filename: cover.Filename, MIME: cover.MIME, Bytes: len(cover.Data)}
+	if info.MIME == "" {
+		info.MIME = http.DetectContentType(cover.Data)
+	}
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(cover.Data)); err == nil {
+		info.Width, info.Height = cfg.Width, cfg.Height
+	}
+	return info
 }
 
 func artworkTemplateData(covers map[string]*metadata.Cover) map[string]string {

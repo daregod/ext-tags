@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -231,5 +232,42 @@ func TestExtractAlbumSeedsEmptyTags(t *testing.T) {
 	}
 	if item, ok := tag.Get("Album"); !ok || string(item.Value) != "Seeded" {
 		t.Fatalf("Album = %q, %v", item.Value, ok)
+	}
+}
+
+func TestExtractDiffDoesNotWrite(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	tag := ape.NewTag()
+	tag.AddText("Title", "Old title")
+	old, err := tag.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tagPath := audio + ".tag"
+	if err := os.WriteFile(tagPath, old, 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	cmd := a.extractCmd()
+	a.opts.diff = true
+	out := captureStdout(t, func() {
+		if err := a.runExtract(cmd, []string{audio}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "DIFF") || !strings.Contains(out, "Old title") || !strings.Contains(out, "Fixture Title") {
+		t.Fatalf("diff = %q", out)
+	}
+	if !strings.Contains(out, "cover front") || !strings.Contains(out, "cover.jpg") {
+		t.Fatalf("cover diff = %q", out)
+	}
+	after, err := os.ReadFile(tagPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, old) {
+		t.Fatal("diff modified the existing .tag")
 	}
 }

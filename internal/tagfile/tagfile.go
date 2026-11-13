@@ -134,6 +134,11 @@ func build(merged map[string]string, covers map[string]*metadata.Cover, existing
 	return data, len(tag.Items), merged, nil
 }
 
+// NameAllowed applies fields.include/exclude to a field or artwork key.
+func NameAllowed(cfg *config.Config, name string) bool {
+	return nameAllowed(cfg, name)
+}
+
 // nameAllowed applies fields.include/exclude to text fields and artwork keys.
 func nameAllowed(cfg *config.Config, name string) bool {
 	if len(cfg.Fields.Include) > 0 {
