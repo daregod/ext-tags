@@ -105,5 +105,6 @@ func (a *app) runFixExt(paths []string, opts *fixOptions) error {
 		res.Status = "renamed"
 		a.report(res)
 	}
+	a.printSummary()
 	return nil
 }

@@ -225,6 +225,7 @@ ext-tags --json extract track.flac
 | `--on-existing MODE` | `overwrite`, `skip`, `backup`, `error` |
 | `--cover=false` | не встраивать обложку |
 | `--no-merge` | не подхватывать поля из старого `.tag` |
+| `--summary` | напечатать итоговые счётчики в конце |
 
 При `backup` (по умолчанию) старый `track.flac.tag` сохраняется как
 `track.flac.tag.bak`.
@@ -259,6 +260,20 @@ ext-tags extract --diff track.flac
 
 `--diff` включает dry-run и сравнивает существующий `.tag` с финальными
 полями. Для обложек показываются слот, файл, MIME, размеры и байты.
+
+`--summary` печатает итог в конце:
+
+```text
+SUMMARY processed=145 ok=132 dry_run=3 diff=4 renamed=0 imported=0 skipped=4 no_tags=0 unsupported=1 errors=1 warnings=2 items=1180 bytes=18273645
+```
+
+В `--json` это последний объект:
+
+```json
+{"type":"summary","processed":145,"ok":132,"dry_run":3,"diff":4,"renamed":0,"imported":0,"skipped":4,"no_tags":0,"unsupported":1,"errors":1,"warnings":2,"items":1180,"bytes":18273645}
+```
+
+`--summary` несовместим с `--stdout`; при `--quiet` остаётся только итог.
 
 ### import: проверка после записи
 

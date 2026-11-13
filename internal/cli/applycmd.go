@@ -57,6 +57,9 @@ func (a *app) runApply(opts *applyOptions) error {
 	if opts.output == "" && !opts.stdout && !a.opts.dryRun {
 		return fmt.Errorf("--output or --stdout is required")
 	}
+	if (opts.stdout || opts.output == "-") && a.opts.summary {
+		return fmt.Errorf("--stdout cannot be combined with --summary")
+	}
 	cfg, _, err := a.effectiveConfig()
 	if err != nil {
 		return err
@@ -113,14 +116,18 @@ func (a *app) runApply(opts *applyOptions) error {
 	} else {
 		res.Status = "dry-run"
 	}
+	a.addResult(fileResult{Status: res.Status, Items: res.Items, Bytes: res.Bytes})
 	if a.opts.json {
 		writeJSONRecord(res)
+		a.printSummary()
 		return nil
 	}
 	if res.Status == "dry-run" {
 		fmt.Printf("DRY-RUN %s (%d items, %d bytes)\n", opts.tag, items, len(data))
+		a.printSummary()
 		return nil
 	}
 	fmt.Printf("Wrote %s (%d items, %d bytes)\n", res.Output, items, len(data))
+	a.printSummary()
 	return nil
 }

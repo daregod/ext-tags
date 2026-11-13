@@ -44,12 +44,14 @@ type options struct {
 	stdout      bool
 	ignoreLimit bool
 	diff        bool
+	summary     bool
 }
 
 type app struct {
 	opts     *options
 	registry *tagformat.Registry
 	failed   bool
+	stats    runStats
 }
 
 // Execute runs the CLI and returns the process exit code.
@@ -95,6 +97,7 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVar(&a.opts.cover, "cover", true, "embed cover art (extract)")
 	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
 	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
+	pf.BoolVar(&a.opts.summary, "summary", false, "print a final summary")
 
 	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.fixTagCmd(), a.albumCmd(), a.artworkCmd(), a.applyCmd(), a.selfUpdateCmd(), a.renderCmd(), a.configCmd(), a.versionCmd())
 	return root
@@ -169,6 +172,7 @@ func (a *app) runExtract(cmd *cobra.Command, paths []string) error {
 		}
 		a.processFile(file, cfg, engine)
 	}
+	a.printSummary()
 	return nil
 }
 
@@ -185,6 +189,9 @@ func (a *app) validateExtractOutput() error {
 	}
 	if a.opts.stdout && a.opts.dryRun {
 		return fmt.Errorf("--stdout cannot be combined with --dry-run")
+	}
+	if a.opts.stdout && a.opts.summary {
+		return fmt.Errorf("--stdout cannot be combined with --summary")
 	}
 	return nil
 }
@@ -369,7 +376,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 	artwork, artworkSkips := selectArtworkWithOptions(embedded, a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg, a.opts.ignoreLimit)
 	md.Artwork = artwork
 	if !a.opts.ignoreLimit {
-		warnArtworkSkips(path, artworkSkips, "--ignore-limit")
+		a.warnArtworkSkips(path, artworkSkips, "--ignore-limit")
 	}
 	md.Cover = md.Artwork["front"]
 	existingFields := tagfile.ExistingFields(existing)
@@ -440,6 +447,9 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 		res.Status = "diff"
 	case written.Skipped:
 		res.Status = "skipped"
+		if written.Reason == "no tags" {
+			res.Status = "no-tags"
+		}
 		res.Reason = written.Reason
 	case a.opts.dryRun:
 		res.Status = "dry-run"
@@ -450,6 +460,7 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 }
 
 func (a *app) report(r fileResult) {
+	a.addResult(r)
 	if a.opts.json {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetEscapeHTML(false)

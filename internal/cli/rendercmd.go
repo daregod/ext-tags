@@ -85,8 +85,10 @@ func (a *app) runRender(paths []string, opts *renderOptions) error {
 		if a.isOwnOutput(file, cfg) {
 			continue
 		}
+		a.stats.processed++
 		a.renderFile(file, cfg, engine, opts)
 	}
+	a.printSummary()
 	return nil
 }
 
@@ -162,6 +164,7 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 }
 
 func (a *app) writeRenderValue(path, value string, opts *renderOptions) {
+	a.stats.ok++
 	if a.opts.json {
 		data, err := json.Marshal(renderResult{File: path, Value: value})
 		if err != nil {
@@ -184,5 +187,6 @@ func renderSeparator(null bool) []byte {
 
 func (a *app) renderError(path string, err error) {
 	a.failed = true
+	a.stats.errors++
 	fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 }

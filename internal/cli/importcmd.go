@@ -70,6 +70,7 @@ func (a *app) runImport(paths []string, opts *importOptions) error {
 	for _, file := range files {
 		a.importFile(file, cfg.TagFile.Suffix, cfg, opts)
 	}
+	a.printSummary()
 	return nil
 }
 

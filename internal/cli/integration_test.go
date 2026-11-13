@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -269,5 +270,29 @@ func TestExtractDiffDoesNotWrite(t *testing.T) {
 	}
 	if !bytes.Equal(after, old) {
 		t.Fatal("diff modified the existing .tag")
+	}
+}
+
+func TestExtractSummary(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	a := &app{opts: &options{quiet: true, json: true, summary: true}, registry: registry.NewDefault()}
+	cmd := a.extractCmd()
+	out := captureStdout(t, func() {
+		if err := a.runExtract(cmd, []string{audio}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) < 2 {
+		t.Fatalf("output = %q", out)
+	}
+	var summary map[string]any
+	if err := json.Unmarshal([]byte(lines[len(lines)-1]), &summary); err != nil {
+		t.Fatal(err)
+	}
+	if summary["type"] != "summary" || summary["processed"].(float64) != 1 || summary["ok"].(float64) != 1 {
+		t.Fatalf("summary = %v", summary)
 	}
 }

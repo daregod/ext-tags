@@ -137,5 +137,6 @@ func (a *app) runFixTag(paths []string, opts *fixTagOptions) error {
 		res.Status = "renamed"
 		a.report(res)
 	}
+	a.printSummary()
 	return nil
 }

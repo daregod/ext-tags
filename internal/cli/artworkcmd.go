@@ -92,7 +92,12 @@ func (a *app) runArtworkList(paths []string, all bool) error {
 			continue
 		}
 		if !all {
-			warnArtworkSkips(file, skips, "--all")
+			a.warnArtworkSkips(file, skips, "--all")
+		}
+		if len(covers) > 0 {
+			a.addResult(fileResult{Status: "ok"})
+		} else {
+			a.addResult(fileResult{Status: "skipped", Reason: "no artwork"})
 		}
 		for _, slot := range artworkKinds {
 			cover := covers[slot]
@@ -107,6 +112,7 @@ func (a *app) runArtworkList(paths []string, all bool) error {
 			}
 		}
 	}
+	a.printSummary()
 	return nil
 }
 
@@ -154,6 +160,8 @@ func (a *app) runArtworkExtract(path string, opts *artworkExtractOptions) error 
 	} else {
 		fmt.Printf("Wrote %s (%s, %d bytes)\n", opts.output, opts.slot, len(cover.Data))
 	}
+	a.addResult(fileResult{Status: "ok", Items: 1, Bytes: len(cover.Data)})
+	a.printSummary()
 	return nil
 }
 
@@ -202,8 +210,9 @@ func validArtworkSlot(slot string) bool {
 	return false
 }
 
-func warnArtworkSkips(path string, skips []artworkSkip, hint string) {
+func (a *app) warnArtworkSkips(path string, skips []artworkSkip, hint string) {
 	for _, skip := range skips {
+		a.stats.warnings++
 		fmt.Fprintf(os.Stderr, "warning: %s: %s artwork %q is %d bytes, exceeds cover.hard_max_bytes %d; use %s\n", path, skip.Slot, skip.Cover.Filename, len(skip.Cover.Data), skip.Hard, hint)
 	}
 }
