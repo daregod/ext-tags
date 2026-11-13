@@ -203,6 +203,7 @@ ext-tags --json extract track.flac
 | `ext-tags import <файлы...>` | записать `.tag` обратно в MP3, FLAC, Ogg, MP4, APEv2, Matroska |
 | `ext-tags album init <папка>` | создать `album.yaml` из тегов треков                           |
 | `ext-tags artwork list/extract` | посмотреть список обложек или вытащить конкретную              |
+| `ext-tags apply --tag FILE` | применить правила к готовому `.tag` без аудио                 |
 | `ext-tags config init`, `validate`, `show`, `path` | работа с конфигом                                              |
 | `ext-tags fixext <пути...>` | переименовать Ogg-файлы с неверным расширением (dry-run)       |
 | `ext-tags render <пути...>` | вывести поля по шаблону, ничего не записывая                   |
@@ -246,6 +247,9 @@ ext-tags extract --stdout track.mp3
 `--output` можно использовать с расширением, отличным от `.tag`, — это
 ответственность вызывающего кода.
 
+Если обложка превышает `cover.hard_max_bytes`, `extract` пишет предупреждение;
+`--ignore-limit` разрешает записать её.
+
 ### import: проверка после записи
 
 По умолчанию импорт проверяет, что ключевые поля читаются после записи, и при
@@ -278,6 +282,18 @@ ext-tags fixext -r ~/Music --apply
 
 По умолчанию ничего не меняется. Если целевое имя уже существует, файл
 пропускается.
+
+### apply
+
+Применяет правила и include/exclude к готовому `.tag`, без аудиофайла:
+
+```bash
+ext-tags apply --tag track.flac.tag --config ext-tags.yaml --output track.flac.tag.new
+ext-tags apply --tag track.flac.tag --stdout > track.flac.tag.new
+```
+
+`--dry-run` показывает результат без записи, `--force` разрешает перезапись
+выхода.
 
 ### artwork
 
@@ -408,6 +424,8 @@ ext-tags config path          # какие файлы применяются
 files:
   recursive: true
   on_existing: backup
+  # container | tag | newest
+  prefer: container
 
 cover:
   enabled: true
@@ -423,6 +441,10 @@ fields:
     - default: {field: "Album artist", from: Artist}
     - remove: [Www]
 ```
+
+`files.prefer` выбирает победителя при совпадении полей: `container` (по
+умолчанию), `tag` (внешний `.tag`) или `newest` (по mtime). `album.yaml` всегда
+выше `prefer`.
 
 Правила (`set`, `copy`, `rename`, `default`, `remove`) и шаблоны —
 продвинутая настройка; полный список ключей и примеры даёт

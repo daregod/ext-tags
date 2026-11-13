@@ -40,8 +40,9 @@ type options struct {
 	merge      bool
 	noMerge    bool
 
-	output string
-	stdout bool
+	output      string
+	stdout      bool
+	ignoreLimit bool
 }
 
 type app struct {
@@ -94,7 +95,7 @@ func (a *app) rootCmd() *cobra.Command {
 	pf.BoolVar(&a.opts.merge, "merge", true, "merge fields from an existing .tag (default from config)")
 	pf.BoolVar(&a.opts.noMerge, "no-merge", false, "do not merge fields from an existing .tag")
 
-	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.albumCmd(), a.artworkCmd(), a.selfUpdateCmd(), a.renderCmd(), a.configCmd(), a.versionCmd())
+	root.AddCommand(a.extractCmd(), a.importCmd(), a.fixextCmd(), a.albumCmd(), a.artworkCmd(), a.applyCmd(), a.selfUpdateCmd(), a.renderCmd(), a.configCmd(), a.versionCmd())
 	return root
 }
 
@@ -109,6 +110,7 @@ func (a *app) extractCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&a.opts.output, "output", "", "write the .tag to this path instead of next to the audio file (- = stdout)")
 	cmd.Flags().BoolVar(&a.opts.stdout, "stdout", false, "write the .tag bytes to stdout")
+	cmd.Flags().BoolVar(&a.opts.ignoreLimit, "ignore-limit", false, "include artwork above cover.hard_max_bytes")
 	return cmd
 }
 func (a *app) versionCmd() *cobra.Command {
@@ -358,10 +360,14 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 			return
 		}
 	}
-	md.Artwork = selectArtwork(embedded, a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg)
+	artwork, artworkSkips := selectArtworkWithOptions(embedded, a.sidecarArtwork(path, cfg), albumCovers, tagfile.ExistingArtwork(existing), cfg, a.opts.ignoreLimit)
+	md.Artwork = artwork
+	if !a.opts.ignoreLimit {
+		warnArtworkSkips(path, artworkSkips, "--ignore-limit")
+	}
 	md.Cover = md.Artwork["front"]
 	existingFields := tagfile.ExistingFields(existing)
-	fields, err := engine.BuildWithOverrides(md, existingFields, albumOverrides, meta)
+	fields, err := engine.BuildWithOverridesPrefer(md, existingFields, albumOverrides, meta, preferExisting(cfg, path))
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()

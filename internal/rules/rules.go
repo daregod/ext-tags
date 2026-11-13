@@ -128,9 +128,19 @@ func (e *Engine) BuildWithExisting(res *metadata.Document, existing map[string]s
 	return e.BuildWithOverrides(res, existing, nil, meta)
 }
 
+func (e *Engine) BuildWithExistingPrefer(res *metadata.Document, existing map[string]string, meta Meta, existingFirst bool) (map[string]string, error) {
+	return e.BuildWithOverridesPrefer(res, existing, nil, meta, existingFirst)
+}
+
 // BuildWithOverrides is BuildWithExisting with album-level overrides applied
 // after raw/existing fields but before rules.
 func (e *Engine) BuildWithOverrides(res *metadata.Document, existing, overrides map[string]string, meta Meta) (map[string]string, error) {
+	return e.BuildWithOverridesPrefer(res, existing, overrides, meta, false)
+}
+
+// BuildWithOverridesPrefer chooses whether existing .tag fields or container
+// fields win when both define the same field.
+func (e *Engine) BuildWithOverridesPrefer(res *metadata.Document, existing, overrides map[string]string, meta Meta, existingFirst bool) (map[string]string, error) {
 	fields := make(map[string]string, len(res.Fields))
 	index := make(map[string]string, len(res.Fields))
 
@@ -165,6 +175,11 @@ func (e *Engine) BuildWithOverrides(res *metadata.Document, existing, overrides 
 	}
 	sort.Strings(rawKeys)
 
+	if existingFirst {
+		for key, value := range existing {
+			set(key, value)
+		}
+	}
 	for _, key := range rawKeys {
 		lower := strings.ToLower(key)
 		if e.ignore[lower] {
@@ -177,11 +192,18 @@ func (e *Engine) BuildWithOverrides(res *metadata.Document, existing, overrides 
 			}
 			target = key
 		}
+		if existingFirst {
+			if _, exists := index[strings.ToLower(strings.TrimSpace(target))]; exists {
+				continue
+			}
+		}
 		set(target, res.Fields[key])
 	}
-	for key, value := range existing {
-		if _, ok := index[strings.ToLower(strings.TrimSpace(key))]; !ok {
-			set(key, value)
+	if !existingFirst {
+		for key, value := range existing {
+			if _, ok := index[strings.ToLower(strings.TrimSpace(key))]; !ok {
+				set(key, value)
+			}
 		}
 	}
 	for key, value := range overrides {

@@ -9,6 +9,11 @@ import (
 
 func TestDefaultValidate(t *testing.T) {
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("default config must be valid: %v", err)
 	}
@@ -114,6 +119,11 @@ func TestValidateErrors(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			cfg := Default()
+			cfg.Files.Prefer = "bad"
+			if err := cfg.Validate(); err == nil {
+				t.Fatal("invalid files.prefer must fail")
+			}
+			cfg.Files.Prefer = "tag"
 			c.mod(cfg)
 			if err := cfg.Validate(); err == nil {
 				t.Fatal("expected validation error")
@@ -204,6 +214,11 @@ fields:
 	}
 
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	if err := loadFiles(cfg, []string{userPath, projectPath}, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -240,6 +255,11 @@ profiles:
 		t.Fatal(err)
 	}
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	if err := loadFiles(cfg, []string{userPath, projectPath}, "flac"); err != nil {
 		t.Fatal(err)
 	}
@@ -273,6 +293,11 @@ fields:
 
 func TestRulesModeInvalid(t *testing.T) {
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	cfg.Fields.RulesMode = "merge"
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected validation error for rules_mode")
@@ -281,6 +306,11 @@ func TestRulesModeInvalid(t *testing.T) {
 
 func TestWarningsMergeWithSkip(t *testing.T) {
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	cfg.Files.OnExisting = OnExistingSkip
 	if len(cfg.Warnings()) != 1 {
 		t.Fatalf("expected warning for merge+skip, got %v", cfg.Warnings())
@@ -325,6 +355,11 @@ profiles:
 
 func TestCoverBudgetDefaultsAndValidation(t *testing.T) {
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	if cfg.Cover.HardMaxBytes != 8<<20 || cfg.Cover.MaxBytes != 0 {
 		t.Fatalf("defaults = %d/%d", cfg.Cover.MaxBytes, cfg.Cover.HardMaxBytes)
 	}
@@ -340,6 +375,11 @@ func TestCoverBudgetDefaultsAndValidation(t *testing.T) {
 
 func TestAlbumInitConfigValidation(t *testing.T) {
 	cfg := Default()
+	cfg.Files.Prefer = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("invalid files.prefer must fail")
+	}
+	cfg.Files.Prefer = "tag"
 	cfg.AlbumInit = &AlbumInitConfig{AlbumOrder: []string{"Album", "album"}}
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("duplicate album_order must fail")

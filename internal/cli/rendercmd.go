@@ -143,7 +143,7 @@ func (a *app) renderFile(path string, cfg *config.Config, engine *rules.Engine, 
 	} else if albumCfg != nil {
 		overrides = albumCfg.Apply(doc, path)
 	}
-	fields, err := engine.BuildWithOverrides(doc, tagfile.ExistingFields(existing), overrides, meta)
+	fields, err := engine.BuildWithOverridesPrefer(doc, tagfile.ExistingFields(existing), overrides, meta, preferExisting(cfg, path))
 	if err != nil {
 		a.renderError(path, err)
 		return

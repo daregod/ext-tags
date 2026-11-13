@@ -52,6 +52,8 @@ type FilesConfig struct {
 	Recursive     bool     `yaml:"recursive"`
 	OnExisting    string   `yaml:"on_existing"`
 	MergeExisting bool     `yaml:"merge_existing"`
+	// Prefer is "container" (default), "tag" or "newest".
+	Prefer string `yaml:"prefer,omitempty"`
 }
 
 // TagFileConfig controls the name of the produced tag file.
@@ -215,6 +217,7 @@ func Default() *Config {
 			Recursive:     false,
 			OnExisting:    OnExistingBackup,
 			MergeExisting: true,
+			Prefer:        "container",
 		},
 		TagFile: TagFileConfig{Suffix: ".tag"},
 		Cover: CoverConfig{
@@ -481,6 +484,11 @@ func (c *Config) Validate() error {
 	default:
 		return fmt.Errorf("files.on_existing: unknown value %q (want overwrite, skip, backup or error)", c.Files.OnExisting)
 	}
+	switch c.Files.Prefer {
+	case "", "container", "tag", "newest":
+	default:
+		return fmt.Errorf("files.prefer: unknown value %q (want container, tag or newest)", c.Files.Prefer)
+	}
 	if !strings.HasPrefix(c.TagFile.Suffix, ".") {
 		return fmt.Errorf("tagfile.suffix %q must start with a dot", c.TagFile.Suffix)
 	}
@@ -620,6 +628,8 @@ files:
   # keep fields from an existing .tag that are absent in the audio file
   # (for example Rating, which foobar2000 keeps in its media library)
   merge_existing: true
+  # container | tag | newest
+  # prefer: container
   # recurse into subdirectories when a directory is passed
   recursive: false
   # extensions: [.mp3, .flac, .m4a]

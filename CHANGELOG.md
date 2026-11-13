@@ -4,6 +4,14 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Добавлено
+
+- `files.prefer` (`container`/`tag`/`newest`) — приоритет полей внешнего `.tag` над контейнером.
+- Команда `apply --tag` — применение правил к готовому `.tag` без аудиофайла.
+- `extract --ignore-limit` и предупреждение об обложке, превысившей `cover.hard_max_bytes`.
+
 ## [0.16.6] — 2026-11-11
 
 ### Исправлено

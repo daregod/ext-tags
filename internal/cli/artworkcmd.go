@@ -92,7 +92,7 @@ func (a *app) runArtworkList(paths []string, all bool) error {
 			continue
 		}
 		if !all {
-			warnArtworkSkips(file, skips, true)
+			warnArtworkSkips(file, skips, "--all")
 		}
 		for _, slot := range artworkKinds {
 			cover := covers[slot]
@@ -202,12 +202,8 @@ func validArtworkSlot(slot string) bool {
 	return false
 }
 
-func warnArtworkSkips(path string, skips []artworkSkip, list bool) {
+func warnArtworkSkips(path string, skips []artworkSkip, hint string) {
 	for _, skip := range skips {
-		hint := "--ignore-limit"
-		if list {
-			hint = "--all"
-		}
 		fmt.Fprintf(os.Stderr, "warning: %s: %s artwork %q is %d bytes, exceeds cover.hard_max_bytes %d; use %s\n", path, skip.Slot, skip.Cover.Filename, len(skip.Cover.Data), skip.Hard, hint)
 	}
 }

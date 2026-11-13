@@ -82,9 +82,9 @@ func (a *app) runAlbumInit(paths []string, opts *albumInitOptions) error {
 					return fmt.Errorf("%s: %w", file, err)
 				}
 			}
-			fields, err := engine.BuildWithExisting(doc, tagfile.ExistingFields(existing), rules.Meta{
+			fields, err := engine.BuildWithExistingPrefer(doc, tagfile.ExistingFields(existing), rules.Meta{
 				Path: file, Filename: baseName(file), Dir: dir, Ext: filepath.Ext(file),
-			})
+			}, preferExisting(cfg, file))
 			if err != nil {
 				return fmt.Errorf("%s: %w", file, err)
 			}

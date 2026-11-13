@@ -314,3 +314,25 @@ func TestDateFieldsNormalizeTime(t *testing.T) {
 		t.Fatalf("Releasetime = %q", fields["Releasetime"])
 	}
 }
+
+func TestBuildWithExistingPreference(t *testing.T) {
+	engine, err := New(config.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := &metadata.Document{Fields: map[string]string{"TITLE": "Container"}, Vars: map[string]string{}}
+	fields, err := engine.BuildWithExistingPrefer(res, map[string]string{"Title": "Tag"}, Meta{}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["Title"] != "Tag" {
+		t.Fatalf("Title = %q", fields["Title"])
+	}
+	fields, err = engine.BuildWithExisting(res, map[string]string{"Title": "Tag"}, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["Title"] != "Container" {
+		t.Fatalf("Title = %q", fields["Title"])
+	}
+}
