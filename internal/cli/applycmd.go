@@ -84,7 +84,7 @@ func (a *app) runApply(opts *applyOptions) error {
 		Path: opts.tag, Filename: strings.TrimSuffix(filepath.Base(opts.tag), filepath.Ext(opts.tag)),
 		Dir: filepath.Dir(opts.tag), Ext: filepath.Ext(opts.tag), Now: time.Now(),
 	}
-	fields, err := engine.Build(doc, meta)
+	fields, err := engine.BuildWithExistingPrefer(doc, doc.Fields, meta, true)
 	if err != nil {
 		return err
 	}

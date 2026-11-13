@@ -368,7 +368,8 @@ ext-tags render --raw --template '{{ range $k, $v := .raw }}{{ println $k $v }}{
 - `.fields` — объединённые поля контейнера и `.tag` (`.tag` имеет приоритет);
 - `.raw` — тот же map, оставлен как alias;
 - `.container` — только поля контейнера;
-- `.tag` — только поля внешнего `.tag`;
+- `.exttag` — только поля внешнего `.tag`;
+- `.tag` — alias для `.exttag`;
 - `.vars` — переменные вроде `.tracknumber`;
 - `.artwork`, `.artworkcount`, `.artwork<slot>`, `.artwork<slot>bytes` — выбранные обложки;
 - `.containerartwork*` и `.tagartwork*` — обложки отдельно из контейнера и `.tag`;
@@ -630,6 +631,23 @@ fields:
 Шаблонные ключи — без пробелов и в нижнем регистре: `.track`, `.artist`,
 `.releasetime`, `.catalognumber`. Встроенное правило `Track` уже применяется
 по умолчанию; не добавляйте своё `set: Track`, если не хотите его заменить.
+
+В правилах также доступны источники:
+
+- `.container` — сырые поля контейнера;
+- `.exttag` — сырые поля внешнего `.tag`;
+- `.fields` — текущий итоговый набор после уже выполненных правил.
+
+Например:
+
+```yaml
+- set: Title
+  template: '{{ if .exttag.Title }}{{ .exttag.Title }}{{ else }}{{ .container.TITLE }}{{ end }}'
+- set: Album artist
+  template: '{{ index .exttag "Album artist" }}'
+```
+
+`.tag` в правилах не используется как map — это может быть обычное поле `Tag`.
 
 ### Конфиг альбома
 

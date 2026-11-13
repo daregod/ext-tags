@@ -336,3 +336,26 @@ func TestBuildWithExistingPreference(t *testing.T) {
 		t.Fatalf("Title = %q", fields["Title"])
 	}
 }
+
+func TestRulesSeeSourceMaps(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.Rules = []config.Rule{
+		{Set: "Title", Template: `{{ if .exttag.Title }}{{ .exttag.Title }}{{ else }}{{ .container.TITLE }}{{ end }}`},
+		{Set: "Album artist", Template: `{{ index .exttag "Album artist" }}`},
+		{Set: "Seen", Template: `{{ .fields.Title }}`},
+	}
+	engine, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := &metadata.Document{Fields: map[string]string{"TITLE": "Container"}, Vars: map[string]string{}}
+	fields, err := engine.BuildWithExisting(res, map[string]string{
+		"Title": "Tag", "Album artist": "Tag Artist",
+	}, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["Title"] != "Tag" || fields["Album artist"] != "Tag Artist" || fields["Seen"] != "Tag" {
+		t.Fatalf("fields = %v", fields)
+	}
+}

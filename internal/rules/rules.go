@@ -217,11 +217,16 @@ func (e *Engine) BuildWithOverridesPrefer(res *metadata.Document, existing, over
 	mergeNumberVars(res.Vars, get)
 	normalizeDateFields(fields)
 
+	container := res.Fields
+	exttag := existing
+	if exttag == nil {
+		exttag = map[string]string{}
+	}
 	for i, c := range e.rules {
-		data := e.templateData(fields, res.Vars, meta)
+		data := e.ruleData(fields, res.Vars, meta, container, exttag)
 
 		if c.when != nil {
-			value, err := execute(c.when, data)
+			value, err := executeData(c.when, data)
 			if err != nil {
 				return nil, fmt.Errorf("rule %d when: %w", i, err)
 			}
@@ -232,7 +237,7 @@ func (e *Engine) BuildWithOverridesPrefer(res *metadata.Document, existing, over
 
 		switch {
 		case c.rule.Set != "":
-			value, err := execute(c.set, data)
+			value, err := executeData(c.set, data)
 			if err != nil {
 				return nil, fmt.Errorf("rule %d set %q: %w", i, c.rule.Set, err)
 			}
@@ -353,6 +358,7 @@ func (e *Engine) RenderRawWithExtra(format string, container, tag, vars, extra m
 	data["raw"] = raw
 	data["container"] = container
 	data["tag"] = tag
+	data["exttag"] = tag
 	for key, value := range extra {
 		if id := ident(key); id != "" {
 			data[id] = value
@@ -448,8 +454,11 @@ func (e *Engine) templateData(fields, vars map[string]string, meta Meta) map[str
 	return data
 }
 
-func execute(t *template.Template, data map[string]string) (string, error) {
-	return executeData(t, data)
+func (e *Engine) ruleData(fields, vars map[string]string, meta Meta, container, exttag map[string]string) map[string]any {
+	data := e.renderData(fields, vars, meta)
+	data["container"] = container
+	data["exttag"] = exttag
+	return data
 }
 
 func executeData(t *template.Template, data any) (string, error) {
@@ -457,12 +466,16 @@ func executeData(t *template.Template, data any) (string, error) {
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(buf.String()), nil
+	out := strings.TrimSpace(buf.String())
+	if out == "<no value>" || out == "<nil>" {
+		return "", nil
+	}
+	return out, nil
 }
 
 func isTrue(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "", "false", "0", "no":
+	case "", "false", "0", "no", "<no value>", "<nil>":
 		return false
 	}
 	return true
