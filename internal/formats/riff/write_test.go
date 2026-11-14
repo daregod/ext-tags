@@ -112,3 +112,33 @@ func riffChunk(id string, data []byte) []byte {
 	}
 	return out
 }
+
+func TestWriteReadAllCovers(t *testing.T) {
+	src := filepath.Join("..", "..", "..", "testdata", "formats", "audio.wav")
+	path := filepath.Join(t.TempDir(), "audio.wav")
+	data, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+		cover := &metadata.Cover{Filename: kind + ".jpg", MIME: "image/jpeg", Data: []byte{1, 2, 3}}
+		doc.Artwork[kind] = cover
+	}
+	doc.Cover = doc.Artwork["front"]
+	if err := riff.Write(path, doc); err != nil {
+		t.Fatal(err)
+	}
+	md, err := riff.Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+		if md.Artwork[kind] == nil {
+			t.Fatalf("missing %s artwork: %+v", kind, md.Artwork)
+		}
+	}
+}

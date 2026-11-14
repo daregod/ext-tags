@@ -7,6 +7,7 @@ import (
 
 	"github.com/dhowden/tag"
 
+	"github.com/daregod/ext-tags/internal/formats/id3"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 )
@@ -74,6 +75,13 @@ func buildDocument(md *Metadata, format string) (*metadata.Document, error) {
 			}
 		}
 	}
+	for kind, id3Cover := range id3.ReadCovers(md.ID3) {
+		cover := &metadata.Cover{Filename: id3Cover.Filename, MIME: id3Cover.MIME, Data: id3Cover.Data}
+		res.Artwork[kind] = cover
+		if kind == metadata.Front {
+			res.Cover = cover
+		}
+	}
 	track, trackTotal := read.SplitPair(read.FieldValue(res.Fields, "TRACKNUMBER"))
 	disc, discTotal := read.SplitPair(read.FieldValue(res.Fields, "DISCNUMBER"))
 	read.PutVar(res.Vars, "tracknumber", track)
@@ -123,6 +131,13 @@ func buildAIFF(md *Metadata) (*metadata.Document, error) {
 			if _, exists := res.Fields[key]; !exists {
 				add(key, value)
 			}
+		}
+	}
+	for kind, id3Cover := range id3.ReadCovers(md.ID3) {
+		cover := &metadata.Cover{Filename: id3Cover.Filename, MIME: id3Cover.MIME, Data: id3Cover.Data}
+		res.Artwork[kind] = cover
+		if kind == metadata.Front {
+			res.Cover = cover
 		}
 	}
 	track, trackTotal := read.SplitPair(read.FieldValue(res.Fields, "TRACKNUMBER"))
