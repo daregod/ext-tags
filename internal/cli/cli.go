@@ -516,6 +516,9 @@ func (a *app) report(r fileResult) {
 		}
 	case "import-dry":
 		fmt.Printf("DRY-RUN %s ← %s (%d fields)\n", r.File, r.TagFile, r.Items)
+		if r.Warning != "" {
+			fmt.Printf("        warning: %s\n", r.Warning)
+		}
 	case "skipped":
 		fmt.Printf("SKIP    %s (%s)\n", r.File, r.Reason)
 	case "no-tags":

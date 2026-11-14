@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/daregod/ext-tags/internal/config"
 	"github.com/daregod/ext-tags/internal/formats/ape"
 	"github.com/daregod/ext-tags/internal/formats/asf"
 	"github.com/daregod/ext-tags/internal/formats/matroska"
@@ -334,5 +335,19 @@ func TestImportOnlyASF(t *testing.T) {
 	}
 	if read.FieldValue(doc.Fields, "TRACKNUMBER", "tracknumber") != "1/10" {
 		t.Fatalf("track = %v", doc.Fields)
+	}
+}
+
+func TestCustomFieldWarnings(t *testing.T) {
+	cfg := config.Default()
+	warnings := customFieldWarnings("track.mp3", map[string]string{"Titel": "typo"}, cfg, []string{"Titel"})
+	if len(warnings) != 1 || !strings.Contains(warnings[0], `custom field "Titel" written as ID3 TXXX`) {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	if got := customFieldWarnings("track.mp3", map[string]string{"Rating": "5"}, cfg, []string{"Rating"}); len(got) != 0 {
+		t.Fatalf("Rating warning = %v", got)
+	}
+	if got := customFieldWarnings("track.mp4", map[string]string{"Titel": "typo"}, cfg, []string{"Titel"}); len(got) != 0 {
+		t.Fatalf("MP4 warning = %v", got)
 	}
 }

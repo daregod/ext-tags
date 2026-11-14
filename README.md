@@ -287,7 +287,7 @@ ext-tags import --only Rating,Track track.mp3
 - если выбранного поля нет в `.tag`, оно удаляется из аудио;
 - остальные поля и обложки не трогаются.
 
-В список можно включать обложки по каноническим именам:
+Если `--only` содержит неизвестное текстовое поле, но формат умеет его\nхранить (ID3 TXXX, Vorbis comment, APEv2 key, Matroska SimpleTag), импорт\nвыполняется с предупреждением:\n\n```text\nwarning: custom field "Titel" written as ID3 TXXX\n```\n\nДля MP4/ASF неизвестное поле остаётся ошибкой.\n\nВ список можно включать обложки по каноническим именам:
 
 ```bash
 ext-tags import --only "Rating,Cover Art (Front)" track.mp3

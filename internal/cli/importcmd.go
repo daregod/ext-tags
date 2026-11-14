@@ -152,9 +152,11 @@ func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOp
 			tf.Cover = covers["front"]
 		}
 	}
+	customWarnings := customFieldWarnings(path, tf.Fields, cfg, opts.only)
 	res.TagFile = tagPath
 	res.Items = len(tf.Fields)
 	res.Fields = tf.Fields
+	res.Warning = strings.Join(customWarnings, "; ")
 	if tf.Cover != nil {
 		res.Cover = &coverInfo{Filename: tf.Cover.Filename, Bytes: len(tf.Cover.Data)}
 	}
@@ -206,7 +208,7 @@ func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOp
 		res.Backup = path + ".bak"
 	}
 	res.Status = "imported"
-	var notes []string
+	notes := append([]string(nil), customWarnings...)
 	notes = append(notes, warnings...)
 	if strings.EqualFold(filepath.Ext(path), ".flac") && sniffContainer(path) == "ogg" {
 		notes = append(notes, "Ogg/Opus in a .flac file: foobar2000 picks the artwork reader by extension; rename to .opus to see embedded art")
@@ -293,4 +295,50 @@ func onlyArtwork(fields []string) map[string]bool {
 		}
 	}
 	return out
+}
+
+func customFieldWarnings(path string, fields map[string]string, cfg *config.Config, only []string) []string {
+	if len(only) == 0 {
+		return nil
+	}
+	fallback := customStorage(path)
+	if fallback == "" {
+		return nil
+	}
+	known := map[string]bool{}
+	for _, field := range cfg.Fields.Aliases {
+		known[strings.ToLower(strings.TrimSpace(field))] = true
+	}
+	for _, field := range []string{"Title", "Artist", "Album", "Album artist", "Track", "Disc", "Genre", "Year", "Releasetime", "Comment", "Composer", "Publisher", "Encoder", "Copyright", "Rating", "Www", "Catalognumber", "Isrc"} {
+		known[strings.ToLower(field)] = true
+	}
+	var warnings []string
+	seen := map[string]bool{}
+	for _, selected := range only {
+		selected = strings.TrimSpace(selected)
+		lower := strings.ToLower(selected)
+		if selected == "" || seen[lower] || known[lower] {
+			continue
+		}
+		if fields[selected] == "" {
+			continue
+		}
+		seen[lower] = true
+		warnings = append(warnings, fmt.Sprintf("custom field %q written as %s", selected, fallback))
+	}
+	return warnings
+}
+
+func customStorage(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".mp3", ".mp2", ".mp1", ".wav", ".rf64", ".w64", ".aif", ".aiff":
+		return "ID3 TXXX"
+	case ".flac", ".ogg", ".oga", ".opus", ".spx":
+		return "Vorbis comment"
+	case ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts":
+		return "APEv2 key"
+	case ".mkv", ".webm":
+		return "Matroska SimpleTag"
+	}
+	return ""
 }
