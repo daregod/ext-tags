@@ -27,6 +27,12 @@ type packet struct {
 // WriteComments replaces/merges Vorbis comments and pictures in an Ogg
 // Vorbis, Opus or Speex file, rewriting only the header pages.
 func WriteComments(path string, comments []vorbis.Comment, pictures []vorbis.Picture, replace bool) error {
+	return WriteCommentsWithRemove(path, comments, pictures, replace, nil, nil)
+}
+
+// WriteCommentsWithRemove is WriteComments with selected comment names and
+// picture types removed even when absent from the new values.
+func WriteCommentsWithRemove(path string, comments []vorbis.Comment, pictures []vorbis.Picture, replace bool, remove map[string]bool, removePictures map[uint32]bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err

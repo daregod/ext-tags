@@ -84,10 +84,11 @@ func mimeFor(name string) string {
 
 // Options controls the tag writer.
 type Options struct {
-	Version int  // ID3v2 major version: 2, 3 or 4 (default 3)
-	V1      bool // also write an ID3v1 tag
-	Replace bool // drop audio tag frames that are not in the .tag file
-	Backup  bool // keep a copy of the audio file as <name>.bak
+	Version int      // ID3v2 major version: 2, 3 or 4 (default 3)
+	V1      bool     // also write an ID3v1 tag
+	Replace bool     // drop audio tag frames that are not in the .tag file
+	Backup  bool     // keep a copy of the audio file as <name>.bak
+	Only    []string // import only these fields; missing ones are removed
 }
 
 // ImportMP3 writes the fields and cover of tf into an MP3 file.
@@ -105,6 +106,7 @@ func ImportMP3(path string, tf *TagFile, opts Options) error {
 		Version: opts.Version,
 		V1:      opts.V1,
 		Replace: opts.Replace,
+		Only:    opts.Only,
 	})
 }
 

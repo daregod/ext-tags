@@ -47,6 +47,9 @@ func ImportAPEv2(path string, tf *TagFile, opts Options) error {
 	for field := range tf.Fields {
 		replaced[strings.ToLower(field)] = true
 	}
+	for _, field := range opts.Only {
+		replaced[strings.ToLower(strings.TrimSpace(field))] = true
+	}
 	if !opts.Replace && existing != nil {
 		for _, item := range existing.Items {
 			if item.Flags&2 != 0 {
@@ -90,12 +93,15 @@ func ImportAPEv2(path string, tf *TagFile, opts Options) error {
 		for _, spec := range apeArtKeys {
 			known[strings.ToLower(spec.key)] = spec.kind
 		}
+		artOnly := onlyArtworkSlots(opts.Only)
 		for _, item := range existing.Items {
 			if item.Flags&2 == 0 {
 				continue
 			}
-			if kind, ok := known[strings.ToLower(item.Key)]; ok && added[kind] {
-				continue
+			if kind, ok := known[strings.ToLower(item.Key)]; ok {
+				if added[kind] || artOnly[kind] {
+					continue
+				}
 			}
 			tag.AddBinary(item.Key, item.Value)
 		}
@@ -126,4 +132,22 @@ func stripAPETag(data []byte) ([]byte, error) {
 		start -= 32
 	}
 	return data[:start], nil
+}
+func onlyArtworkSlots(fields []string) map[string]bool {
+	out := make(map[string]bool)
+	for _, field := range fields {
+		switch strings.ToLower(strings.TrimSpace(field)) {
+		case "cover art (front)":
+			out["front"] = true
+		case "cover art (back)":
+			out["back"] = true
+		case "artist picture":
+			out["artist"] = true
+		case "cover art (disc)":
+			out["disc"] = true
+		case "cover art (icon)":
+			out["icon"] = true
+		}
+	}
+	return out
 }

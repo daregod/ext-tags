@@ -64,5 +64,5 @@ func ImportOgg(path string, tf *TagFile, opts Options) error {
 	}
 	sort.Slice(pictures, func(i, j int) bool { return pictures[i].Type < pictures[j].Type })
 
-	return ogg.WriteComments(path, comments, pictures, opts.Replace)
+	return ogg.WriteCommentsWithRemove(path, comments, pictures, opts.Replace, onlyVorbis(opts.Only), onlyPictures(opts.Only))
 }

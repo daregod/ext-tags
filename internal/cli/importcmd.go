@@ -20,6 +20,7 @@ type importOptions struct {
 	v1      bool
 	backup  bool
 	verify  string
+	only    []string
 }
 
 func (a *app) importCmd() *cobra.Command {
@@ -37,6 +38,7 @@ func (a *app) importCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.v1, "id3v1", false, "also write an ID3v1 tag")
 	cmd.Flags().BoolVar(&opts.backup, "backup", false, "keep a copy of the audio file as <name>.bak")
 	cmd.Flags().StringVar(&opts.verify, "verify", "error", "post-write verification: error, warn or off")
+	cmd.Flags().StringSliceVar(&opts.only, "only", nil, "import only these fields; missing selected fields are removed")
 	return cmd
 }
 
@@ -58,6 +60,17 @@ func (a *app) runImport(paths []string, opts *importOptions) error {
 	case "error", "warn", "off":
 	default:
 		return fmt.Errorf("--verify must be error, warn or off")
+	}
+	if len(opts.only) > 0 {
+		opts.only = cleanOnly(opts.only)
+		if len(opts.only) == 0 {
+			return fmt.Errorf("--only requires at least one field")
+		}
+		if opts.replace {
+			fmt.Fprintln(os.Stderr, "warning: --replace has no effect with --only")
+			a.stats.warnings++
+			opts.replace = false
+		}
 	}
 	if a.opts.verbose && !a.opts.json {
 		fmt.Fprintf(os.Stderr, "config: %s\n", label)
@@ -97,6 +110,13 @@ func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOp
 		return
 	}
 
+	if len(opts.only) > 0 && !onlyFormatSupported(path) {
+		res.Status = "error"
+		res.Error = fmt.Sprintf("--only is not supported for %s", strings.ToLower(filepath.Ext(path)))
+		a.failed = true
+		a.report(res)
+		return
+	}
 	tf, err := importer.ReadTagFile(tagPath)
 	if err != nil {
 		res.Status = "error"
@@ -104,6 +124,33 @@ func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOp
 		a.failed = true
 		a.report(res)
 		return
+	}
+	if len(opts.only) > 0 {
+		selected := make(map[string]bool, len(opts.only))
+		for _, field := range opts.only {
+			selected[strings.ToLower(field)] = true
+		}
+		filtered := make(map[string]string)
+		for field, value := range tf.Fields {
+			if selected[strings.ToLower(field)] && !isArtworkName(field) {
+				filtered[field] = value
+			}
+		}
+		tf.Fields = filtered
+		artOnly := onlyArtwork(opts.only)
+		if len(artOnly) == 0 {
+			tf.Covers = map[string]*importer.Cover{}
+			tf.Cover = nil
+		} else {
+			covers := make(map[string]*importer.Cover)
+			for kind, cover := range tf.Covers {
+				if artOnly[kind] {
+					covers[kind] = cover
+				}
+			}
+			tf.Covers = covers
+			tf.Cover = covers["front"]
+		}
 	}
 	res.TagFile = tagPath
 	res.Items = len(tf.Fields)
@@ -146,6 +193,7 @@ func (a *app) importFile(path, suffix string, cfg *config.Config, opts *importOp
 		ID3Version: opts.version,
 		ID3V1:      opts.v1,
 		Verify:     opts.verify,
+		Only:       opts.only,
 	})
 	if err != nil {
 		res.Status = "error"
@@ -194,4 +242,52 @@ func documentFromTagFile(tf *importer.TagFile) *metadata.Document {
 	}
 	doc.Cover = tf.Cover
 	return doc
+}
+func cleanOnly(fields []string) []string {
+	seen := make(map[string]bool, len(fields))
+	out := make([]string, 0, len(fields))
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			continue
+		}
+		key := strings.ToLower(field)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, field)
+	}
+	return out
+}
+func onlyFormatSupported(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx",
+		".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts":
+		return true
+	}
+	return false
+}
+
+var artworkNames = map[string]string{
+	"cover art (front)": "front",
+	"cover art (back)":  "back",
+	"artist picture":    "artist",
+	"cover art (disc)":  "disc",
+	"cover art (icon)":  "icon",
+}
+
+func isArtworkName(name string) bool {
+	_, ok := artworkNames[strings.ToLower(strings.TrimSpace(name))]
+	return ok
+}
+
+func onlyArtwork(fields []string) map[string]bool {
+	out := make(map[string]bool)
+	for _, field := range fields {
+		if kind, ok := artworkNames[strings.ToLower(strings.TrimSpace(field))]; ok {
+			out[kind] = true
+		}
+	}
+	return out
 }

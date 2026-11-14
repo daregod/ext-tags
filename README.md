@@ -219,7 +219,7 @@ ext-tags --json extract track.flac
 | `--profile NAME` | профиль из конфига |
 | `--dry-run` | показать, что было бы записано |
 | `--json` | NDJSON-вывод для скриптов |
-| `--quiet` | только ошибки |
+| `--quiet` | не печатать per-file результаты; с `--summary` — только итог |
 | `-v`, `--verbose` | подробности и итоговый конфиг |
 | `-r`, `--recursive` | обходить подпапки |
 | `--on-existing MODE` | `overwrite`, `skip`, `backup`, `error` |
@@ -274,6 +274,34 @@ SUMMARY processed=145 ok=132 dry_run=3 diff=4 renamed=0 imported=0 skipped=4 no_
 ```
 
 `--summary` несовместим с `--stdout`; при `--quiet` остаётся только итог.
+
+### import: только выбранные поля
+
+```bash
+ext-tags import --only Rating,Track track.mp3
+```
+
+`--only` — частичная замена, не merge:
+
+- выбранные поля синхронизируются с `.tag`;
+- если выбранного поля нет в `.tag`, оно удаляется из аудио;
+- остальные поля и обложки не трогаются.
+
+В список можно включать обложки по каноническим именам:
+
+```bash
+ext-tags import --only "Rating,Cover Art (Front)" track.mp3
+ext-tags import --only "Cover Art (Front)" track.mp3
+```
+
+Доступны `Cover Art (Front)`, `Cover Art (Back)`, `Artist Picture`,
+`Cover Art (Disc)`, `Cover Art (Icon)`. Выбранный слот берётся из `.tag`;
+если его там нет, существующая обложка удаляется. Невыбранные слоты
+сохраняются.
+
+Поддерживаются MP3, FLAC, Ogg/Opus/Speex и APEv2-форматы. Для остальных
+`--only` возвращает ошибку. `--replace` вместе с `--only` игнорируется с
+предупреждением.
 
 ### import: проверка после записи
 

@@ -87,7 +87,7 @@ func ImportFLAC(path string, tf *TagFile, opts Options) error {
 	}
 	sort.Slice(pictures, func(i, j int) bool { return pictures[i].Type < pictures[j].Type })
 
-	return flac.Write(path, comments, pictures, opts.Replace)
+	return flac.WriteWithRemove(path, comments, pictures, opts.Replace, onlyVorbis(opts.Only), onlyPictures(opts.Only))
 }
 func splitPair(value string) (string, string) {
 	parts := strings.SplitN(value, "/", 2)
@@ -95,4 +95,45 @@ func splitPair(value string) (string, string) {
 		return parts[0], parts[1]
 	}
 	return parts[0], ""
+}
+func onlyVorbis(fields []string) map[string]bool {
+	if len(fields) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(fields)+2)
+	for _, field := range fields {
+		name, ok := vorbisFields[field]
+		if !ok {
+			name = strings.ToUpper(strings.ReplaceAll(field, " ", ""))
+		}
+		out[name] = true
+		switch field {
+		case "Track":
+			out["TRACKTOTAL"] = true
+		case "Disc":
+			out["DISCTOTAL"] = true
+		}
+	}
+	return out
+}
+
+var onlyPictureKinds = map[string]uint32{
+	"cover art (front)": 3,
+	"cover art (back)":  4,
+	"artist picture":    8,
+	"cover art (disc)":  6,
+	"cover art (icon)":  1,
+}
+
+func onlyPictures(fields []string) map[uint32]bool {
+	out := make(map[uint32]bool)
+	for _, field := range fields {
+		if typ, ok := onlyPictureKinds[strings.ToLower(strings.TrimSpace(field))]; ok {
+			out[typ] = true
+			if typ == 3 {
+				out[0] = true
+			}
+		}
+	}
+	return out
 }

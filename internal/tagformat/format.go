@@ -21,6 +21,8 @@ type WriteOptions struct {
 	ID3V1      bool
 	// Verify controls post-write verification: ""/"error", "warn" or "off".
 	Verify string
+	// Only limits import to the listed fields.
+	Only []string
 }
 
 // Reader reads a container into a metadata document.

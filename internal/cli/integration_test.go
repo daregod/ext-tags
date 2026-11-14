@@ -277,7 +277,7 @@ func TestExtractSummary(t *testing.T) {
 	dir := t.TempDir()
 	audio := filepath.Join(dir, "track.flac")
 	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
-	a := &app{opts: &options{quiet: true, json: true, summary: true}, registry: registry.NewDefault()}
+	a := &app{opts: &options{json: true, summary: true}, registry: registry.NewDefault()}
 	cmd := a.extractCmd()
 	out := captureStdout(t, func() {
 		if err := a.runExtract(cmd, []string{audio}); err != nil {
@@ -294,5 +294,22 @@ func TestExtractSummary(t *testing.T) {
 	}
 	if summary["type"] != "summary" || summary["processed"].(float64) != 1 || summary["ok"].(float64) != 1 {
 		t.Fatalf("summary = %v", summary)
+	}
+}
+
+func TestExtractQuietSummaryOnly(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	a := &app{opts: &options{quiet: true, json: true, summary: true}, registry: registry.NewDefault()}
+	cmd := a.extractCmd()
+	out := captureStdout(t, func() {
+		if err := a.runExtract(cmd, []string{audio}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 1 || !strings.Contains(lines[0], `"type":"summary"`) {
+		t.Fatalf("output = %q", out)
 	}
 }

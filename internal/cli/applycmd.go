@@ -117,17 +117,15 @@ func (a *app) runApply(opts *applyOptions) error {
 		res.Status = "dry-run"
 	}
 	a.addResult(fileResult{Status: res.Status, Items: res.Items, Bytes: res.Bytes})
-	if a.opts.json {
-		writeJSONRecord(res)
-		a.printSummary()
-		return nil
+	if !a.opts.quiet {
+		if a.opts.json {
+			writeJSONRecord(res)
+		} else if res.Status == "dry-run" {
+			fmt.Printf("DRY-RUN %s (%d items, %d bytes)\n", opts.tag, items, len(data))
+		} else {
+			fmt.Printf("Wrote %s (%d items, %d bytes)\n", res.Output, items, len(data))
+		}
 	}
-	if res.Status == "dry-run" {
-		fmt.Printf("DRY-RUN %s (%d items, %d bytes)\n", opts.tag, items, len(data))
-		a.printSummary()
-		return nil
-	}
-	fmt.Printf("Wrote %s (%d items, %d bytes)\n", res.Output, items, len(data))
 	a.printSummary()
 	return nil
 }

@@ -461,6 +461,12 @@ func (a *app) processFile(path string, cfg *config.Config, engine *rules.Engine)
 
 func (a *app) report(r fileResult) {
 	a.addResult(r)
+	if a.opts.quiet {
+		if r.Status == "error" {
+			fmt.Fprintf(os.Stderr, "error: %s: %s\\n", r.File, r.Error)
+		}
+		return
+	}
 	if a.opts.json {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetEscapeHTML(false)
@@ -468,10 +474,6 @@ func (a *app) report(r fileResult) {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			a.failed = true
 		}
-		return
-	}
-
-	if a.opts.quiet && r.Status != "error" {
 		return
 	}
 

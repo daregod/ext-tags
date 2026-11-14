@@ -109,6 +109,7 @@ func (w writerSpec) Write(path string, doc *metadata.Document, opts tagformat.Wr
 		Backup:  opts.Backup,
 		Version: opts.ID3Version,
 		V1:      opts.ID3V1,
+		Only:    opts.Only,
 	})
 }
 

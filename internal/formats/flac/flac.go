@@ -54,6 +54,12 @@ func Read(path string) ([]vorbis.Comment, []vorbis.Picture, error) {
 
 // Write replaces/merges comments and pictures, keeping the audio frames intact.
 func Write(path string, comments []vorbis.Comment, pictures []vorbis.Picture, replace bool) error {
+	return WriteWithRemove(path, comments, pictures, replace, nil, nil)
+}
+
+// WriteWithRemove is Write with selected comment names and picture types
+// removed from the existing tag even when absent from the new values.
+func WriteWithRemove(path string, comments []vorbis.Comment, pictures []vorbis.Picture, replace bool, remove map[string]bool, removePictures map[uint32]bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -89,7 +95,8 @@ func Write(path string, comments []vorbis.Comment, pictures []vorbis.Picture, re
 			replaced[strings.ToUpper(c.Name)] = true
 		}
 		for _, c := range existing {
-			if !replaced[strings.ToUpper(c.Name)] {
+			name := strings.ToUpper(c.Name)
+			if !replaced[name] && !remove[name] {
 				merged = append(merged, c)
 			}
 		}
@@ -102,7 +109,7 @@ func Write(path string, comments []vorbis.Comment, pictures []vorbis.Picture, re
 			replaced[p.Type] = true
 		}
 		for _, p := range existingPictures {
-			if !replaced[p.Type] {
+			if !replaced[p.Type] && !removePictures[p.Type] {
 				mergedPictures = append(mergedPictures, p)
 			}
 		}

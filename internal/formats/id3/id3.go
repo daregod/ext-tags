@@ -2,6 +2,7 @@
 package id3
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -19,9 +20,10 @@ type Cover struct {
 
 // Options controls the writer.
 type Options struct {
-	Version int  // ID3v2 major version: 2, 3 or 4 (default 3)
-	V1      bool // also write an ID3v1 tag
-	Replace bool // drop existing frames that are not in fields
+	Version int      // ID3v2 major version: 2, 3 or 4 (default 3)
+	V1      bool     // also write an ID3v1 tag
+	Replace bool     // drop existing frames that are not in fields
+	Only    []string // selected fields; absent ones are removed
 }
 
 type rawFrame struct {
@@ -63,8 +65,23 @@ func Write(path string, fields map[string]string, covers map[string]*Cover, opts
 	frames := buildFrames(version, fields, covers)
 	if !opts.Replace && hasTag && oldVersion == version {
 		overwrite := frameIDs(frames)
+		artOnly := onlyArtworkTypes(opts.Only)
+		if len(artOnly) > 0 {
+			delete(overwrite, apicID(version))
+		}
+		removeIDs, removeTXXX := onlyRemovals(version, opts.Only)
 		for _, frame := range existing {
-			if overwrite[frame.id] {
+			if frame.id == apicID(version) {
+				if artOnly[apicKind(version, frame.payload)] {
+					continue
+				}
+				frames = append(frames, frame)
+				continue
+			}
+			if overwrite[frame.id] || removeIDs[frame.id] {
+				continue
+			}
+			if frame.id == txxxID(version) && removeTXXX[strings.ToLower(txxxDescription(frame.payload))] {
 				continue
 			}
 			frames = append(frames, frame)
@@ -72,6 +89,7 @@ func Write(path string, fields map[string]string, covers map[string]*Cover, opts
 	}
 
 	tag := composeTag(version, frames)
+
 	rest := data
 	if hasTag {
 		rest = data[tagLen:]
@@ -143,6 +161,117 @@ func encodingFor(version int) byte {
 	return 1 // UTF-16 with BOM
 }
 
+func onlyRemovals(version int, only []string) (map[string]bool, map[string]bool) {
+	ids := frameIDsFor(version)
+	removeIDs := make(map[string]bool)
+	removeTXXX := make(map[string]bool)
+	for _, field := range only {
+		if artworkKind(field) != "" {
+			continue
+		}
+		if strings.EqualFold(field, "Comment") {
+			removeIDs[commentID(version)] = true
+			continue
+		}
+		if id, ok := ids[field]; ok {
+			removeIDs[id] = true
+			continue
+		}
+		removeTXXX[strings.ToLower(field)] = true
+	}
+	return removeIDs, removeTXXX
+}
+
+func txxxDescription(payload []byte) string {
+	if len(payload) < 2 {
+		return ""
+	}
+	encoding := payload[0]
+	body := payload[1:]
+	switch encoding {
+	case 1, 2:
+		var u []uint16
+		for i := 0; i+1 < len(body); i += 2 {
+			v := uint16(body[i]) | uint16(body[i+1])<<8
+			if encoding == 2 {
+				v = uint16(body[i])<<8 | uint16(body[i+1])
+			}
+			if v == 0 {
+				break
+			}
+			u = append(u, v)
+		}
+		if encoding == 2 {
+			return string(utf16.Decode(u))
+		}
+		if len(u) > 0 && u[0] == 0xFEFF {
+			u = u[1:]
+		}
+		return string(utf16.Decode(u))
+	case 3:
+		if i := bytes.IndexByte(body, 0); i >= 0 {
+			return string(body[:i])
+		}
+		return string(body)
+	default:
+		if i := bytes.IndexByte(body, 0); i >= 0 {
+			return string(body[:i])
+		}
+		return string(body)
+	}
+}
+
+func artworkKind(field string) string {
+	names := map[string]string{
+		"cover art (front)": "front",
+		"cover art (back)":  "back",
+		"artist picture":    "artist",
+		"cover art (disc)":  "disc",
+		"cover art (icon)":  "icon",
+	}
+	return names[strings.ToLower(strings.TrimSpace(field))]
+}
+
+func onlyArtworkTypes(fields []string) map[string]bool {
+	out := make(map[string]bool)
+	for _, field := range fields {
+		if kind := artworkKind(field); kind != "" {
+			out[kind] = true
+		}
+	}
+	return out
+}
+
+func apicKind(version int, payload []byte) string {
+	if len(payload) < 2 {
+		return ""
+	}
+	pos := 1
+	if version == 2 {
+		pos += 3
+	} else {
+		for pos < len(payload) && payload[pos] != 0 {
+			pos++
+		}
+		pos++
+	}
+	if pos >= len(payload) {
+		return ""
+	}
+	switch payload[pos] {
+	case 0, 3:
+		return "front"
+	case 4:
+		return "back"
+	case 8:
+		return "artist"
+	case 6:
+		return "disc"
+	case 1:
+		return "icon"
+	}
+	return ""
+}
 func frameIDsFor(version int) map[string]string {
 	if version == 2 {
 		return map[string]string{
