@@ -73,3 +73,26 @@ func TestFixTagDoesNotStealExistingSource(t *testing.T) {
 		t.Fatal("source tag is missing")
 	}
 }
+
+func TestFindTagSourceMultipleAndErrors(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	if err := os.WriteFile(audio, nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"track.mp3.tag", "track.wav.tag"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	source, reason, err := findTagSource(audio, ".tag")
+	if err != nil || source != "" || reason == "" {
+		t.Fatalf("multiple = %q %q %v", source, reason, err)
+	}
+	if _, _, err := findTagSource(filepath.Join(dir, "missing", "track.flac"), ".tag"); err == nil {
+		t.Fatal("expected read dir error")
+	}
+	if source, reason, err := findTagSource(filepath.Join(dir, "other.flac"), ".tag"); err != nil || source != "" || reason != "" {
+		t.Fatalf("none = %q %q %v", source, reason, err)
+	}
+}

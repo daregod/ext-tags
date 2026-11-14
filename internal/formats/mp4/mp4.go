@@ -474,9 +474,9 @@ func readMoovPictures(payload []byte) ([]Cover, error) {
 						kind := binary.BigEndian.Uint32(value.data[0:4])
 						mime, filename := "image/jpeg", "cover.jpg"
 						switch kind {
-						case 13:
-							mime, filename = "image/png", "cover.png"
 						case 14:
+							mime, filename = "image/png", "cover.png"
+						case 12:
 							mime, filename = "image/gif", "cover.gif"
 						}
 						out = append(out, Cover{Filename: filename, MIME: mime, Data: value.data[4:]})

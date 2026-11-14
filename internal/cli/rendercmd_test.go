@@ -104,3 +104,19 @@ func TestRenderFieldsMap(t *testing.T) {
 		t.Fatalf("fields = %q", out)
 	}
 }
+
+func TestRenderErrors(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), path)
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	if err := a.runRender([]string{path}, &renderOptions{template: "{{"}); err == nil {
+		t.Fatal("expected template error")
+	}
+	if err := a.runRender([]string{filepath.Join(dir, "track.unknown")}, &renderOptions{template: "{{.title}}"}); err != nil {
+		t.Fatalf("unsupported file: %v", err)
+	}
+	if err := a.runRender([]string{filepath.Join(dir, "missing.flac")}, &renderOptions{template: "{{.title}}"}); err != nil {
+		t.Fatalf("missing file: %v", err)
+	}
+}

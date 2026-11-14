@@ -463,7 +463,7 @@ func (a *app) report(r fileResult) {
 	a.addResult(r)
 	if a.opts.quiet {
 		if r.Status == "error" {
-			fmt.Fprintf(os.Stderr, "error: %s: %s\\n", r.File, r.Error)
+			fmt.Fprintf(os.Stderr, "error: %s: %s\n", r.File, r.Error)
 		}
 		return
 	}

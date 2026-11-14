@@ -176,3 +176,45 @@ func TestWriteSelectiveRemovesInfo(t *testing.T) {
 		t.Fatalf("ICMT = %q", md.Info["ICMT"])
 	}
 }
+
+func TestWriteReplaceDropsInfoAndOldFrames(t *testing.T) {
+	info := []byte("INFO")
+	info = append(info, riffChunk("ICMT", []byte("Old comment\x00"))...)
+	id3tag, err := id3.Build(map[string]string{"Comment": "Old ID3"}, nil, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := riffChunk("fmt ", make([]byte, 16))
+	body = append(body, riffChunk("LIST", info)...)
+	body = append(body, riffChunk("data", make([]byte, 32))...)
+	body = append(body, riffChunk("id3 ", id3tag)...)
+	out := []byte("RIFF")
+	size := make([]byte, 4)
+	binary.LittleEndian.PutUint32(size, uint32(4+len(body)))
+	out = append(out, size...)
+	out = append(out, []byte("WAVE")...)
+	out = append(out, body...)
+	path := filepath.Join(t.TempDir(), "track.wav")
+	if err := os.WriteFile(path, out, 0644); err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Title"] = "New"
+	if err := riff.WriteSelective(path, doc, nil, true); err != nil {
+		t.Fatal(err)
+	}
+	md, err := riff.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(md.Info) != 0 {
+		t.Fatalf("info = %+v", md.Info)
+	}
+	doc, err = riff.Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.Fields["COMMENT"] != "" {
+		t.Fatalf("old ID3 frame = %+v", doc.Fields)
+	}
+}
