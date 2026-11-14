@@ -4,6 +4,17 @@
 [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.17.1] — 2026-11-14
+
+### Исправлено
+
+- MP4 `covr`: PNG (`data type 14`) и GIF (`12`) больше не определяются как JPEG/PNG наоборот.
+- `--quiet` больше не печатает литеральный `\n` в сообщении об ошибке.
+
+### Тесты
+
+- Покрытие `internal/` поднято с 76.0% до 85.1%; добавлены тесты artwork index, ID3 APIC, Matroska, MP4, ASF, RIFF, rules, tagfile и CLI.
+
 ## [0.17.0] — 2026-11-14
 
 ### Исправлено
