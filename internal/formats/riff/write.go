@@ -370,10 +370,7 @@ func id3ChunkBE(tag []byte) []byte {
 }
 
 func rewriteWave64(data, tag []byte, replace bool, remove map[string]bool) ([]byte, error) {
-	if len(remove) > 0 {
-		return nil, fmt.Errorf("riff: --only is not supported for Wave64 yet")
-	}
-	body, err := stripWave64Chunks(data[40:])
+	body, err := filterWave64Chunks(data[40:], replace, remove)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +381,7 @@ func rewriteWave64(data, tag []byte, replace bool, remove map[string]bool) ([]by
 	return out, nil
 }
 
-func stripWave64Chunks(data []byte) ([]byte, error) {
+func filterWave64Chunks(data []byte, replace bool, remove map[string]bool) ([]byte, error) {
 	var out []byte
 	offset := 0
 	for offset+24 <= len(data) {
@@ -397,7 +394,18 @@ func stripWave64Chunks(data []byte) ([]byte, error) {
 		if next > len(data) {
 			next = len(data)
 		}
-		if id != "ID3 " && id != "id3 " {
+		switch id {
+		case "ID3 ", "id3 ":
+			// replaced below
+		case "LIST":
+			payload := data[offset+24 : offset+size]
+			if len(payload) >= 4 && string(payload[:4]) == "INFO" && !replace {
+				filtered := filterInfoLE(payload[4:], remove)
+				out = append(out, wave64Chunk(data[offset:offset+16], append([]byte("INFO"), filtered...))...)
+			} else if !replace {
+				out = append(out, data[offset:next]...)
+			}
+		default:
 			out = append(out, data[offset:next]...)
 		}
 		offset = next
@@ -408,6 +416,18 @@ func stripWave64Chunks(data []byte) ([]byte, error) {
 	return out, nil
 }
 
+func wave64Chunk(guid, payload []byte) []byte {
+	size := 24 + len(payload)
+	padded := (size + 7) &^ 7
+	out := make([]byte, 24, padded)
+	copy(out[0:16], guid)
+	binary.LittleEndian.PutUint64(out[16:24], uint64(size))
+	out = append(out, payload...)
+	for len(out) < padded {
+		out = append(out, 0)
+	}
+	return out
+}
 func wave64ID3Chunk(tag []byte) []byte {
 	chunkSize := 24 + len(tag)
 	padded := (chunkSize + 7) &^ 7
