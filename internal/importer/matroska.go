@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/daregod/ext-tags/internal/formats/matroska"
@@ -29,15 +28,7 @@ func ImportMatroska(path string, tf *TagFile, opts Options) error {
 		return matroska.Write(path, tf.Fields, covers)
 	}
 
-	frontArtwork := false
-	for _, field := range opts.Only {
-		switch strings.ToLower(strings.TrimSpace(field)) {
-		case "cover art (front)":
-			frontArtwork = true
-		case "cover art (back)", "artist picture", "cover art (disc)", "cover art (icon)":
-			return fmt.Errorf("--only artwork %q is not supported for Matroska", field)
-		}
-	}
+	artOnly := onlyArtworkSlots(opts.Only)
 	existing, err := matroska.Read(path, nil)
 	if err != nil && err != read.ErrNoTags {
 		return err
@@ -65,22 +56,28 @@ func ImportMatroska(path string, tf *TagFile, opts Options) error {
 			fields[raw] = value
 		}
 	}
-	if frontArtwork {
+	if len(artOnly) > 0 {
 		md, err := matroska.ReadFile(path)
 		if err != nil {
 			return err
 		}
 		attachments := append([]matroska.Attachment(nil), md.Attachments...)
-		idx := matroska.FrontIndex(attachments)
-		if tf.Cover != nil {
-			cover := matroska.Attachment{Filename: tf.Cover.Filename, MIME: tf.Cover.MIME, Data: tf.Cover.Data}
-			if idx >= 0 {
-				attachments[idx] = cover
-			} else {
-				attachments = append(attachments, cover)
+		for kind := range artOnly {
+			idx := matroska.AttachmentIndex(attachments, kind)
+			cover := tf.Covers[kind]
+			if kind == "front" && cover == nil {
+				cover = tf.Cover
 			}
-		} else if idx >= 0 {
-			attachments = append(attachments[:idx], attachments[idx+1:]...)
+			if cover != nil {
+				attachment := matroska.Attachment{Filename: cover.Filename, MIME: cover.MIME, Data: cover.Data}
+				if idx >= 0 {
+					attachments[idx] = attachment
+				} else {
+					attachments = append(attachments, attachment)
+				}
+			} else if idx >= 0 {
+				attachments = append(attachments[:idx], attachments[idx+1:]...)
+			}
 		}
 		return matroska.WriteWithAttachments(path, fields, attachments)
 	}

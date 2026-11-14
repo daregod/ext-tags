@@ -52,15 +52,60 @@ func Read(path string, coverNames []string) (*metadata.Document, error) {
 	read.PutVar(res.Vars, "totaltracks", read.FieldValue(res.Fields, "TOTAL_PARTS", "TRACKTOTAL", "TOTALTRACKS"))
 	read.PutVar(res.Vars, "discnumber", read.FieldValue(res.Fields, "DISCNUMBER", "DISC"))
 	read.PutVar(res.Vars, "disctotal", read.FieldValue(res.Fields, "DISCTOTAL", "TOTALDISCS"))
-	if att := pickCover(md.Attachments, coverNames); att != nil {
+	for _, kind := range []string{"front", "back", "artist", "disc", "icon"} {
+		idx := attachmentIndex(md.Attachments, kind, coverNames)
+		if idx < 0 {
+			continue
+		}
+		att := md.Attachments[idx]
 		cover := &metadata.Cover{Filename: read.CoverName(att.Filename, att.MIME), MIME: att.MIME, Data: att.Data}
-		res.Cover = cover
-		res.Artwork[metadata.Front] = cover
+		res.Artwork[kind] = cover
+		if kind == metadata.Front {
+			res.Cover = cover
+		}
 	}
-	if len(res.Fields) == 0 && res.Cover == nil {
+	if len(res.Fields) == 0 && len(res.Artwork) == 0 {
 		return res, read.ErrNoTags
 	}
 	return res, nil
+}
+
+var attachmentNames = map[string][]string{
+	"front":  {"cover", "folder", "front", "album", "poster", "box"},
+	"back":   {"back"},
+	"artist": {"artist"},
+	"disc":   {"disc", "media"},
+	"icon":   {"icon"},
+}
+
+func AttachmentIndex(attachments []Attachment, kind string) int {
+	return attachmentIndex(attachments, kind, nil)
+}
+
+func attachmentIndex(attachments []Attachment, kind string, frontNames []string) int {
+	images := make([]int, 0, len(attachments))
+	for i, att := range attachments {
+		if len(att.Data) == 0 || !strings.HasPrefix(strings.ToLower(att.MIME), "image/") {
+			continue
+		}
+		images = append(images, i)
+	}
+	names := attachmentNames[kind]
+	if kind == "front" && len(frontNames) > 0 {
+		names = frontNames
+	}
+	for _, name := range names {
+		for _, i := range images {
+			base := strings.TrimSuffix(attachments[i].Filename, filepath.Ext(attachments[i].Filename))
+			if strings.EqualFold(base, name) {
+				return i
+			}
+		}
+	}
+	if kind == "front" && len(images) > 0 {
+		return images[0]
+	}
+	return -1
 }
 
 var defaultCoverNames = []string{"cover", "folder", "box", "disc", "media"}

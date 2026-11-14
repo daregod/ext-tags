@@ -260,3 +260,34 @@ func TestImportOnlyMatroskaFrontCoverRemoval(t *testing.T) {
 		t.Fatalf("attachments = %d, before %d", len(md.Attachments), len(before.Attachments))
 	}
 }
+
+func TestImportOnlyMatroskaBackCoverRemoval(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.mkv")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.mkv"), audio)
+	if err := matroska.Write(audio, map[string]string{"Title": "Title"}, map[string]*matroska.Cover{
+		"front": {Filename: "cover.jpg", MIME: "image/jpeg", Data: []byte{1}},
+		"back":  {Filename: "back.jpg", MIME: "image/jpeg", Data: []byte{2}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	tag := ape.NewTag()
+	data, err := tag.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(audio+".tag", data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off", only: []string{"Cover Art (Back)"}}); err != nil {
+		t.Fatal(err)
+	}
+	md, err := matroska.ReadFile(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(md.Attachments) != 1 || md.Attachments[0].Filename != "cover.jpg" {
+		t.Fatalf("attachments = %+v", md.Attachments)
+	}
+}
