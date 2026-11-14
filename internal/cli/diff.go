@@ -136,6 +136,26 @@ func artworkField(slot string, cfg *config.Config) string {
 	return slot
 }
 
+func printFieldDiff(diff *diffResult, path, label string) {
+	fmt.Printf("%s    %s\n", label, path)
+	if diff == nil {
+		return
+	}
+	for _, change := range diff.Fields {
+		switch change.Change {
+		case "added":
+			fmt.Printf("        + %s: %q\n", change.Field, change.To)
+		case "removed":
+			fmt.Printf("        - %s: %q\n", change.Field, change.From)
+		default:
+			fmt.Printf("        ~ %s: %q -> %q\n", change.Field, change.From, change.To)
+		}
+	}
+	for _, change := range diff.Artwork {
+		fmt.Printf("        cover %s: %s -> %s\n", change.Slot, formatCover(change.From), formatCover(change.To))
+	}
+}
+
 func formatCover(info *artworkInfo) string {
 	if info == nil {
 		return "none"

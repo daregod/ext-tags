@@ -369,7 +369,11 @@ ext-tags apply --tag track.flac.tag --stdout > track.flac.tag.new
 ```
 
 `--dry-run` показывает результат без записи, `--force` разрешает перезапись
-выхода.
+выхода. `--diff` показывает изменения и включает dry-run; с `--diff` нельзя
+использовать `--output`/`--stdout`.
+
+По умолчанию `apply` подхватывает `album.yaml` из папки `.tag`; `--no-album`
+отключает это. Путь для выбора трека вычисляется удалением `tagfile.suffix`.
 
 ### artwork
 

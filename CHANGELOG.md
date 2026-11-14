@@ -14,13 +14,13 @@
 ### Изменено
 
 - `import --only` предупреждает о custom-полях, записанных через TXXX/Vorbis/APEv2/Matroska; для MP4/ASF неизвестные поля остаются ошибкой.
-
 - `--quiet` подавляет per-file text/JSON-вывод; с `--summary` остаётся только итог, ошибки идут в stderr.
 
 ### Добавлено
 
-- `import --only`: импорт только выбранных полей и обложек; отсутствующие выбранные значения удаляются из аудио. Поддержаны MP3, FLAC, Ogg, APEv2, MP4 (поля + front cover) Matroska (текстовые поля + все artwork-слоты) ASF/WMA и RIFF/WAV/RF64/AIFF/Wave64 (поля + все artwork-слоты).
-- Глобальный `--summary` с итоговыми счётчиками; `--quiet` оставляет только итог.
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+- `import --only`: импорт только выбранных полей и обложек; отсутствующие выбранные значения удаляются из аудио. Поддержаны MP3, FLAC, Ogg, APEv2, MP4 (поля + front cover), Matroska (текстовые поля + все artwork-слоты) ASF/WMA и RIFF/WAV/RF64/AIFF/Wave64 (поля + все artwork-слоты).
+- Глобальный `--summary` с итоговыми счётчиками.
 - `extract --diff`: dry-run-сравнение существующего `.tag` с финальными полями и обложками.
 - `files.prefer` (`container`/`tag`/`newest`) — приоритет полей внешнего `.tag` над контейнером.
 - Команда `apply --tag` — применение правил к готовому `.tag` без аудиофайла.
@@ -44,6 +44,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - `artwork list --all` и `artwork extract --ignore-limit` для обложек больше `cover.hard_max_bytes`.
 - Предупреждение `artwork list` о кандидате, отброшенном по `hard_max_bytes`.
 
@@ -63,11 +65,15 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - `render --raw` отдаёт `.artwork`, `.containerartwork`, `.tagartwork`, их `...count` и `...<slot>`/`...<slot>bytes`.
 
 ## [0.16.0] — 2026-11-10
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `render` отдаёт в шаблон данные об обложках: `.artwork`, `.artworkcount` и `.artwork<slot>`/`.artwork<slot>bytes`.
 - `render --raw` отдаёт сырые поля контейнера и `.tag` через `.fields`, `.raw` (alias), `.container`, `.tag` и `.vars` без album/rules.
@@ -82,12 +88,16 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - `album_init.multiline`: `block` (по умолчанию) или `quoted` для редакторов, которые не понимают YAML block scalar.
 - `album_init.quote`: `minimal` (по умолчанию) или `all` — двойные кавычки для ключей и значений, чтобы редакторы не путались на пробелах/апострофах.
 
 ## [0.15.0] — 2026-11-09
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Секция `album_init`: `ignore`, `album_order`, `track_order` для генерации `album.yaml`; числовая сортировка ключей треков.
 
@@ -107,11 +117,15 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Команда `ext-tags artwork list` и `ext-tags artwork extract` для просмотра и сохранения выбранной обложки.
 
 ## [0.13.0] — 2026-11-09
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Команда `ext-tags render` для вывода на экран финальных полей по Go-шаблону.
 - Шаблонная функция `sanitize` для безопасных имён файлов.
@@ -152,11 +166,15 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Шаблонный helper `atoi` для числовых условий, например `gt (atoi .disctotal) 1`.
 
 ## [0.12.0] — 2026-11-06
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `extract --output PATH` и `extract --stdout`; существующий `.tag` читается рядом с исходным аудиофайлом.
 - `fields.include`/`exclude` применяются к итоговому набору после merge и правил; обложки получили имена для фильтров.
@@ -194,6 +212,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - `ext-tags self-update` для standalone-бинарников: `--check`, `--dry-run`, `--force`; проверка SHA256 и атомарная замена.
 - Для установок через opkg/apt/Homebrew/Scoop self-update подсказывает правильную команду пакетного менеджера.
 
@@ -207,12 +227,16 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.
 - Release workflow собирает `.ipk` и автоматически обновляет `opkg-feed`.
 
 ## [0.10.2] — 2026-11-05
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Linux-пакеты `.deb`, `.rpm` и `.apk` в релизах.
 - Scoop bucket, Homebrew tap и AUR `PKGBUILD`.
@@ -229,6 +253,8 @@
 ## [0.10.0] — 2026-11-05
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `ext-tags album init`: генерация `album.yaml` из тегов треков.
 
@@ -249,6 +275,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Per-album `album.yaml`: переопределение полей альбома, треков и artwork.
 - `cover.prefer`: `embedded`, `sidecar` или `existing`.
 - Шаблонные функции `year` и `formatTrack`.
@@ -262,6 +290,8 @@
 ## [0.9.0] — 2026-11-04
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт для WAV/RF64/Wave64/AIFF через ID3v2-чанк; старые
   LIST/INFO и текстовые IFF-чанки заменяются.
@@ -279,6 +309,8 @@
 ## [0.8.0] — 2026-11-04
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт ASF/WMA/WMV: Content Description, Extended Content
   Description и `WM/Picture` (пять artwork-типов, лимит 64 КиБ на descriptor).
@@ -315,6 +347,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Обратный импорт переносит все пять artwork-слотов в ID3 APIC (front/back/
   artist/disc/icon) — проверено на MP3.
 - Обложки: пять artwork-слотов foobar2000 — `front`/`back`/`artist`/`disc`/`icon`.
@@ -332,6 +366,8 @@
 ## [0.6.0] — 2026-11-04
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Лицензия MIT (`LICENSE`).
 
@@ -358,6 +394,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Обратный импорт тегов для MP3: `ext-tags import` читает `<file>.tag` и
   пишет ID3v2.2/2.3/2.4 (`--id3v2-version`, по умолчанию 3) и при желании
   ID3v1 (`--id3v1`): поля, обложка (PIC/APIC), неизвестные поля — TXX/TXXX;
@@ -377,6 +415,8 @@
 ## [0.4.0] — 2026-11-04
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - MP1: фикстура (получена `mp2enc -l 1`, теги — ID3v2) и тест.
 - Wave64: ридер GUID-чанков (64-битные размеры) и фикстура с ID3-чанком
@@ -441,6 +481,8 @@
 
 ### Добавлено
 
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
+
 - Поля iTunes `Itunescompilation` (`cpil`) и `Tempo` (`tmpo`) в `.tag`.
 - Юнит-тесты на нормализацию ключей (`mapKey`) и объединение номеров
   трека/диска.
@@ -458,6 +500,8 @@
 ## [0.2.0] — 2026-11-03
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `Makefile`: сборка, тесты, покрытие, `vet`, `lint`, форматирование,
   кросс-компиляция в `dist/`, очистка артефактов.
@@ -477,6 +521,8 @@
 ## [0.1.0] — 2026-11-03
 
 ### Добавлено
+
+- `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - CLI `ext-tags`: извлечение тегов из MP3 (ID3v1, ID3v2.2–2.4), FLAC, Opus,
   OGG Vorbis, M4A/MP4, WAV, AIFF.
