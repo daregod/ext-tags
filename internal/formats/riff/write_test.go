@@ -142,3 +142,37 @@ func TestWriteReadAllCovers(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteSelectiveRemovesInfo(t *testing.T) {
+	info := []byte("INFO")
+	info = append(info, riffChunk("INAM", []byte("Old title\x00"))...)
+	info = append(info, riffChunk("ICMT", []byte("Keep comment\x00"))...)
+	body := riffChunk("fmt ", make([]byte, 16))
+	body = append(body, riffChunk("LIST", info)...)
+	body = append(body, riffChunk("data", make([]byte, 32))...)
+	out := []byte("RIFF")
+	size := make([]byte, 4)
+	binary.LittleEndian.PutUint32(size, uint32(4+len(body)))
+	out = append(out, size...)
+	out = append(out, []byte("WAVE")...)
+	out = append(out, body...)
+	path := filepath.Join(t.TempDir(), "track.wav")
+	if err := os.WriteFile(path, out, 0644); err != nil {
+		t.Fatal(err)
+	}
+	doc := metadata.New()
+	doc.Fields["Title"] = "New title"
+	if err := riff.WriteSelective(path, doc, []string{"Title"}, false); err != nil {
+		t.Fatal(err)
+	}
+	md, err := riff.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.Info["INAM"] != "" {
+		t.Fatalf("INAM = %q", md.Info["INAM"])
+	}
+	if md.Info["ICMT"] != "Keep comment" {
+		t.Fatalf("ICMT = %q", md.Info["ICMT"])
+	}
+}

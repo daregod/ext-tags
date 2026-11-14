@@ -41,6 +41,12 @@ func Build(fields map[string]string, covers map[string]*Cover, version int) ([]b
 
 // BuildMerged returns an ID3v2 tag that keeps existing frames not present in fields.
 func BuildMerged(existing []byte, fields map[string]string, covers map[string]*Cover, version int) ([]byte, error) {
+	return BuildMergedOnly(existing, fields, covers, version, nil)
+}
+
+// BuildMergedOnly merges existing frames and removes selected fields that are
+// absent from fields.
+func BuildMergedOnly(existing []byte, fields map[string]string, covers map[string]*Cover, version int, only []string) ([]byte, error) {
 	if len(existing) == 0 {
 		return Build(fields, covers, version)
 	}
@@ -53,8 +59,23 @@ func BuildMerged(existing []byte, fields map[string]string, covers map[string]*C
 	}
 	frames := buildFrames(version, fields, covers)
 	overwrite := frameIDs(frames)
+	artOnly := onlyArtworkTypes(only)
+	if len(artOnly) > 0 {
+		delete(overwrite, apicID(version))
+	}
+	removeIDs, removeTXXX := onlyRemovals(version, only)
 	for _, frame := range old {
-		if overwrite[frame.id] {
+		if frame.id == apicID(version) {
+			if artOnly[apicKind(version, frame.payload)] {
+				continue
+			}
+			frames = append(frames, frame)
+			continue
+		}
+		if overwrite[frame.id] || removeIDs[frame.id] {
+			continue
+		}
+		if frame.id == txxxID(version) && removeTXXX[strings.ToLower(txxxDescription(frame.payload))] {
 			continue
 		}
 		frames = append(frames, frame)

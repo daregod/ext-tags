@@ -20,5 +20,8 @@ func ImportRIFF(path string, tf *TagFile, opts Options) error {
 		doc.Artwork[kind] = cover
 	}
 	doc.Cover = tf.Cover
+	if len(opts.Only) > 0 || opts.Replace {
+		return riff.WriteSelective(path, doc, opts.Only, opts.Replace)
+	}
 	return riff.Write(path, doc)
 }

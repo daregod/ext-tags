@@ -265,7 +265,8 @@ func onlyFormatSupported(path string) bool {
 	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx",
 		".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts",
 		".m4a", ".m4b", ".mp4", ".alac", ".mkv", ".webm",
-		".wma", ".wmv", ".asf":
+		".wma", ".wmv", ".asf",
+		".wav", ".rf64", ".w64", ".aif", ".aiff":
 		return true
 	}
 	return false

@@ -4,31 +4,159 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/daregod/ext-tags/internal/formats/id3"
 	"github.com/daregod/ext-tags/internal/metadata"
 )
 
+func onlyInfoFields(only []string) map[string]bool {
+	out := make(map[string]bool)
+	for _, field := range only {
+		switch field {
+		case "Title", "Artist", "Album", "Year", "Genre", "Comment", "Track", "Copyright":
+			out[strings.ToLower(field)] = true
+		}
+	}
+	return out
+}
+
+func filterChunksLE(data []byte, dataSize int64, remove map[string]bool) ([]byte, error) {
+	var out []byte
+	offset := 0
+	for offset+8 <= len(data) {
+		id := string(data[offset : offset+4])
+		size := int(binary.LittleEndian.Uint32(data[offset+4 : offset+8]))
+		if id == "data" && size == 0xFFFFFFFF && dataSize > 0 {
+			size = int(dataSize)
+		}
+		end := offset + 8 + size
+		if size%2 == 1 {
+			end++
+		}
+		if size < 0 || end > len(data) {
+			return nil, fmt.Errorf("riff: bad chunk %q", id)
+		}
+		if id == "LIST" && size >= 4 && string(data[offset+8:offset+12]) == "INFO" {
+			inner := data[offset+12 : offset+8+size]
+			filtered := filterInfoLE(inner, remove)
+			out = append(out, makeChunkLE("LIST", append([]byte("INFO"), filtered...))...)
+		} else {
+			out = append(out, data[offset:end]...)
+		}
+		offset = end
+	}
+	if offset != len(data) {
+		return nil, fmt.Errorf("riff: trailing bytes")
+	}
+	return out, nil
+}
+
+func filterInfoLE(data []byte, remove map[string]bool) []byte {
+	var out []byte
+	offset := 0
+	for offset+8 <= len(data) {
+		id := string(data[offset : offset+4])
+		size := int(binary.LittleEndian.Uint32(data[offset+4 : offset+8]))
+		end := offset + 8 + size
+		if size%2 == 1 {
+			end++
+		}
+		if size < 0 || end > len(data) {
+			break
+		}
+		if key := infoField(id); key == "" || !remove[strings.ToLower(key)] {
+			out = append(out, data[offset:end]...)
+		}
+		offset = end
+	}
+	return out
+}
+
+func makeChunkLE(id string, payload []byte) []byte {
+	size := len(payload)
+	pad := size % 2
+	out := make([]byte, 8, 8+size+pad)
+	copy(out[0:4], id)
+	binary.LittleEndian.PutUint32(out[4:8], uint32(size))
+	out = append(out, payload...)
+	if pad == 1 {
+		out = append(out, 0)
+	}
+	return out
+}
+
+func filterIFF(data []byte, replace bool, remove map[string]bool) ([]byte, error) {
+	var out []byte
+	offset := 0
+	for offset+8 <= len(data) {
+		id := string(data[offset : offset+4])
+		size := int(binary.BigEndian.Uint32(data[offset+4 : offset+8]))
+		end := offset + 8 + size
+		if size%2 == 1 {
+			end++
+		}
+		if end > len(data) {
+			return nil, fmt.Errorf("riff: bad IFF chunk %q", id)
+		}
+		drop := false
+		switch id {
+		case "ID3 ", "id3 ":
+			drop = true
+		case "NAME":
+			drop = replace || remove["title"]
+		case "AUTH":
+			drop = replace || remove["artist"]
+		case "ANNO":
+			drop = replace || remove["comment"]
+		case "(c) ":
+			drop = replace || remove["copyright"]
+		}
+		if !drop {
+			out = append(out, data[offset:end]...)
+		}
+		offset = end
+	}
+	if offset != len(data) {
+		return nil, fmt.Errorf("riff: trailing IFF bytes")
+	}
+	return out, nil
+}
+
 // Write stores ID3v2 metadata in a WAV/RF64/Wave64/AIFF file.
 func Write(path string, doc *metadata.Document) error {
+	return WriteSelective(path, doc, nil, false)
+}
+
+// WriteSelective applies fields/artwork; only removes selected values and
+// replace drops all metadata that is not in doc.
+func WriteSelective(path string, doc *metadata.Document, only []string, replace bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	existing := existingID3(path, data)
-	tag, err := buildID3Merged(doc, existing)
+	var tag []byte
+	if replace {
+		tag, err = buildID3(doc)
+	} else if len(only) > 0 {
+		tag, err = buildID3Only(doc, existing, only)
+	} else {
+		tag, err = buildID3Merged(doc, existing)
+	}
 	if err != nil {
 		return err
 	}
+	removeInfo := onlyInfoFields(only)
 	switch {
 	case len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WAVE":
-		data, err = rewriteRIFF(data, tag, false)
+		data, err = rewriteRIFF(data, tag, false, replace, removeInfo)
 	case len(data) >= 12 && string(data[0:4]) == "RF64" && string(data[8:12]) == "WAVE":
-		data, err = rewriteRIFF(data, tag, true)
+		data, err = rewriteRIFF(data, tag, true, replace, removeInfo)
 	case len(data) >= 12 && string(data[0:4]) == "FORM" && (string(data[8:12]) == "AIFF" || string(data[8:12]) == "AIFC"):
-		data, err = rewriteIFF(data, tag)
+		data, err = rewriteIFF(data, tag, replace, removeInfo)
 	case len(data) >= 40 && string(data[0:4]) == "riff" && string(data[24:28]) == "wave":
-		data, err = rewriteWave64(data, tag)
+		data, err = rewriteWave64(data, tag, replace, removeInfo)
 	default:
 		return fmt.Errorf("riff: unsupported container")
 	}
@@ -44,6 +172,20 @@ func Write(path string, doc *metadata.Document) error {
 
 func buildID3(doc *metadata.Document) ([]byte, error) {
 	return buildID3Merged(doc, nil)
+}
+
+func buildID3Only(doc *metadata.Document, existing []byte, only []string) ([]byte, error) {
+	covers := make(map[string]*id3.Cover, len(doc.Artwork))
+	for kind, cover := range doc.Artwork {
+		if cover == nil {
+			continue
+		}
+		covers[kind] = &id3.Cover{Filename: cover.Filename, MIME: cover.MIME, Data: cover.Data}
+	}
+	if doc.Cover != nil && covers[metadata.Front] == nil {
+		covers[metadata.Front] = &id3.Cover{Filename: doc.Cover.Filename, MIME: doc.Cover.MIME, Data: doc.Cover.Data}
+	}
+	return id3.BuildMergedOnly(existing, doc.Fields, covers, 3, only)
 }
 
 func buildID3Merged(doc *metadata.Document, existing []byte) ([]byte, error) {
@@ -84,7 +226,7 @@ func existingID3(path string, data []byte) []byte {
 	}
 	return nil
 }
-func rewriteRIFF(data, tag []byte, rf64 bool) ([]byte, error) {
+func rewriteRIFF(data, tag []byte, rf64, replace bool, remove map[string]bool) ([]byte, error) {
 	declaredEnd := len(data)
 	if !rf64 && len(data) >= 8 {
 		if end := 8 + int(binary.LittleEndian.Uint32(data[4:8])); end >= 12 && end <= len(data) {
@@ -93,10 +235,24 @@ func rewriteRIFF(data, tag []byte, rf64 bool) ([]byte, error) {
 	}
 	var body []byte
 	var err error
+	bodyData := data[12:declaredEnd]
+	dataSize := int64(0)
 	if rf64 {
-		body, err = stripChunksRF64(data[12:], rf64DataSize(data), "id3 ", "ID3 ")
+		bodyData = data[12:]
+		dataSize = rf64DataSize(data)
+	}
+	if replace {
+		if rf64 {
+			body, err = stripChunksRF64(bodyData, dataSize, "id3 ", "ID3 ", "LIST")
+		} else {
+			body, err = stripChunksLE(bodyData, "id3 ", "ID3 ", "LIST")
+		}
+	} else if len(remove) > 0 {
+		body, err = filterChunksLE(bodyData, dataSize, remove)
+	} else if rf64 {
+		body, err = stripChunksRF64(bodyData, dataSize, "id3 ", "ID3 ")
 	} else {
-		body, err = stripChunksLE(data[12:declaredEnd], "id3 ", "ID3 ")
+		body, err = stripChunksLE(bodyData, "id3 ", "ID3 ")
 	}
 	if err != nil {
 		return nil, err
@@ -181,14 +337,14 @@ func patchDS64(data []byte) {
 	}
 }
 
-func rewriteIFF(data, tag []byte) ([]byte, error) {
+func rewriteIFF(data, tag []byte, replace bool, remove map[string]bool) ([]byte, error) {
 	declaredEnd := len(data)
 	if len(data) >= 8 {
 		if end := 8 + int(binary.BigEndian.Uint32(data[4:8])); end >= 12 && end <= len(data) {
 			declaredEnd = end
 		}
 	}
-	body, err := stripChunksBE(data[12:declaredEnd], "ID3 ", "id3 ")
+	body, err := filterIFF(data[12:declaredEnd], replace, remove)
 	if err != nil {
 		return nil, err
 	}
@@ -198,34 +354,6 @@ func rewriteIFF(data, tag []byte) ([]byte, error) {
 	binary.BigEndian.PutUint32(out[4:8], uint32(len(body)+4))
 	copy(out[8:12], data[8:12])
 	return append(out, body...), nil
-}
-
-func stripChunksBE(data []byte, skip ...string) ([]byte, error) {
-	skipSet := make(map[string]bool, len(skip))
-	for _, id := range skip {
-		skipSet[id] = true
-	}
-	var out []byte
-	offset := 0
-	for offset+8 <= len(data) {
-		id := string(data[offset : offset+4])
-		size := int(binary.BigEndian.Uint32(data[offset+4 : offset+8]))
-		end := offset + 8 + size
-		if size%2 == 1 {
-			end++
-		}
-		if end > len(data) {
-			return nil, fmt.Errorf("riff: bad IFF chunk %q", id)
-		}
-		if !skipSet[id] {
-			out = append(out, data[offset:end]...)
-		}
-		offset = end
-	}
-	if offset != len(data) {
-		return nil, fmt.Errorf("riff: trailing bytes")
-	}
-	return out, nil
 }
 
 func id3ChunkBE(tag []byte) []byte {
@@ -241,7 +369,10 @@ func id3ChunkBE(tag []byte) []byte {
 	return out
 }
 
-func rewriteWave64(data, tag []byte) ([]byte, error) {
+func rewriteWave64(data, tag []byte, replace bool, remove map[string]bool) ([]byte, error) {
+	if len(remove) > 0 {
+		return nil, fmt.Errorf("riff: --only is not supported for Wave64 yet")
+	}
 	body, err := stripWave64Chunks(data[40:])
 	if err != nil {
 		return nil, err
