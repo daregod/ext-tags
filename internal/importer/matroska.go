@@ -29,9 +29,13 @@ func ImportMatroska(path string, tf *TagFile, opts Options) error {
 		return matroska.Write(path, tf.Fields, covers)
 	}
 
+	frontArtwork := false
 	for _, field := range opts.Only {
-		if isArtworkOnlyName(field) {
-			return fmt.Errorf("--only artwork is not supported for Matroska yet")
+		switch strings.ToLower(strings.TrimSpace(field)) {
+		case "cover art (front)":
+			frontArtwork = true
+		case "cover art (back)", "artist picture", "cover art (disc)", "cover art (icon)":
+			return fmt.Errorf("--only artwork %q is not supported for Matroska", field)
 		}
 	}
 	existing, err := matroska.Read(path, nil)
@@ -61,6 +65,25 @@ func ImportMatroska(path string, tf *TagFile, opts Options) error {
 			fields[raw] = value
 		}
 	}
+	if frontArtwork {
+		md, err := matroska.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		attachments := append([]matroska.Attachment(nil), md.Attachments...)
+		idx := matroska.FrontIndex(attachments)
+		if tf.Cover != nil {
+			cover := matroska.Attachment{Filename: tf.Cover.Filename, MIME: tf.Cover.MIME, Data: tf.Cover.Data}
+			if idx >= 0 {
+				attachments[idx] = cover
+			} else {
+				attachments = append(attachments, cover)
+			}
+		} else if idx >= 0 {
+			attachments = append(attachments[:idx], attachments[idx+1:]...)
+		}
+		return matroska.WriteWithAttachments(path, fields, attachments)
+	}
 	return matroska.WriteKeepAttachments(path, fields)
 }
 
@@ -76,12 +99,4 @@ func matroskaName(field string) string {
 		return "DATE"
 	}
 	return strings.ToUpper(strings.ReplaceAll(field, " ", "_"))
-}
-
-func isArtworkOnlyName(field string) bool {
-	switch strings.ToLower(strings.TrimSpace(field)) {
-	case "cover art (front)", "cover art (back)", "artist picture", "cover art (disc)", "cover art (icon)":
-		return true
-	}
-	return false
 }

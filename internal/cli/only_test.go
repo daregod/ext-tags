@@ -228,3 +228,35 @@ func TestImportOnlyMatroska(t *testing.T) {
 		t.Fatalf("track was not removed: %v", doc.Fields)
 	}
 }
+
+func TestImportOnlyMatroskaFrontCoverRemoval(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.mkv")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio-attachments.mkv"), audio)
+	tag := ape.NewTag()
+	data, err := tag.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(audio+".tag", data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	before, err := matroska.ReadFile(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if matroska.FrontIndex(before.Attachments) < 0 {
+		t.Skip("fixture has no front attachment")
+	}
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off", only: []string{"Cover Art (Front)"}}); err != nil {
+		t.Fatal(err)
+	}
+	md, err := matroska.ReadFile(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(md.Attachments) != len(before.Attachments)-1 {
+		t.Fatalf("attachments = %d, before %d", len(md.Attachments), len(before.Attachments))
+	}
+}

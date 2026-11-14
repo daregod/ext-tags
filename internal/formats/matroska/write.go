@@ -3,6 +3,7 @@ package matroska
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -29,21 +30,32 @@ var coverOrder = []string{"front", "back", "artist", "disc", "icon"}
 // Write appends Tags and Attachments to a Matroska/WebM file. Existing
 // trailing Tags/Attachments are replaced; clusters are not moved.
 func Write(path string, fields map[string]string, covers map[string]*Cover) error {
-	return write(path, fields, covers, false)
+	return write(path, fields, covers, false, nil)
 }
 
 // WriteKeepAttachments replaces Tags but preserves all existing Attachments.
 func WriteKeepAttachments(path string, fields map[string]string) error {
-	return write(path, fields, nil, true)
+	return write(path, fields, nil, true, nil)
 }
 
-func write(path string, fields map[string]string, covers map[string]*Cover, keepAttachments bool) error {
+// WriteWithAttachments replaces Tags and rewrites the complete attachment list.
+func WriteWithAttachments(path string, fields map[string]string, attachments []Attachment) error {
+	return write(path, fields, nil, false, attachments)
+}
+
+func write(path string, fields map[string]string, covers map[string]*Cover, keepAttachments bool, rawAttachments []Attachment) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	tags, okTags := buildTags(fields)
-	attachments, okAtt := buildAttachments(covers)
+	var attachments []byte
+	okAtt := false
+	if rawAttachments != nil {
+		attachments, okAtt = buildAttachmentList(rawAttachments)
+	} else {
+		attachments, okAtt = buildAttachments(covers)
+	}
 	if !okTags && !okAtt {
 		return nil
 	}
@@ -263,6 +275,56 @@ func mkSimpleTag(name, value string) []byte {
 	return mkElem(idSimpleTag, mkElem(idTagName, []byte(name)), mkElem(idTagString, []byte(value)))
 }
 
+func buildAttachmentList(attachments []Attachment) ([]byte, bool) {
+	var files []byte
+	uid := 1
+	for _, att := range attachments {
+		if len(att.Data) == 0 {
+			continue
+		}
+		name := att.Filename
+		if name == "" {
+			name = "cover.jpg"
+		}
+		mime := att.MIME
+		if mime == "" {
+			mime = "image/jpeg"
+		}
+		files = append(files, mkElem(idAttached,
+			mkElem(idFileUID, uintBytes(uid)),
+			mkElem(idFileName, []byte(name)),
+			mkElem(idFileMime, []byte(mime)),
+			mkElem(idFileData, att.Data),
+		)...)
+		uid++
+	}
+	if len(files) == 0 {
+		return nil, false
+	}
+	return mkElem(idAttachments, files), true
+}
+
+// FrontIndex returns the attachment index used as front cover, or -1.
+func FrontIndex(attachments []Attachment) int {
+	images := make([]int, 0, len(attachments))
+	for i, att := range attachments {
+		if len(att.Data) > 0 && strings.HasPrefix(strings.ToLower(att.MIME), "image/") {
+			images = append(images, i)
+		}
+	}
+	for _, name := range defaultCoverNames {
+		for _, i := range images {
+			base := strings.TrimSuffix(attachments[i].Filename, filepath.Ext(attachments[i].Filename))
+			if strings.EqualFold(base, name) {
+				return i
+			}
+		}
+	}
+	if len(images) > 0 {
+		return images[0]
+	}
+	return -1
+}
 func buildAttachments(covers map[string]*Cover) ([]byte, bool) {
 	var files []byte
 	uid := 1
