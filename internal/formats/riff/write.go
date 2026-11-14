@@ -15,7 +15,8 @@ func Write(path string, doc *metadata.Document) error {
 	if err != nil {
 		return err
 	}
-	tag, err := buildID3(doc)
+	existing := existingID3(path, data)
+	tag, err := buildID3Merged(doc, existing)
 	if err != nil {
 		return err
 	}
@@ -42,6 +43,10 @@ func Write(path string, doc *metadata.Document) error {
 }
 
 func buildID3(doc *metadata.Document) ([]byte, error) {
+	return buildID3Merged(doc, nil)
+}
+
+func buildID3Merged(doc *metadata.Document, existing []byte) ([]byte, error) {
 	covers := make(map[string]*id3.Cover, len(doc.Artwork))
 	for kind, cover := range doc.Artwork {
 		if cover == nil {
@@ -52,9 +57,33 @@ func buildID3(doc *metadata.Document) ([]byte, error) {
 	if doc.Cover != nil && covers[metadata.Front] == nil {
 		covers[metadata.Front] = &id3.Cover{Filename: doc.Cover.Filename, MIME: doc.Cover.MIME, Data: doc.Cover.Data}
 	}
-	return id3.Build(doc.Fields, covers, 3)
+	return id3.BuildMerged(existing, doc.Fields, covers, 3)
 }
 
+func existingID3(path string, data []byte) []byte {
+	if len(data) < 12 {
+		return nil
+	}
+	switch {
+	case string(data[0:4]) == "RIFF" && string(data[8:12]) == "WAVE":
+		if md, err := ReadFile(path); err == nil {
+			return md.ID3
+		}
+	case string(data[0:4]) == "RF64" && string(data[8:12]) == "WAVE":
+		if md, err := ReadRF64(path); err == nil {
+			return md.ID3
+		}
+	case string(data[0:4]) == "FORM" && (string(data[8:12]) == "AIFF" || string(data[8:12]) == "AIFC"):
+		if md, err := ReadAIFF(path); err == nil {
+			return md.ID3
+		}
+	case len(data) >= 28 && string(data[0:4]) == "riff" && string(data[24:28]) == "wave":
+		if md, err := ReadWave64(path); err == nil {
+			return md.ID3
+		}
+	}
+	return nil
+}
 func rewriteRIFF(data, tag []byte, rf64 bool) ([]byte, error) {
 	declaredEnd := len(data)
 	if !rf64 && len(data) >= 8 {
@@ -65,9 +94,9 @@ func rewriteRIFF(data, tag []byte, rf64 bool) ([]byte, error) {
 	var body []byte
 	var err error
 	if rf64 {
-		body, err = stripChunksRF64(data[12:], rf64DataSize(data), "id3 ", "ID3 ", "LIST")
+		body, err = stripChunksRF64(data[12:], rf64DataSize(data), "id3 ", "ID3 ")
 	} else {
-		body, err = stripChunksLE(data[12:declaredEnd], "id3 ", "ID3 ", "LIST")
+		body, err = stripChunksLE(data[12:declaredEnd], "id3 ", "ID3 ")
 	}
 	if err != nil {
 		return nil, err
@@ -159,7 +188,7 @@ func rewriteIFF(data, tag []byte) ([]byte, error) {
 			declaredEnd = end
 		}
 	}
-	body, err := stripChunksBE(data[12:declaredEnd], "ID3 ", "id3 ", "NAME", "AUTH", "ANNO", "(c) ")
+	body, err := stripChunksBE(data[12:declaredEnd], "ID3 ", "id3 ")
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +266,7 @@ func stripWave64Chunks(data []byte) ([]byte, error) {
 		if next > len(data) {
 			next = len(data)
 		}
-		if id != "ID3 " && id != "id3 " && id != "LIST" {
+		if id != "ID3 " && id != "id3 " {
 			out = append(out, data[offset:next]...)
 		}
 		offset = next

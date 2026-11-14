@@ -39,6 +39,29 @@ func Build(fields map[string]string, covers map[string]*Cover, version int) ([]b
 	return composeTag(version, buildFrames(version, fields, covers)), nil
 }
 
+// BuildMerged returns an ID3v2 tag that keeps existing frames not present in fields.
+func BuildMerged(existing []byte, fields map[string]string, covers map[string]*Cover, version int) ([]byte, error) {
+	if len(existing) == 0 {
+		return Build(fields, covers, version)
+	}
+	if version != 2 && version != 4 {
+		version = 3
+	}
+	old, oldVersion, _, hasTag, err := parseTag(existing)
+	if err != nil || !hasTag || oldVersion != version {
+		return Build(fields, covers, version)
+	}
+	frames := buildFrames(version, fields, covers)
+	overwrite := frameIDs(frames)
+	for _, frame := range old {
+		if overwrite[frame.id] {
+			continue
+		}
+		frames = append(frames, frame)
+	}
+	return composeTag(version, frames), nil
+}
+
 // Write replaces the ID3v2 tag of path with fields and cover.
 func Write(path string, fields map[string]string, covers map[string]*Cover, opts Options) error {
 	version := opts.Version

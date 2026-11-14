@@ -62,14 +62,16 @@ func buildDocument(md *Metadata, format string) (*metadata.Document, error) {
 		}
 		res.Fields[key] = value
 	}
-	for id, value := range md.Info {
-		if key := infoField(id); key != "" {
-			add(key, value)
-		}
-	}
 	if len(md.ID3) > 0 {
 		if m, err := tag.ReadFrom(bytes.NewReader(md.ID3)); err == nil {
 			read.ApplyTagMetadata(m, res)
+		}
+	}
+	for id, value := range md.Info {
+		if key := infoField(id); key != "" {
+			if _, exists := res.Fields[key]; !exists {
+				add(key, value)
+			}
 		}
 	}
 	track, trackTotal := read.SplitPair(read.FieldValue(res.Fields, "TRACKNUMBER"))
@@ -100,21 +102,27 @@ func buildAIFF(md *Metadata) (*metadata.Document, error) {
 		}
 		res.Fields[key] = value
 	}
-	for id, value := range md.Info {
-		switch id {
-		case "NAME":
-			add("TITLE", value)
-		case "AUTH":
-			add("ARTIST", value)
-		case "ANNO":
-			add("COMMENT", value)
-		case "(c) ":
-			add("COPYRIGHT", value)
-		}
-	}
 	if len(md.ID3) > 0 {
 		if m, err := tag.ReadFrom(bytes.NewReader(md.ID3)); err == nil {
 			read.ApplyTagMetadata(m, res)
+		}
+	}
+	for id, value := range md.Info {
+		key := ""
+		switch id {
+		case "NAME":
+			key = "TITLE"
+		case "AUTH":
+			key = "ARTIST"
+		case "ANNO":
+			key = "COMMENT"
+		case "(c) ":
+			key = "COPYRIGHT"
+		}
+		if key != "" {
+			if _, exists := res.Fields[key]; !exists {
+				add(key, value)
+			}
 		}
 	}
 	track, trackTotal := read.SplitPair(read.FieldValue(res.Fields, "TRACKNUMBER"))

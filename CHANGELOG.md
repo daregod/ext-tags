@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Исправлено
+
+- RIFF/WAV/AIFF/Wave64 import больше не удаляет `LIST/INFO` и сохраняет ID3-кадры, которых нет в `.tag`; при чтении ID3 имеет приоритет над INFO.
+
 ### Изменено
 
 - `--quiet` подавляет per-file text/JSON-вывод; с `--summary` остаётся только итог, ошибки идут в stderr.

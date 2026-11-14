@@ -68,8 +68,8 @@ func TestExtractWAV(t *testing.T) {
 	if res.Format != "WAVE" {
 		t.Fatalf("format = %q", res.Format)
 	}
-	if res.Fields["TITLE"] != "Info Title" {
-		t.Fatalf("INFO fields = %v", res.Fields)
+	if res.Fields["TITLE"] != "ID3 Title" {
+		t.Fatalf("ID3 should take priority: %v", res.Fields)
 	}
 	if res.Fields["TIT2"] != "ID3 Title" {
 		t.Fatalf("ID3 fields = %v", res.Fields)
