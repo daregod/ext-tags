@@ -264,7 +264,7 @@ func onlyFormatSupported(path string) bool {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".mp3", ".mp2", ".mp1", ".flac", ".ogg", ".oga", ".opus", ".spx",
 		".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts",
-		".m4a", ".m4b", ".mp4", ".alac":
+		".m4a", ".m4b", ".mp4", ".alac", ".mkv", ".webm":
 		return true
 	}
 	return false

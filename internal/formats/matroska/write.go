@@ -29,6 +29,15 @@ var coverOrder = []string{"front", "back", "artist", "disc", "icon"}
 // Write appends Tags and Attachments to a Matroska/WebM file. Existing
 // trailing Tags/Attachments are replaced; clusters are not moved.
 func Write(path string, fields map[string]string, covers map[string]*Cover) error {
+	return write(path, fields, covers, false)
+}
+
+// WriteKeepAttachments replaces Tags but preserves all existing Attachments.
+func WriteKeepAttachments(path string, fields map[string]string) error {
+	return write(path, fields, nil, true)
+}
+
+func write(path string, fields map[string]string, covers map[string]*Cover, keepAttachments bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -69,7 +78,7 @@ func Write(path string, fields map[string]string, covers map[string]*Cover) erro
 	content := make([]byte, 0, len(old)+len(tags)+len(attachments))
 	mapping := make(map[int]int, len(children))
 	for _, c := range children {
-		if c.id == idTags || c.id == idAttachments || c.id == idSeekHead {
+		if c.id == idTags || c.id == idSeekHead || (!keepAttachments && c.id == idAttachments) {
 			continue
 		}
 		mapping[c.start] = len(content)
@@ -79,7 +88,9 @@ func Write(path string, fields map[string]string, covers map[string]*Cover) erro
 		return err
 	}
 	content = append(content, tags...)
-	content = append(content, attachments...)
+	if !keepAttachments {
+		content = append(content, attachments...)
+	}
 
 	out := append([]byte(nil), data[:segmentSizeStart]...)
 	if seg.unknown {

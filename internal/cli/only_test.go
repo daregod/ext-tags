@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/formats/matroska"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
 )
@@ -184,6 +185,46 @@ func TestImportOnlyMP4(t *testing.T) {
 		t.Fatalf("title = %v", doc.Fields)
 	}
 	if read.FieldValue(doc.Fields, "TRACKNUMBER", "tracknumber") != "" {
+		t.Fatalf("track was not removed: %v", doc.Fields)
+	}
+}
+
+func TestImportOnlyMatroska(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.mkv")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.mkv"), audio)
+	tagPath := audio + ".tag"
+	write := func(fields map[string]string) {
+		tag := ape.NewTag()
+		for key, value := range fields {
+			tag.AddText(key, value)
+		}
+		data, err := tag.Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tagPath, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	write(map[string]string{"Title": "Tag title", "Track": "1/10"})
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off"}); err != nil {
+		t.Fatal(err)
+	}
+	write(map[string]string{"Title": "Tag title"})
+	a.opts = &options{}
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off", only: []string{"Track"}}); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := matroska.Read(audio, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.FieldValue(doc.Fields, "TITLE", "title") != "Tag title" {
+		t.Fatalf("title = %v", doc.Fields)
+	}
+	if read.FieldValue(doc.Fields, "PART_NUMBER", "TRACKNUMBER") != "" {
 		t.Fatalf("track was not removed: %v", doc.Fields)
 	}
 }
