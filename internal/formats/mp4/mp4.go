@@ -409,3 +409,82 @@ func setBE16(dst []byte, value string) {
 	n, _ := strconv.Atoi(value)
 	binary.BigEndian.PutUint16(dst, uint16(n))
 }
+
+// ReadPictures returns all cover images from the covr atom.
+func ReadPictures(path string) ([]Cover, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	boxes, err := parseBoxes(data)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range boxes {
+		if b.typ != "moov" {
+			continue
+		}
+		return readMoovPictures(b.data)
+	}
+	return nil, nil
+}
+
+func readMoovPictures(payload []byte) ([]Cover, error) {
+	children, err := parseBoxes(payload)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range children {
+		if b.typ != "udta" {
+			continue
+		}
+		udta, err := parseBoxes(b.data)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range udta {
+			if m.typ != "meta" || len(m.data) < 4 {
+				continue
+			}
+			meta, err := parseBoxes(m.data[4:])
+			if err != nil {
+				return nil, err
+			}
+			for _, ilst := range meta {
+				if ilst.typ != "ilst" {
+					continue
+				}
+				items, err := parseBoxes(ilst.data)
+				if err != nil {
+					return nil, err
+				}
+				var out []Cover
+				for _, item := range items {
+					if item.typ != "covr" {
+						continue
+					}
+					values, err := parseBoxes(item.data)
+					if err != nil {
+						return nil, err
+					}
+					for _, value := range values {
+						if value.typ != "data" || len(value.data) < 4 {
+							continue
+						}
+						kind := binary.BigEndian.Uint32(value.data[0:4])
+						mime, filename := "image/jpeg", "cover.jpg"
+						switch kind {
+						case 13:
+							mime, filename = "image/png", "cover.png"
+						case 14:
+							mime, filename = "image/gif", "cover.gif"
+						}
+						out = append(out, Cover{Filename: filename, MIME: mime, Data: value.data[4:]})
+					}
+				}
+				return out, nil
+			}
+		}
+	}
+	return nil, nil
+}

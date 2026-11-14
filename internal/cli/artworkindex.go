@@ -1,15 +1,21 @@
 package cli
 
 import (
+	"encoding/base64"
 	"errors"
 	"path/filepath"
 	"strings"
 
 	"github.com/daregod/ext-tags/internal/config"
+	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/formats/asf"
 	"github.com/daregod/ext-tags/internal/formats/flac"
 	"github.com/daregod/ext-tags/internal/formats/id3"
 	"github.com/daregod/ext-tags/internal/formats/matroska"
+	"github.com/daregod/ext-tags/internal/formats/mp4"
+	"github.com/daregod/ext-tags/internal/formats/ogg"
 	"github.com/daregod/ext-tags/internal/formats/riff"
+	"github.com/daregod/ext-tags/internal/formats/vorbis"
 	"github.com/daregod/ext-tags/internal/metadata"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/tagfile"
@@ -73,6 +79,74 @@ func containerPictures(path string, doc *metadata.Document) []metadata.Picture {
 				out = append(out, metadata.Picture{Slot: vorbisSlot(pic.Type), MIME: pic.MIME, Data: pic.Data})
 			}
 			return out
+		}
+	case ".m4a", ".m4b", ".mp4", ".alac":
+		if pictures, err := mp4.ReadPictures(path); err == nil {
+			var out []metadata.Picture
+			for _, pic := range pictures {
+				if len(pic.Data) == 0 {
+					continue
+				}
+				out = append(out, metadata.Picture{Slot: "front", Filename: pic.Filename, MIME: pic.MIME, Data: pic.Data})
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	case ".ape", ".wv", ".mpc", ".tak", ".ac3", ".dts":
+		if tag, err := ape.ReadFromFileEnd(path); err == nil {
+			var out []metadata.Picture
+			for _, item := range tag.Items {
+				if item.Flags&2 == 0 {
+					continue
+				}
+				filename, data := splitPictureValue(item.Value)
+				if len(data) == 0 {
+					continue
+				}
+				out = append(out, metadata.Picture{Slot: apeSlot(item.Key), Filename: filename, MIME: coverMIME(filename), Data: data})
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	case ".ogg", ".oga", ".opus", ".spx":
+		if _, comments, err := ogg.ReadComments(path); err == nil {
+			var out []metadata.Picture
+			for _, comment := range comments {
+				if !strings.EqualFold(comment.Name, "metadata_block_picture") {
+					continue
+				}
+				raw, err := base64.StdEncoding.DecodeString(comment.Value)
+				if err != nil {
+					continue
+				}
+				pic, err := vorbis.ParsePicture(raw)
+				if err != nil || len(pic.Data) == 0 {
+					continue
+				}
+				out = append(out, metadata.Picture{Slot: vorbisSlot(pic.Type), MIME: pic.MIME, Data: pic.Data})
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	case ".wma", ".wmv", ".asf":
+		if md, err := asf.ReadFile(path); err == nil {
+			var out []metadata.Picture
+			for _, descriptor := range md.Descriptors {
+				if !strings.EqualFold(descriptor.Name, "WM/Picture") || descriptor.Type != 1 {
+					continue
+				}
+				pic, ok := asf.ParsePicture(descriptor.Value)
+				if !ok || len(pic.Data) == 0 {
+					continue
+				}
+				out = append(out, metadata.Picture{Slot: asfSlot(pic.Type), MIME: pic.MIME, Data: pic.Data})
+			}
+			if len(out) > 0 {
+				return out
+			}
 		}
 	case ".mkv", ".webm":
 		if md, err := matroska.ReadFile(path); err == nil && len(md.Attachments) > 0 {
@@ -165,4 +239,57 @@ func riffID3(path string) []byte {
 		}
 	}
 	return nil
+}
+
+func splitPictureValue(value []byte) (string, []byte) {
+	for i, b := range value {
+		if b == 0 {
+			return string(value[:i]), value[i+1:]
+		}
+	}
+	return "", nil
+}
+
+func coverMIME(filename string) string {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	}
+	return "image/jpeg"
+}
+
+func apeSlot(key string) string {
+	switch strings.ToLower(key) {
+	case "cover art (front)":
+		return "front"
+	case "cover art (back)":
+		return "back"
+	case "artist picture":
+		return "artist"
+	case "cover art (disc)":
+		return "disc"
+	case "cover art (icon)":
+		return "icon"
+	}
+	return ""
+}
+
+func asfSlot(pictureType byte) string {
+	switch pictureType {
+	case 3:
+		return "front"
+	case 4:
+		return "back"
+	case 8:
+		return "artist"
+	case 6:
+		return "disc"
+	case 1:
+		return "icon"
+	}
+	return ""
 }

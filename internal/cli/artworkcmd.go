@@ -99,7 +99,9 @@ func (a *app) runArtworkList(paths []string, all, indexed bool) error {
 				a.artworkError(file, err)
 				continue
 			}
+			totalBytes := 0
 			for _, item := range items {
+				totalBytes += len(item.Data)
 				index := item.Index
 				res := artworkResult{File: file, Source: item.Source, Index: &index, Slot: item.Slot, Filename: item.Filename, MIME: item.MIME, Bytes: len(item.Data)}
 				if a.opts.json {
@@ -108,7 +110,7 @@ func (a *app) runArtworkList(paths []string, all, indexed bool) error {
 					fmt.Printf("%s\t%s:%d\t%s\t%s\t%d\n", file, item.Source, item.Index, item.Slot, item.Filename, len(item.Data))
 				}
 			}
-			a.addResult(fileResult{Status: "ok"})
+			a.addResult(fileResult{Status: "ok", Items: len(items), Bytes: totalBytes})
 			continue
 		}
 		covers, skips, err := a.loadArtworkWithOptions(file, cfg, all)
