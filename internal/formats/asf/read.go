@@ -65,9 +65,14 @@ func Read(path string) (*metadata.Document, error) {
 		case "picture":
 			if d.Type == 1 {
 				if pic, ok := ParsePicture(d.Value); ok {
-					cover := &metadata.Cover{Filename: read.CoverName("", pic.MIME), MIME: pic.MIME, Data: pic.Data}
-					res.Cover = cover
-					res.Artwork[metadata.Front] = cover
+					kind := pictureKind(pic.Type)
+					if kind != "" {
+						cover := &metadata.Cover{Filename: read.CoverName("", pic.MIME), MIME: pic.MIME, Data: pic.Data}
+						res.Artwork[kind] = cover
+						if kind == metadata.Front {
+							res.Cover = cover
+						}
+					}
 				}
 			}
 			continue
@@ -98,8 +103,23 @@ func Read(path string) (*metadata.Document, error) {
 	read.PutVar(res.Vars, "totaltracks", trackTotal)
 	read.PutVar(res.Vars, "discnumber", disc)
 	read.PutVar(res.Vars, "disctotal", discTotal)
-	if len(res.Fields) == 0 && res.Cover == nil {
+	if len(res.Fields) == 0 && len(res.Artwork) == 0 {
 		return res, read.ErrNoTags
 	}
 	return res, nil
+}
+func pictureKind(pictureType byte) string {
+	switch pictureType {
+	case 3:
+		return metadata.Front
+	case 4:
+		return metadata.Back
+	case 8:
+		return metadata.Artist
+	case 6:
+		return metadata.Disc
+	case 1:
+		return metadata.Icon
+	}
+	return ""
 }

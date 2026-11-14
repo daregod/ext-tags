@@ -21,5 +21,8 @@ func ImportASF(path string, tf *TagFile, opts Options) error {
 	if tf.Cover != nil && covers["front"] == nil {
 		covers["front"] = &asf.Cover{Filename: tf.Cover.Filename, MIME: tf.Cover.MIME, Data: tf.Cover.Data}
 	}
+	if len(opts.Only) > 0 {
+		return asf.WriteOnly(path, tf.Fields, covers, opts.Only)
+	}
 	return asf.Write(path, tf.Fields, covers, opts.Replace)
 }

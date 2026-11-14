@@ -46,6 +46,51 @@ type object struct {
 // Write replaces ASF content descriptions and pictures, preserving the rest
 // of the header and all data objects.
 func Write(path string, fields map[string]string, covers map[string]*Cover, replace bool) error {
+	return write(path, fields, covers, replace, nil)
+}
+
+// WriteOnly synchronises selected fields/artwork and removes selected values
+// that are absent from the new data.
+func WriteOnly(path string, fields map[string]string, covers map[string]*Cover, only []string) error {
+	content := map[string]string{}
+	md, err := ReadFile(path)
+	if err == nil {
+		content["Title"] = md.Title
+		content["Artist"] = md.Author
+		content["Copyright"] = md.Copyright
+		content["Comment"] = md.Description
+		content["Rating"] = md.Rating
+	}
+	removeDesc := make(map[string]bool)
+	removePictures := make(map[byte]bool)
+	for _, field := range only {
+		switch field {
+		case "Title", "Artist", "Copyright", "Comment", "Rating":
+			if fields[field] != "" {
+				content[field] = fields[field]
+			} else {
+				delete(content, field)
+			}
+		case "Album", "Album artist", "Genre", "Year", "Track", "Disc", "Composer", "Publisher", "Encoder":
+			removeDesc[strings.ToLower(descriptorFields[field])] = true
+		case "Cover Art (Front)", "Cover Art (Back)", "Artist Picture", "Cover Art (Disc)", "Cover Art (Icon)":
+			if typ, ok := pictureTypes[asfArtworkKind(field)]; ok {
+				removePictures[typ] = true
+			}
+		default:
+			return fmt.Errorf("--only field %q is not supported for ASF", field)
+		}
+	}
+	return write(path, fields, covers, false, &writeOptions{content: content, removeDesc: removeDesc, removePictures: removePictures})
+}
+
+type writeOptions struct {
+	content        map[string]string
+	removeDesc     map[string]bool
+	removePictures map[byte]bool
+}
+
+func write(path string, fields map[string]string, covers map[string]*Cover, replace bool, opts *writeOptions) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -80,8 +125,12 @@ func Write(path string, fields map[string]string, covers map[string]*Cover, repl
 		insertAt = len(kept)
 	}
 
-	content := buildContentDescription(fields)
-	ext := buildExtendedContent(fields, covers, existingDesc, replace)
+	contentFields := fields
+	if opts != nil && opts.content != nil {
+		contentFields = opts.content
+	}
+	content := buildContentDescription(contentFields)
+	ext := buildExtendedContentOpts(fields, covers, existingDesc, replace, opts)
 	newObjects := make([]object, 0, len(kept)+2)
 	newObjects = append(newObjects, kept[:insertAt]...)
 	newObjects = append(newObjects, object{guid: guidContentDesc, raw: makeObject(guidContentDesc, content)})
@@ -178,6 +227,10 @@ type extDescriptor struct {
 }
 
 func buildExtendedContent(fields map[string]string, covers map[string]*Cover, existing []Descriptor, replace bool) []byte {
+	return buildExtendedContentOpts(fields, covers, existing, replace, nil)
+}
+
+func buildExtendedContentOpts(fields map[string]string, covers map[string]*Cover, existing []Descriptor, replace bool, opts *writeOptions) []byte {
 	var descriptors []extDescriptor
 	replaced := make(map[string]bool)
 	for field, name := range descriptorFields {
@@ -210,13 +263,13 @@ func buildExtendedContent(fields map[string]string, covers map[string]*Cover, ex
 		for _, d := range existing {
 			lower := strings.ToLower(d.Name)
 			if lower == "wm/picture" {
-				if len(d.Value) > 0 && added[d.Value[0]] {
+				if len(d.Value) > 0 && (added[d.Value[0]] || (opts != nil && opts.removePictures[d.Value[0]])) {
 					continue
 				}
 				descriptors = append(descriptors, extDescriptor{name: d.Name, typ: d.Type, value: d.Value})
 				continue
 			}
-			if replaced[lower] {
+			if replaced[lower] || (opts != nil && opts.removeDesc[lower]) {
 				continue
 			}
 			descriptors = append(descriptors, extDescriptor{name: d.Name, typ: d.Type, value: d.Value})
@@ -307,4 +360,19 @@ func utf16Bytes(value string) []byte {
 		binary.LittleEndian.PutUint16(out[i*2:], unit)
 	}
 	return out
+}
+func asfArtworkKind(field string) string {
+	switch strings.ToLower(strings.TrimSpace(field)) {
+	case "cover art (front)":
+		return "front"
+	case "cover art (back)":
+		return "back"
+	case "artist picture":
+		return "artist"
+	case "cover art (disc)":
+		return "disc"
+	case "cover art (icon)":
+		return "icon"
+	}
+	return ""
 }

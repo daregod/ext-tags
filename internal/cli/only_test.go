@@ -3,9 +3,11 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/daregod/ext-tags/internal/formats/ape"
+	"github.com/daregod/ext-tags/internal/formats/asf"
 	"github.com/daregod/ext-tags/internal/formats/matroska"
 	"github.com/daregod/ext-tags/internal/read"
 	"github.com/daregod/ext-tags/internal/registry"
@@ -289,5 +291,48 @@ func TestImportOnlyMatroskaBackCoverRemoval(t *testing.T) {
 	}
 	if len(md.Attachments) != 1 || md.Attachments[0].Filename != "cover.jpg" {
 		t.Fatalf("attachments = %+v", md.Attachments)
+	}
+}
+
+func TestImportOnlyASF(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.wma")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.wma"), audio)
+	tagPath := audio + ".tag"
+	write := func(fields map[string]string) {
+		tag := ape.NewTag()
+		for key, value := range fields {
+			tag.AddText(key, value)
+		}
+		data, err := tag.Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tagPath, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	write(map[string]string{"Title": "Tag title", "Rating": "5", "Track": "1/10"})
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off"}); err != nil {
+		t.Fatal(err)
+	}
+	write(map[string]string{"Track": "2/10"})
+	a.opts = &options{}
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off", only: []string{"Rating"}}); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := asf.Read(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(read.FieldValue(doc.Fields, "TITLE", "title"), "Tag title") {
+		t.Fatalf("title = %v", doc.Fields)
+	}
+	if read.FieldValue(doc.Fields, "RATING", "rating") != "" {
+		t.Fatalf("rating = %v", doc.Fields)
+	}
+	if read.FieldValue(doc.Fields, "TRACKNUMBER", "tracknumber") != "1/10" {
+		t.Fatalf("track = %v", doc.Fields)
 	}
 }

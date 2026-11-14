@@ -168,6 +168,7 @@ func parseExtendedContent(payload []byte, md *Metadata) {
 
 // Picture is a decoded WM/Picture value.
 type Picture struct {
+	Type byte
 	MIME string
 	Data []byte
 }
@@ -177,6 +178,7 @@ func ParsePicture(value []byte) (Picture, bool) {
 	if len(value) < 5 {
 		return Picture{}, false
 	}
+	pictureType := value[0]
 	dataLen := int(binary.LittleEndian.Uint32(value[1:5]))
 	rest := value[5:]
 
@@ -191,7 +193,7 @@ func ParsePicture(value []byte) (Picture, bool) {
 	if dataLen <= 0 || dataLen > len(rest) {
 		return Picture{}, false
 	}
-	return Picture{MIME: mime, Data: rest[:dataLen]}, true
+	return Picture{Type: pictureType, MIME: mime, Data: rest[:dataLen]}, true
 }
 
 func readUTF16Z(data []byte) (string, []byte, bool) {
