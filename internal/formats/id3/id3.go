@@ -13,6 +13,7 @@ import (
 
 // Cover is an embedded front cover.
 type Cover struct {
+	Type     byte
 	Filename string
 	MIME     string
 	Data     []byte

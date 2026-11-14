@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -24,11 +25,14 @@ type artworkExtractOptions struct {
 	output      string
 	force       bool
 	ignoreLimit bool
+	index       string
 }
 
 type artworkResult struct {
 	File     string `json:"file"`
-	Slot     string `json:"slot"`
+	Source   string `json:"source,omitempty"`
+	Index    *int   `json:"index,omitempty"`
+	Slot     string `json:"slot,omitempty"`
 	Filename string `json:"filename,omitempty"`
 	MIME     string `json:"mime,omitempty"`
 	Bytes    int    `json:"bytes,omitempty"`
@@ -41,15 +45,17 @@ func (a *app) artworkCmd() *cobra.Command {
 		Short: "Inspect and extract artwork",
 	}
 	listAll := false
+	listIndex := false
 	listCmd := &cobra.Command{
 		Use:   "list <path...>",
 		Short: "List selected artwork slots",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return a.runArtworkList(args, listAll)
+			return a.runArtworkList(args, listAll, listIndex)
 		},
 	}
 	listCmd.Flags().BoolVar(&listAll, "all", false, "include artwork above cover.hard_max_bytes")
+	listCmd.Flags().BoolVar(&listIndex, "index", false, "list all pictures with source:index keys")
 	opts := &artworkExtractOptions{}
 	extractCmd := &cobra.Command{
 		Use:   "extract <audio file>",
@@ -63,11 +69,12 @@ func (a *app) artworkCmd() *cobra.Command {
 	extractCmd.Flags().StringVar(&opts.output, "output", "", "output image path")
 	extractCmd.Flags().BoolVar(&opts.force, "force", false, "overwrite an existing output file")
 	extractCmd.Flags().BoolVar(&opts.ignoreLimit, "ignore-limit", false, "extract artwork above cover.hard_max_bytes")
+	extractCmd.Flags().StringVar(&opts.index, "index", "", "picture key: container:N or tag:N")
 	cmd.AddCommand(listCmd, extractCmd)
 	return cmd
 }
 
-func (a *app) runArtworkList(paths []string, all bool) error {
+func (a *app) runArtworkList(paths []string, all, indexed bool) error {
 	cfg, _, err := a.effectiveConfig()
 	if err != nil {
 		return err
@@ -84,6 +91,24 @@ func (a *app) runArtworkList(paths []string, all bool) error {
 	}
 	for _, file := range files {
 		if a.isOwnOutput(file, cfg) {
+			continue
+		}
+		if indexed {
+			items, err := a.loadIndexedArtwork(file, cfg)
+			if err != nil {
+				a.artworkError(file, err)
+				continue
+			}
+			for _, item := range items {
+				index := item.Index
+				res := artworkResult{File: file, Source: item.Source, Index: &index, Slot: item.Slot, Filename: item.Filename, MIME: item.MIME, Bytes: len(item.Data)}
+				if a.opts.json {
+					writeJSONRecord(res)
+				} else {
+					fmt.Printf("%s\t%s:%d\t%s\t%s\t%d\n", file, item.Source, item.Index, item.Slot, item.Filename, len(item.Data))
+				}
+			}
+			a.addResult(fileResult{Status: "ok"})
 			continue
 		}
 		covers, skips, err := a.loadArtworkWithOptions(file, cfg, all)
@@ -123,6 +148,9 @@ func (a *app) runArtworkExtract(path string, opts *artworkExtractOptions) error 
 	if opts.output == "" {
 		return fmt.Errorf("--output is required")
 	}
+	if opts.index != "" && opts.slot != "front" {
+		return fmt.Errorf("--index and --slot are mutually exclusive")
+	}
 	if !opts.force {
 		if _, err := os.Stat(opts.output); err == nil {
 			return fmt.Errorf("%s already exists (use --force)", opts.output)
@@ -137,6 +165,34 @@ func (a *app) runArtworkExtract(path string, opts *artworkExtractOptions) error 
 	}
 	if err := cfg.Validate(); err != nil {
 		return err
+	}
+	if opts.index != "" {
+		items, err := a.loadIndexedArtwork(path, cfg)
+		if err != nil {
+			return err
+		}
+		source, index, ok := parsePictureIndex(opts.index)
+		if !ok {
+			return fmt.Errorf("--index must be container:N or tag:N")
+		}
+		for _, item := range items {
+			if item.Source == source && item.Index == index {
+				if err := os.WriteFile(opts.output, item.Data, 0644); err != nil {
+					return err
+				}
+				index := item.Index
+				res := artworkResult{File: path, Source: item.Source, Index: &index, Slot: item.Slot, Filename: item.Filename, MIME: item.MIME, Bytes: len(item.Data), Output: opts.output}
+				if a.opts.json {
+					writeJSONRecord(res)
+				} else {
+					fmt.Printf("Wrote %s (%s:%d, %d bytes)\n", opts.output, item.Source, item.Index, len(item.Data))
+				}
+				a.addResult(fileResult{Status: "ok", Items: 1, Bytes: len(item.Data)})
+				a.printSummary()
+				return nil
+			}
+		}
+		return fmt.Errorf("picture %s not found", opts.index)
 	}
 	covers, skips, err := a.loadArtworkWithOptions(path, cfg, opts.ignoreLimit)
 	if err != nil {
@@ -228,4 +284,16 @@ func writeJSONRecord(v any) {
 		return
 	}
 	_, _ = os.Stdout.Write(append(data, '\n'))
+}
+
+func parsePictureIndex(value string) (string, int, bool) {
+	source, number, ok := strings.Cut(value, ":")
+	if !ok || (source != "container" && source != "tag") {
+		return "", 0, false
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 0 {
+		return "", 0, false
+	}
+	return source, n, true
 }

@@ -287,7 +287,17 @@ ext-tags import --only Rating,Track track.mp3
 - если выбранного поля нет в `.tag`, оно удаляется из аудио;
 - остальные поля и обложки не трогаются.
 
-Если `--only` содержит неизвестное текстовое поле, но формат умеет его\nхранить (ID3 TXXX, Vorbis comment, APEv2 key, Matroska SimpleTag), импорт\nвыполняется с предупреждением:\n\n```text\nwarning: custom field "Titel" written as ID3 TXXX\n```\n\nДля MP4/ASF неизвестное поле остаётся ошибкой.\n\nВ список можно включать обложки по каноническим именам:
+Если `--only` содержит неизвестное текстовое поле, но формат умеет его
+хранить (ID3 TXXX, Vorbis comment, APEv2 key, Matroska SimpleTag), импорт
+выполняется с предупреждением:
+
+```text
+warning: custom field "Titel" written as ID3 TXXX
+```
+
+Для MP4/ASF неизвестное поле остаётся ошибкой.
+
+В список можно включать обложки по каноническим именам:
 
 ```bash
 ext-tags import --only "Rating,Cover Art (Front)" track.mp3
@@ -383,7 +393,10 @@ ext-tags apply --tag track.flac.tag --stdout > track.flac.tag.new
 ext-tags artwork list album/*.flac
 ext-tags artwork list --json track.flac
 ext-tags artwork list --all track.flac
+ext-tags artwork list --index track.flac
 ext-tags artwork extract --slot front --output cover.jpg track.flac
+ext-tags artwork extract --index container:0 --output cover.jpg track.flac
+ext-tags artwork extract --index tag:0 --output tag-cover.jpg track.flac
 ext-tags artwork extract --slot back --output back.png track.flac --force
 ext-tags artwork extract --ignore-limit --output cover.jpg track.flac
 ```
@@ -391,6 +404,10 @@ ext-tags artwork extract --ignore-limit --output cover.jpg track.flac
 `list` печатает выбранные слоты с учётом `cover.prefer`,
 `cover.max_bytes`/`hard_max_bytes`, `album.yaml` и существующего `.tag`.
 `extract` пишет байты одного слота в файл; по умолчанию слот `front`.
+
+`--index` выбирает конкретную picture по ключу `container:N` или `tag:N`;
+нумерация отдельная для контейнера и внешнего `.tag`, sidecar/album.yaml в неё
+не входят. Для `--index` лимит `hard_max_bytes` не применяется.
 
 Если кандидат больше `cover.hard_max_bytes`, `list` предупреждает и
 показывает пустой слот. Флаг `--all` показывает такой слот, `--ignore-limit`

@@ -18,6 +18,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 - `import --only`: импорт только выбранных полей и обложек; отсутствующие выбранные значения удаляются из аудио. Поддержаны MP3, FLAC, Ogg, APEv2, MP4 (поля + front cover), Matroska (текстовые поля + все artwork-слоты) ASF/WMA и RIFF/WAV/RF64/AIFF/Wave64 (поля + все artwork-слоты).
 - Глобальный `--summary` с итоговыми счётчиками.
@@ -44,6 +45,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `artwork list --all` и `artwork extract --ignore-limit` для обложек больше `cover.hard_max_bytes`.
@@ -65,6 +67,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `render --raw` отдаёт `.artwork`, `.containerartwork`, `.tagartwork`, их `...count` и `...<slot>`/`...<slot>bytes`.
@@ -73,6 +76,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `render` отдаёт в шаблон данные об обложках: `.artwork`, `.artworkcount` и `.artwork<slot>`/`.artwork<slot>bytes`.
@@ -88,6 +92,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `album_init.multiline`: `block` (по умолчанию) или `quoted` для редакторов, которые не понимают YAML block scalar.
@@ -97,6 +102,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Секция `album_init`: `ignore`, `album_order`, `track_order` для генерации `album.yaml`; числовая сортировка ключей треков.
@@ -117,6 +123,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Команда `ext-tags artwork list` и `ext-tags artwork extract` для просмотра и сохранения выбранной обложки.
@@ -125,6 +132,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Команда `ext-tags render` для вывода на экран финальных полей по Go-шаблону.
@@ -166,6 +174,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Шаблонный helper `atoi` для числовых условий, например `gt (atoi .disctotal) 1`.
@@ -174,6 +183,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `extract --output PATH` и `extract --stdout`; существующий `.tag` читается рядом с исходным аудиофайлом.
@@ -212,6 +222,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `ext-tags self-update` для standalone-бинарников: `--check`, `--dry-run`, `--force`; проверка SHA256 и атомарная замена.
@@ -227,6 +238,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Entware/opkg feed для QNAP: `opkg install ext-tags` и `opkg upgrade ext-tags`.
@@ -236,6 +248,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Linux-пакеты `.deb`, `.rpm` и `.apk` в релизах.
@@ -254,6 +267,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `ext-tags album init`: генерация `album.yaml` из тегов треков.
@@ -275,6 +289,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Per-album `album.yaml`: переопределение полей альбома, треков и artwork.
@@ -291,6 +306,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт для WAV/RF64/Wave64/AIFF через ID3v2-чанк; старые
@@ -310,6 +326,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт ASF/WMA/WMV: Content Description, Extended Content
@@ -347,6 +364,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт переносит все пять artwork-слотов в ID3 APIC (front/back/
@@ -367,6 +385,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Лицензия MIT (`LICENSE`).
@@ -394,6 +413,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Обратный импорт тегов для MP3: `ext-tags import` читает `<file>.tag` и
@@ -416,6 +436,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - MP1: фикстура (получена `mp2enc -l 1`, теги — ID3v2) и тест.
@@ -481,6 +502,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - Поля iTunes `Itunescompilation` (`cpil`) и `Tempo` (`tmpo`) в `.tag`.
@@ -501,6 +523,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - `Makefile`: сборка, тесты, покрытие, `vet`, `lint`, форматирование,
@@ -522,6 +545,7 @@
 
 ### Добавлено
 
+- `artwork list --index` и `artwork extract --index container:N|tag:N`.
 - `apply --diff` и автоматическое применение `album.yaml` (отключается `--no-album`).
 
 - CLI `ext-tags`: извлечение тегов из MP3 (ID3v1, ID3v2.2–2.4), FLAC, Opus,

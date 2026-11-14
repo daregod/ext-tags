@@ -15,7 +15,7 @@ func TestArtworkListAndExtract(t *testing.T) {
 	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
 	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
 	out := captureStdout(t, func() {
-		if err := a.runArtworkList([]string{audio}, false); err != nil {
+		if err := a.runArtworkList([]string{audio}, false, false); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -39,4 +39,26 @@ func TestArtworkListAndExtract(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestArtworkIndexListAndExtract(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.flac")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio.flac"), audio)
+	a := &app{opts: &options{quiet: true}, registry: registry.NewDefault()}
+	out := captureStdout(t, func() {
+		if err := a.runArtworkList([]string{audio}, false, true); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "container:0") {
+		t.Fatalf("index list = %q", out)
+	}
+	outPath := filepath.Join(dir, "cover.jpg")
+	if err := a.runArtworkExtract(audio, &artworkExtractOptions{slot: "front", output: outPath, index: "container:0"}); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(outPath); err != nil || info.Size() == 0 {
+		t.Fatalf("extracted index: %v %v", info, err)
+	}
 }

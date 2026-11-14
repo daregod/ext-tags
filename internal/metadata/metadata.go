@@ -21,13 +21,23 @@ type Cover struct {
 	Data     []byte
 }
 
+// Picture is one indexed artwork item from the container.
+type Picture struct {
+	Source   string
+	Slot     string
+	Filename string
+	MIME     string
+	Data     []byte
+}
+
 // Document is raw metadata, before any field rules are applied.
 type Document struct {
-	Format  string
-	Fields  map[string]string
-	Vars    map[string]string
-	Cover   *Cover
-	Artwork map[string]*Cover // front, back, artist, disc, icon
+	Format   string
+	Fields   map[string]string
+	Vars     map[string]string
+	Cover    *Cover
+	Artwork  map[string]*Cover // front, back, artist, disc, icon
+	Pictures []Picture         // all container pictures in native order
 }
 
 // New returns a document with initialised maps.
