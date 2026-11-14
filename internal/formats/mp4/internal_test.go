@@ -43,7 +43,7 @@ func TestShiftOffsets(t *testing.T) {
 func TestRewriteMoovCreatesMetadata(t *testing.T) {
 	fields := map[string]string{"Title": "T", "Track": "3/12"}
 	cover := &Cover{Filename: "cover.jpg", MIME: "image/jpeg", Data: []byte{1}}
-	payload, err := rewriteMoov(nil, fields, cover, true)
+	payload, err := rewriteMoov(nil, fields, cover, true, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -19,5 +19,8 @@ func ImportMP4(path string, tf *TagFile, opts Options) error {
 			cover = &mp4.Cover{Filename: c.Filename, MIME: c.MIME, Data: c.Data}
 		}
 	}
+	if len(opts.Only) > 0 {
+		return mp4.WriteOnly(path, tf.Fields, cover, opts.Replace, opts.Only)
+	}
 	return mp4.Write(path, tf.Fields, cover, opts.Replace)
 }

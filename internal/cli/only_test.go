@@ -147,3 +147,43 @@ func TestImportOnlyCoverRemovalFLAC(t *testing.T) {
 		t.Fatalf("cover was not removed: %+v", doc.Cover)
 	}
 }
+
+func TestImportOnlyMP4(t *testing.T) {
+	dir := t.TempDir()
+	audio := filepath.Join(dir, "track.m4a")
+	copyFixture(t, filepath.Join("..", "..", "testdata", "formats", "audio-aac.m4a"), audio)
+	tagPath := audio + ".tag"
+	write := func(fields map[string]string) {
+		tag := ape.NewTag()
+		for key, value := range fields {
+			tag.AddText(key, value)
+		}
+		data, err := tag.Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(tagPath, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := &app{opts: &options{}, registry: registry.NewDefault()}
+	write(map[string]string{"Title": "Tag title", "Track": "1/10"})
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off"}); err != nil {
+		t.Fatal(err)
+	}
+	write(map[string]string{"Title": "Tag title"})
+	a.opts = &options{}
+	if err := a.runImport([]string{audio}, &importOptions{version: 3, verify: "off", only: []string{"Track"}}); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := read.Taglib(audio)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.FieldValue(doc.Fields, "TITLE", "title") != "Tag title" {
+		t.Fatalf("title = %v", doc.Fields)
+	}
+	if read.FieldValue(doc.Fields, "TRACKNUMBER", "tracknumber") != "" {
+		t.Fatalf("track was not removed: %v", doc.Fields)
+	}
+}

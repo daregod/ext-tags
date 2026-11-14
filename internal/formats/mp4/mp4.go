@@ -42,6 +42,31 @@ var containerTypes = map[string]bool{
 
 // Write merges fields and the front cover into an MP4 file.
 func Write(path string, fields map[string]string, cover *Cover, replace bool) error {
+	return write(path, fields, cover, replace, nil)
+}
+
+// WriteOnly writes selected fields and removes selected atoms that are
+// missing. It rejects fields/artwork that MP4 cannot represent.
+func WriteOnly(path string, fields map[string]string, cover *Cover, replace bool, only []string) error {
+	remove := make(map[string]bool)
+	for _, field := range only {
+		switch field {
+		case "Title", "Artist", "Album", "Album artist", "Year", "Genre", "Composer", "Comment", "Copyright", "Encoder":
+			remove[textAtoms[field]] = true
+		case "Track":
+			remove["trkn"] = true
+		case "Disc":
+			remove["disk"] = true
+		case "Cover Art (Front)":
+			remove["covr"] = true
+		default:
+			return fmt.Errorf("--only field %q is not supported for MP4", field)
+		}
+	}
+	return write(path, fields, cover, replace, remove)
+}
+
+func write(path string, fields map[string]string, cover *Cover, replace bool, remove map[string]bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -67,7 +92,7 @@ func Write(path string, fields map[string]string, cover *Cover, replace bool) er
 	oldMoov := boxes[moovIndex].raw
 	oldEnd := moovOffset + int64(len(oldMoov))
 
-	payload, err := rewriteMoov(boxes[moovIndex].data, fields, cover, replace)
+	payload, err := rewriteMoov(boxes[moovIndex].data, fields, cover, replace, remove)
 	if err != nil {
 		return err
 	}
@@ -95,7 +120,7 @@ func Write(path string, fields map[string]string, cover *Cover, replace bool) er
 	return os.WriteFile(path, out, info.Mode().Perm())
 }
 
-func rewriteMoov(payload []byte, fields map[string]string, cover *Cover, replace bool) ([]byte, error) {
+func rewriteMoov(payload []byte, fields map[string]string, cover *Cover, replace bool, remove map[string]bool) ([]byte, error) {
 	children, err := parseBoxes(payload)
 	if err != nil {
 		return nil, err
@@ -104,7 +129,7 @@ func rewriteMoov(payload []byte, fields map[string]string, cover *Cover, replace
 	var out []byte
 	for _, b := range children {
 		if b.typ == "udta" {
-			udta, err := rewriteUdta(b.data, fields, cover, replace)
+			udta, err := rewriteUdta(b.data, fields, cover, replace, remove)
 			if err != nil {
 				return nil, err
 			}
@@ -115,7 +140,7 @@ func rewriteMoov(payload []byte, fields map[string]string, cover *Cover, replace
 		out = append(out, b.raw...)
 	}
 	if !found {
-		udta, err := rewriteUdta(nil, fields, cover, replace)
+		udta, err := rewriteUdta(nil, fields, cover, replace, remove)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +149,7 @@ func rewriteMoov(payload []byte, fields map[string]string, cover *Cover, replace
 	return out, nil
 }
 
-func rewriteUdta(payload []byte, fields map[string]string, cover *Cover, replace bool) ([]byte, error) {
+func rewriteUdta(payload []byte, fields map[string]string, cover *Cover, replace bool, remove map[string]bool) ([]byte, error) {
 	var children []box
 	var err error
 	if len(payload) > 0 {
@@ -137,7 +162,7 @@ func rewriteUdta(payload []byte, fields map[string]string, cover *Cover, replace
 	var out []byte
 	for _, b := range children {
 		if b.typ == "meta" {
-			meta, err := rewriteMeta(b.data, fields, cover, replace)
+			meta, err := rewriteMeta(b.data, fields, cover, replace, remove)
 			if err != nil {
 				return nil, err
 			}
@@ -148,7 +173,7 @@ func rewriteUdta(payload []byte, fields map[string]string, cover *Cover, replace
 		out = append(out, b.raw...)
 	}
 	if !found {
-		meta, err := rewriteMeta(nil, fields, cover, replace)
+		meta, err := rewriteMeta(nil, fields, cover, replace, remove)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +182,7 @@ func rewriteUdta(payload []byte, fields map[string]string, cover *Cover, replace
 	return out, nil
 }
 
-func rewriteMeta(payload []byte, fields map[string]string, cover *Cover, replace bool) ([]byte, error) {
+func rewriteMeta(payload []byte, fields map[string]string, cover *Cover, replace bool, remove map[string]bool) ([]byte, error) {
 	prefix := make([]byte, 4)
 	if len(payload) >= 4 {
 		copy(prefix, payload[:4])
@@ -175,7 +200,7 @@ func rewriteMeta(payload []byte, fields map[string]string, cover *Cover, replace
 		case "hdlr":
 			hdlr = b.raw
 		case "ilst":
-			ilst, err := rewriteIlst(b.data, fields, cover, replace)
+			ilst, err := rewriteIlst(b.data, fields, cover, replace, remove)
 			if err != nil {
 				return nil, err
 			}
@@ -186,7 +211,7 @@ func rewriteMeta(payload []byte, fields map[string]string, cover *Cover, replace
 		}
 	}
 	if !hasIlst {
-		ilst, err := rewriteIlst(nil, fields, cover, replace)
+		ilst, err := rewriteIlst(nil, fields, cover, replace, remove)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +225,7 @@ func rewriteMeta(payload []byte, fields map[string]string, cover *Cover, replace
 	return append(out, outChildren...), nil
 }
 
-func rewriteIlst(payload []byte, fields map[string]string, cover *Cover, replace bool) ([]byte, error) {
+func rewriteIlst(payload []byte, fields map[string]string, cover *Cover, replace bool, remove map[string]bool) ([]byte, error) {
 	var children []box
 	var err error
 	if len(payload) > 0 {
@@ -227,7 +252,7 @@ func rewriteIlst(payload []byte, fields map[string]string, cover *Cover, replace
 
 	var out []byte
 	for _, b := range children {
-		if replace || wanted[b.typ] {
+		if replace || wanted[b.typ] || remove[b.typ] {
 			continue
 		}
 		out = append(out, b.raw...)
