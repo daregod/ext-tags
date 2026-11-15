@@ -36,3 +36,32 @@ func TestMergeMatchesNumericTrackKeys(t *testing.T) {
 		t.Fatalf("tracks = %#v", got.Tracks)
 	}
 }
+
+func TestMergeFieldNamesCaseInsensitive(t *testing.T) {
+	existing := &Config{
+		Album: map[string]string{"Album Artist": "Manual", "WWW": "manual"},
+		Tracks: map[string]map[string]string{"1": {
+			"Track_URL": "manual",
+		}},
+	}
+	generated := &Config{
+		Album: map[string]string{"Album artist": "Generated", "Www": "generated", "Album": "Album"},
+		Tracks: map[string]map[string]string{"01": {
+			"Track_url": "generated",
+			"Artist":    "Artist",
+		}},
+	}
+	got := Merge(existing, generated)
+	if len(got.Album) != 3 {
+		t.Fatalf("album = %#v", got.Album)
+	}
+	if got.Album["Album Artist"] != "Manual" || got.Album["WWW"] != "manual" || got.Album["Album"] != "Album" {
+		t.Fatalf("album = %#v", got.Album)
+	}
+	if len(got.Tracks) != 1 || got.Tracks["1"]["Track_URL"] != "manual" || got.Tracks["1"]["Artist"] != "Artist" {
+		t.Fatalf("tracks = %#v", got.Tracks)
+	}
+	if _, ok := got.Tracks["1"]["Track_url"]; ok {
+		t.Fatalf("duplicate track field: %#v", got.Tracks["1"])
+	}
+}

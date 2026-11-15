@@ -12,9 +12,9 @@ func Merge(existing, generated *Config) *Config {
 		return existing
 	}
 	out := &Config{
-		Album:      cloneFields(existing.Album),
+		Album:      mergeFieldMaps(existing.Album, generated.Album),
 		Tracks:     cloneTracks(existing.Tracks),
-		Artwork:    cloneFields(existing.Artwork),
+		Artwork:    mergeFieldMaps(existing.Artwork, generated.Artwork),
 		dir:        existing.dir,
 		path:       existing.path,
 		albumOrder: generated.albumOrder,
@@ -22,22 +22,7 @@ func Merge(existing, generated *Config) *Config {
 		multiline:  generated.multiline,
 		quote:      generated.quote,
 	}
-	if out.Album == nil {
-		out.Album = map[string]string{}
-	}
-	if out.Artwork == nil {
-		out.Artwork = map[string]string{}
-	}
-	for key, value := range generated.Album {
-		if _, ok := out.Album[key]; !ok {
-			out.Album[key] = value
-		}
-	}
-	for key, value := range generated.Artwork {
-		if _, ok := out.Artwork[key]; !ok {
-			out.Artwork[key] = value
-		}
-	}
+
 	if out.Tracks == nil && len(generated.Tracks) > 0 {
 		out.Tracks = map[string]map[string]string{}
 	}
@@ -54,7 +39,7 @@ func Merge(existing, generated *Config) *Config {
 		}
 		current := out.Tracks[actual]
 		for field, value := range fields {
-			if _, exists := current[field]; !exists {
+			if !hasFieldFold(current, field) {
 				current[field] = value
 			}
 		}
@@ -62,6 +47,35 @@ func Merge(existing, generated *Config) *Config {
 	return out
 }
 
+func mergeFieldMaps(base, extra map[string]string) map[string]string {
+	out := make(map[string]string, len(base)+len(extra))
+	index := make(map[string]string, len(base)+len(extra))
+	add := func(key, value string) {
+		lower := strings.ToLower(strings.TrimSpace(key))
+		if _, ok := index[lower]; ok {
+			return
+		}
+		index[lower] = key
+		out[key] = value
+	}
+	for key, value := range base {
+		add(key, value)
+	}
+	for key, value := range extra {
+		add(key, value)
+	}
+	return out
+}
+
+func hasFieldFold(fields map[string]string, name string) bool {
+	lower := strings.ToLower(strings.TrimSpace(name))
+	for key := range fields {
+		if strings.ToLower(strings.TrimSpace(key)) == lower {
+			return true
+		}
+	}
+	return false
+}
 func canonicalTrackKey(key string) string {
 	key = strings.TrimSpace(key)
 	if key == "" {

@@ -359,3 +359,34 @@ func TestRulesSeeSourceMaps(t *testing.T) {
 		t.Fatalf("fields = %v", fields)
 	}
 }
+
+func TestDiscRuleMissingTotal(t *testing.T) {
+	cfg := config.Default()
+	cfg.Fields.Rules = []config.Rule{
+		{Set: "Disc", When: `{{ and .discnumber .disctotal (ne .disctotal "1") }}`, Template: `{{ formatTrack (printf "%s/%s" .discnumber .disctotal) }}`},
+		{Remove: []string{"Disc"}, When: `{{ or (not .discnumber) (not .disctotal) (eq .disctotal "1") }}`},
+	}
+	engine, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		vars map[string]string
+		want string
+	}{
+		{map[string]string{"discnumber": "1"}, ""},
+		{map[string]string{"discnumber": "1", "disctotal": "2"}, "1/2"},
+		{map[string]string{"discnumber": "1", "disctotal": "1"}, ""},
+	} {
+		doc := metadata.New()
+		doc.Fields["DISCNUMBER"] = tc.vars["discnumber"]
+		doc.Vars = tc.vars
+		fields, err := engine.Build(doc, Meta{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fields["Disc"] != tc.want {
+			t.Fatalf("vars=%v Disc=%q want %q", tc.vars, fields["Disc"], tc.want)
+		}
+	}
+}
